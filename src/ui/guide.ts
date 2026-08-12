@@ -262,12 +262,15 @@ export const GUIDE: GuideSection[] = [
     id: 'settings',
     title: 'Settings',
     intro:
-      'Two switches, and that is on purpose — anything that needs a switch usually needed a decision instead.',
+      'One question and two switches, and that is on purpose — anything that needs a switch usually needed a decision instead.',
     rows: [
       { keys: 'Ctrl + ,', what: 'Open settings' },
+      { what: 'What should it call you — the name the greeting uses. Leave it empty and it says “Hey you”.' },
       { what: 'Animated cursor — the cursor slides between positions rather than jumping.' },
       { what: 'Greeting on launch — somewhere to start before the writing. Escape always skips it.' },
       { what: 'The theme button in the top bar cycles system, light and dark.' },
     ],
+    aside:
+      'The name is the one setting the app cannot guess. It used to be written into the source, which was fine while one person used it and wrong the moment somebody else built their own copy and got greeted by its author’s name.',
   },
 ];

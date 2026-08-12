@@ -1663,6 +1663,19 @@ button.crumb:hover {
   border-radius: 4px;
   padding: 0.28rem 0.4rem;
   resize: vertical;
+  transition:
+    border-color var(--quick) var(--glide),
+    box-shadow var(--quick) var(--glide);
+}
+
+/* Colour appears in focus rings, the highlights and the drop indicators, and
+   this is the first of those. `focus-visible` rather than `focus`, so clicking
+   into the field does not ring it — only arriving by keyboard does. */
+.text-field input:focus-visible,
+.text-field textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--held);
 }
 
 .dialog-foot {
@@ -3115,9 +3128,19 @@ mark[data-tone='pink'] {
 .setting-note {
   display: block;
   margin-top: 0.1rem;
+  /* Zero, because this is a `<p>` under the name field as well as a `<span>`
+     beside every switch, and a paragraph brings the browser's own margin with
+     it. */
+  margin-bottom: 0;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--faint);
+}
+
+/* The name field's note sits under an input rather than beside a checkbox, so
+   it needs the air the grid would otherwise have given it. */
+.field .text-field + .setting-note {
+  margin-top: 0.4rem;
 }
 
 /* ----------------------------------------------------------- page links */

@@ -98,7 +98,13 @@ const dismissWelcome = async (target = page) => {
 section('launch');
 await page.goto(URL, { waitUntil: 'networkidle' });
 await page.waitForSelector('.welcome', { timeout: 8000 });
-check('launch greets by name', (await page.locator('.welcome-greeting').innerText()).trim(), 'Hey Sesan,');
+// A fresh profile has no name set, so this is what a copy somebody else built
+// greets them with — the case the hard-coded name used to get wrong.
+check(
+  'launch greets you, having not been told your name',
+  (await page.locator('.welcome-greeting').innerText()).trim(),
+  'Hey you,',
+);
 check(
   'and offers somewhere to start',
   await page.locator('.welcome-start').allInnerTexts(),
@@ -701,6 +707,50 @@ await freshPage('Not a mention');
 await page.keyboard.type('write to sesan@gmail');
 await page.waitForTimeout(300);
 check('an "@" inside a word is not a mention', await page.locator('.slash').count(), 0);
+
+// ------------------------------------------------------------- what it calls you
+section('what it calls you');
+await page.keyboard.press('Control+Comma');
+await page.waitForSelector('.dialog.is-narrow', { timeout: 4000 });
+const nameField = page.locator('.text-field input').first();
+check('settings asks what to call you', await nameField.getAttribute('placeholder'), 'you');
+check('and starts out not knowing', await nameField.inputValue(), '');
+
+await nameField.fill('  Ada  ');
+await page.waitForTimeout(250);
+check(
+  'the note shows the greeting it will make, trimmed',
+  (await page.locator('#name-note').innerText()).includes('“Hey Ada,”'),
+  true,
+);
+await page.locator('.dialog.is-narrow .btn', { hasText: 'Done' }).click();
+await page.waitForTimeout(200);
+
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForSelector('.welcome', { timeout: 8000 });
+check(
+  'and the greeting uses it after a restart',
+  (await page.locator('.welcome-greeting').innerText()).trim(),
+  'Hey Ada,',
+);
+
+// Emptying it has to go back to "you" rather than to "Hey ,".
+await page.keyboard.press('Escape');
+await page.waitForSelector('.body', { timeout: 8000 });
+await page.keyboard.press('Control+Comma');
+await page.waitForSelector('.dialog.is-narrow', { timeout: 4000 });
+await page.locator('.text-field input').first().fill('');
+await page.waitForTimeout(200);
+await page.locator('.dialog.is-narrow .btn', { hasText: 'Done' }).click();
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForSelector('.welcome', { timeout: 8000 });
+check(
+  'clearing it goes back to “you”, not to a gap',
+  (await page.locator('.welcome-greeting').innerText()).trim(),
+  'Hey you,',
+);
+await page.keyboard.press('Escape');
+await page.waitForSelector('.body', { timeout: 8000 });
 
 // ------------------------------------------------------------------ guide
 section('guide');

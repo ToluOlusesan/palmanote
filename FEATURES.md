@@ -760,10 +760,13 @@ button in the top bar. Three states rather than two, because following the
 machine is a real preference. It also sets `color-scheme`, so the engine draws
 the right scrollbars and form controls.
 
-**Settings** ([SettingsDialog.tsx](src/ui/SettingsDialog.tsx)), `Ctrl+,` — two
-switches, on purpose, because anything that needs a switch usually needed a
-decision instead:
+**Settings** ([SettingsDialog.tsx](src/ui/SettingsDialog.tsx)), `Ctrl+,` — one
+question and two switches, on purpose, because anything that needs a switch
+usually needed a decision instead:
 
+- *What should it call you* — the name the greeting uses, and the only setting
+  the app cannot work out for itself. It sits first because it is the only one
+  about you rather than about the app.
 - *Animated cursor* — the drawn caret described above. A system-level
   reduced-motion preference overrides it either way, and the dialog says so.
 - *Greeting on launch* — read once per session, so turning it off does not close
@@ -771,6 +774,27 @@ decision instead:
   it says.
 
 Plus a link to the guide.
+
+### What it calls you
+
+The greeting had a name compiled into it — `const OWNER = 'Sesan'` — which was
+correct while exactly one person used this and became wrong the moment the
+source was published and somebody else built a copy that greeted them by its
+author's name.
+
+Empty is the default and is a real answer rather than a missing one:
+[`whatToCallYou`](src/state/writingSettings.ts) turns it into **"you"**, so a
+fresh build opens on *"Hey you,"*. That matters more than it looks — the name is
+in the middle of a one-line greeting, so nothing is not an option; it has to
+become a word. "Hey you," is what a person says when they do not know your name
+yet, and reads as a greeting rather than as a bug. Whitespace is trimmed on the
+way through for the same reason: typing three spaces and getting *"Hey ,"* back
+would look like the greeting was broken rather than like an answer to what was
+typed.
+
+The settings note shows the greeting it is about to make as you type it, and
+says so differently when the greeting is switched off — a field whose only
+effect is invisible should say that rather than appear to do nothing.
 
 **The guide** ([guide.ts](src/ui/guide.ts),
 [GuideDialog.tsx](src/ui/GuideDialog.tsx)) is every key, gesture and menu in one
@@ -904,7 +928,13 @@ rather than deferred: no underline, no tables, no text colour, no font sizes, no
 alignment controls, no colour picker for highlights, no syntax highlighting in
 code blocks, no full-text search of bodies, no global undo stack, no annotation
 on PDFs, no auto-collapsing sidebar, no multi-block selection, and no third
-setting.
+switch.
+
+That last one used to read "no third setting", and the name field is the reason
+it does not. It is a question rather than a switch — the app cannot work out
+what to call you, where it can and does work out everything a third switch would
+have asked about. The rule the count was standing in for is intact: still two
+things to turn on and off.
 
 **And no link previews.** Cards, unfurling, favicons and fetched titles all
 mean the app calling whatever domain you happened to paste, which would tell
