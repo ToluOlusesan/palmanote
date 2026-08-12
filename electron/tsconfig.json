@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "../dist-electron",
+    "rootDir": "..",
+    "types": ["node", "better-sqlite3"]
+  },
+  "include": ["./**/*.ts", "../src/core/**/*.ts", "../src/data/bridge.ts", "../src/data/store.ts"]
+}

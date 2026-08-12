@@ -1,0 +1,103 @@
+{
+  "name": "springboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "smoke": "node scripts/smoke.mjs",
+    "capture": "node scripts/capture-ui.mjs",
+    "desktop": "tauri dev",
+    "desktop:build": "tauri build",
+    "desktop:smoke": "node scripts/desktop-smoke.mjs",
+    "icon": "node scripts/make-icon.mjs",
+    "tauri": "tauri",
+    "electron:build": "tsc -p electron && node scripts/after-main-build.mjs && vite build",
+    "electron:dev": "node scripts/electron-dev.mjs",
+    "electron:rebuild": "electron-rebuild -f -w better-sqlite3",
+    "electron:dist": "npm run icon && npm run electron:build && electron-builder",
+    "scale": "node scripts/scale-check.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.2"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.4",
+    "@tiptap/extension-placeholder": "^3.29.2",
+    "@tiptap/extension-task-item": "^3.29.2",
+    "@tiptap/extension-task-list": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "docx": "^9.7.1",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "fake-indexeddb": "^6.2.5",
+    "mammoth": "^1.12.0",
+    "playwright-core": "^1.62.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  },
+  "main": "dist-electron/electron/main.js",
+  "description": "A writing app for one person.",
+  "author": {
+    "name": "Springboard"
+  },
+  "build": {
+    "appId": "com.springboard.app",
+    "productName": "Springboard",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/{test,tests,__tests__,example,examples,docs,doc}/**",
+      "!**/*.{md,markdown,ts,tsx,cts,mts}",
+      "!**/{.eslintrc,.editorconfig,.nycrc,tsconfig.json,.prettierrc}"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Springboard"
+    },
+    "publish": null,
+    "compression": "maximum",
+    "afterPack": "scripts/trim-package.cjs",
+    "removePackageScripts": true,
+    "removePackageKeywords": true
+  }
+}

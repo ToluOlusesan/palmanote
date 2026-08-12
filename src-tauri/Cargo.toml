@@ -1,0 +1,51 @@
+[package]
+name = "springboard"
+version = "0.1.0"
+edition = "2021"
+description = "A writing app for one person."
+default-run = "springboard"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# image-png: the window icon is set at runtime from the 32 drawn for the
+# taskbar, rather than letting the shell resample the 256 or the 16.
+# protocol-asset: lets the webview read the one PDF the owner picked, so the
+# reader renders in the main window instead of a second one.
+tauri = { version = "2", features = ["image-png", "protocol-asset"] }
+tauri-plugin-dialog = "2"
+# Hands a link to whatever the machine uses for it. The plugin's own command is
+# deliberately *not* granted to the page in capabilities/default.json: the page
+# asks `open_external`, which checks the scheme first — see main.rs.
+tauri-plugin-opener = "2"
+# Image bytes cross `invoke` as base64: it is JSON underneath, where a byte
+# array costs four characters a byte to base64's one and a third.
+base64 = "0.22"
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+# DataExchange, Memory, Ole and Shell are the clipboard: a gallery is copied as
+# a file list (CF_HDROP) and as inline HTML in one write, which is the only way
+# to put more than one picture down at a time. See src/clipboard.rs.
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_System_DataExchange",
+  "Win32_System_Memory",
+  "Win32_System_Ole",
+  "Win32_UI_Shell",
+] }
+
+# The whole point of leaving Electron. Optimise for size, not for the last
+# few percent of a runtime that spends its life waiting for keystrokes.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

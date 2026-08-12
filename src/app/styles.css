@@ -1,0 +1,3470 @@
+/*
+  Springboard.
+
+  A sidebar that is part of the window rather than a panel in it, and a single
+  white card floating on the window's own grey. Chrome sits in the strip above
+  the card; the card holds nothing but the writing, its trail, and its counts.
+  Light only.
+
+  One family, two registers. Chrome is small, tracked out and grey; prose is
+  larger, tracked in and black. That separation carries further than two
+  unrelated typefaces would, and it is how the reference this is modelled on
+  does it. --prose is a single variable if the page should read as a serif.
+*/
+
+:root {
+  --prose: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', 'Inter',
+    system-ui, sans-serif;
+  --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui,
+    sans-serif;
+
+  --canvas: #f0efec;
+  --page: #ffffff;
+  --ink: #17171a;
+  --muted: #6b6b70;
+  --faint: #9b9b9f;
+  --hairline: #e4e2dd;
+  --line: #dedcd6;
+  --raise: #e6e4df;
+  --accent: #2f4b8f;
+  /* A block held as an object. Accent at a tenth, so it reads as chosen
+     without competing with a highlight, which is the other coloured wash a
+     line of prose can be wearing. */
+  --held: rgb(47 75 143 / 10%);
+
+  --mono: 'Cascadia Mono', 'Consolas', 'SF Mono', 'Menlo', ui-monospace, monospace;
+
+  --measure: 40rem;
+  --rail: 15rem;
+  --status: 2rem;
+  --topbar: 2.75rem;
+  --tabstrip: 2.5rem;
+  --inset: 0.5rem;
+  --radius: 0.6rem;
+
+  /*
+    Motion, as a vocabulary rather than a number picked per rule.
+
+    --ease is the one this app already had: a long tail that decelerates almost
+    to a stop, which is what makes a panel look like it settled rather than
+    arrived. --glide is the same idea with less bite, for the small things a
+    pointer touches. --spring overshoots by a hair and comes back, and is kept
+    for things that appear out of nothing — a bar over a selection, a menu —
+    where the overshoot is what separates "this opened" from "this was always
+    there and you just noticed".
+
+    Three durations, and almost nothing outside them. --quick is a hover: fast
+    enough that the pointer never waits on it. --settle is something arriving.
+    --unfold is the longest thing here and is still under a third of a second,
+    because this is a writing app and nothing should ever be worth watching.
+  */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --glide: cubic-bezier(0.25, 0.8, 0.3, 1);
+  --spring: cubic-bezier(0.22, 1.18, 0.36, 1);
+  --quick: 120ms;
+  --settle: 190ms;
+  --unfold: 280ms;
+
+  color-scheme: light;
+}
+
+/*
+  Dark is not the light palette inverted. The card lifts *above* the window
+  rather than sinking into it, so in dark the card is lighter than the canvas
+  and the shadow does almost nothing — depth comes from value, not from a
+  drop shadow nobody can see on black.
+*/
+:root[data-theme='dark'] {
+  --canvas: #171719;
+  --page: #202023;
+  --ink: #e9e8e4;
+  --muted: #9a9a9f;
+  --faint: #6a6a70;
+  --hairline: #2d2d31;
+  --line: #313136;
+  --raise: #2a2a2e;
+  --accent: #86a5ec;
+  /* Lifted rather than inverted: the same tenth over a dark card would be
+     invisible, so the wash carries more of the lighter accent. */
+  --held: rgb(134 165 236 / 16%);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .editor-host {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 22%);
+}
+
+:root[data-theme='dark'] .row:hover,
+:root[data-theme='dark'] .tab:hover,
+:root[data-theme='dark'] .chrome-btn:hover,
+:root[data-theme='dark'] .add-row:hover,
+:root[data-theme='dark'] .backlink:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+:root[data-theme='dark'] .navbtn:disabled {
+  color: #43434a;
+}
+
+:root[data-theme='dark'] .dialog {
+  box-shadow: 0 2px 6px rgb(0 0 0 / 40%), 0 14px 40px rgb(0 0 0 / 35%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--rail) 1fr;
+  height: 100%;
+  transition: grid-template-columns 220ms var(--ease);
+}
+
+.workspace.tree-hidden {
+  grid-template-columns: 0 1fr;
+}
+
+.tree-handle {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 18px;
+  z-index: 2;
+  opacity: 0;
+}
+
+.tree-handle::before {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 6px;
+  width: 2px;
+  height: 40px;
+  translate: 0 -50%;
+  background: var(--faint);
+  border-radius: 2px;
+}
+
+.workspace:not(.tree-hidden) .tree-handle {
+  pointer-events: none;
+}
+
+.tree-hidden .tree-handle:hover,
+.tree-hidden .tree-handle:focus-visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------- sidebar */
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  letter-spacing: 0.002em;
+}
+
+.tree-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: var(--topbar);
+  padding: 0 0.85rem;
+  white-space: nowrap;
+}
+
+/* Chrome recedes; the mark in the sidebar is a wordmark, not a button. The
+   greeting overrides this — that one is the loudest thing on its screen. */
+.springmark {
+  flex: none;
+  color: var(--muted);
+}
+
+/* Present to a screen reader, absent to everyone else. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wordmark {
+  font-size: 0.6875rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.favourites {
+  padding-bottom: 0.15rem;
+}
+
+.row.is-flat {
+  padding-left: 0.6rem;
+  gap: 0.4rem;
+}
+
+.row-star {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 120ms var(--ease), color 120ms var(--ease);
+}
+
+.row-star.is-on {
+  color: #c9962f;
+  opacity: 1;
+}
+
+.row:hover .row-star,
+.row-star:focus-visible {
+  opacity: 1;
+}
+
+.row-star:hover {
+  color: #c9962f;
+}
+
+/* Section labels, the way a Finder sidebar groups things. */
+.section {
+  margin: 0.4rem 0 0.2rem;
+  padding: 0 0.95rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.ghost {
+  color: var(--muted);
+  font-size: 0.75rem;
+  transition: color 140ms var(--ease);
+}
+
+.ghost:hover {
+  color: var(--ink);
+}
+
+.tree-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+  outline: none;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.55rem;
+  min-height: 1.75rem;
+  border-radius: 5px;
+  margin: 0 0.45rem;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.row:hover {
+  background: rgb(0 0 0 / 3.5%);
+}
+
+.row.is-selected {
+  background: var(--raise);
+}
+
+.row.is-selected .row-title {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.row.is-dragging {
+  opacity: 0.4;
+}
+
+.row.drop-before::after,
+.row.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+.row.drop-before::after {
+  top: -1px;
+}
+
+.row.drop-after::after {
+  bottom: -1px;
+}
+
+.row.drop-into {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.twisty {
+  flex: none;
+  width: 1.05rem;
+  text-align: center;
+  color: var(--faint);
+  font-size: 0.7rem;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.twisty:hover {
+  color: var(--ink);
+}
+
+.row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+.untitled {
+  color: var(--faint);
+}
+
+.row-count {
+  flex: none;
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-add {
+  flex: none;
+  width: 1.15rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 120ms var(--ease);
+}
+
+.row-add:hover {
+  color: var(--ink);
+}
+
+.row:hover .row-add,
+.row-add:focus-visible {
+  opacity: 1;
+}
+
+/* The "Add page" affordance that sits under the list, not in the header. It
+   is the most-used control in the sidebar, so it is drawn like one. */
+.add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0.6rem 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--page);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background 130ms var(--ease), border-color 130ms var(--ease);
+}
+
+.add-row svg {
+  color: var(--muted);
+}
+
+.add-row:hover {
+  background: var(--raise);
+  border-color: var(--faint);
+}
+
+.add-row:hover svg {
+  color: var(--ink);
+}
+
+.rename {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  padding: 0 0.2rem;
+}
+
+.tree-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  border-top: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.total {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.archive {
+  border-top: 1px solid var(--line);
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.4rem 0.95rem 0.8rem;
+}
+
+.archive-empty {
+  margin: 0.3rem 0;
+  color: var(--faint);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.archive-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.2rem 0;
+}
+
+.archive-row .row-title {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+.main {
+  display: grid;
+  grid-template-rows: var(--topbar) 1fr;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 var(--inset) var(--inset);
+}
+
+.topstrip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding-right: 0.25rem;
+}
+
+.chrome-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 5px;
+  color: var(--muted);
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+
+.chrome-btn:hover {
+  background: rgb(0 0 0 / 4%);
+  color: var(--ink);
+}
+
+.tabstrip {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  height: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tabstrip::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  /* Overflow scrolls; tabs never shrink into illegibility. */
+  max-width: 13rem;
+  height: 1.75rem;
+  overflow: hidden;
+  padding: 0 0.4rem 0 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: rgb(0 0 0 / 4%);
+}
+
+.tab.is-active {
+  background: var(--page);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.tab.is-preview .tab-label {
+  font-style: italic;
+}
+
+.tab.is-pinned {
+  padding: 0 0.5rem;
+}
+
+.tab.is-drop {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-pin {
+  color: var(--faint);
+}
+
+.tab-close {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 3px;
+  color: var(--faint);
+  opacity: 0;
+}
+
+.tab:hover .tab-close,
+.tab.is-active .tab-close,
+.tab-close:focus-visible {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------------ card */
+
+/* One card, floating on the window's own grey, holding the writing.
+   Positioned, because the drawn caret is placed against it. */
+.editor-host {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 5%);
+}
+
+.editor {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.pagebar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  height: var(--topbar);
+  padding: 0 0.55rem;
+  background: var(--page);
+  border-radius: var(--radius) var(--radius) 0 0;
+  white-space: nowrap;
+}
+
+.navbtn {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+
+.navbtn:hover:not(:disabled) {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.navbtn:disabled {
+  color: #cfcdc7;
+  cursor: default;
+}
+
+/* ------------------------------------------------------- window controls */
+
+.drag-region {
+  flex: 1;
+  align-self: stretch;
+  min-width: 1rem;
+  -webkit-app-region: drag;
+}
+
+.topstrip.is-desktop {
+  padding-right: 0;
+}
+
+.topstrip .chrome-btn,
+.topstrip .tabstrip,
+.wincontrols {
+  -webkit-app-region: no-drag;
+}
+
+.wincontrols {
+  display: flex;
+  align-self: stretch;
+  margin-left: 0.35rem;
+}
+
+.wincontrol {
+  display: grid;
+  place-items: center;
+  width: 2.875rem;
+  color: var(--muted);
+  transition: background 90ms linear, color 90ms linear;
+}
+
+.wincontrol:hover {
+  background: rgb(0 0 0 / 6%);
+  color: var(--ink);
+}
+
+.wincontrol.is-close:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .wincontrol:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-left: 0.35rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+}
+
+.crumbs > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.crumb {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  color: var(--muted);
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+
+button.crumb:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.crumb.is-current {
+  color: var(--ink);
+}
+
+.crumb-sep {
+  color: var(--faint);
+  padding: 0 0.1rem;
+}
+
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2.5rem 2rem 6rem;
+  flex: 1;
+}
+
+/*
+  ------------------------------------------------------------------- cover
+
+  A banner across the top of the card, edge to edge — the one thing on a page
+  that is allowed outside the measure, because it is a picture rather than a
+  line of text. It sits above the sheet rather than inside it, so the prose
+  keeps its column and the picture keeps the width of the window.
+
+  The height is fixed and the picture is cropped to it. That is the whole
+  reason `object-position` is on a slider the writer drags: at this ratio
+  almost every photograph is cropped badly by default, and the fix is one
+  gesture rather than a set of framing controls.
+*/
+.cover {
+  position: relative;
+  flex: none;
+}
+
+.cover-frame {
+  height: 11.5rem;
+  overflow: hidden;
+  background: var(--raise);
+  outline: none;
+  touch-action: none;
+}
+
+.cover-frame:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cover-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.cover.is-dragging .cover-image {
+  cursor: grabbing;
+}
+
+.cover-empty {
+  height: 100%;
+}
+
+/* Only on hover, and only over the picture. A cover is not a control panel;
+   the buttons are there when you go looking for them and gone otherwise. */
+.cover-actions {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  transition: opacity 140ms var(--ease);
+}
+
+.cover:hover .cover-actions,
+.cover:focus-within .cover-actions {
+  opacity: 1;
+}
+
+.cover-action {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+.cover-action:hover {
+  background: var(--raise);
+}
+
+/* The way in, above the title. Hidden until the page is hovered: a permanent
+   button over every untouched page reads as an instruction to decorate it. */
+.sheet-tools {
+  height: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.sheet-tool {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 140ms var(--ease), color 140ms var(--ease);
+}
+
+.editor:hover .sheet-tool,
+.sheet-tool:focus-visible {
+  opacity: 1;
+}
+
+.sheet-tool:hover {
+  color: var(--ink);
+}
+
+.title,
+.body {
+  display: block;
+  width: 100%;
+  font-family: var(--prose);
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  outline: none;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.019em;
+  margin-bottom: 1.5rem;
+}
+
+.title::placeholder {
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.body {
+  font-size: 1rem;
+  line-height: 1.62;
+  letter-spacing: -0.003em;
+  min-height: 20rem;
+}
+
+/* --------------------------------------------------------- prose content */
+
+/*
+  The browser's own block margins, out.
+
+  Inside `:where()`, which contributes nothing to specificity — that is the
+  whole point of it being written this way. Zeroing them at `.body p` instead
+  outranked the stack rule below, and the result was a page where two
+  paragraphs, a quote after a sentence and a list after its lead-in all ran
+  flush together while headings kept their air, because headings alone had
+  explicit rules further down to win it back.
+
+  One rule owns the space between blocks, and it is the next one.
+*/
+.body :where(p, h1, h2, h3, blockquote, pre, ul, ol, li) {
+  margin: 0;
+}
+
+.body > * + * {
+  margin-top: 1.05em;
+}
+
+.body h1,
+.body h2,
+.body h3 {
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.014em;
+}
+
+.body > h1 + *,
+.body > h2 + *,
+.body > h3 + * {
+  margin-top: 0.6em;
+}
+
+.body > * + h1,
+.body > * + h2,
+.body > * + h3 {
+  margin-top: 1.9em;
+}
+
+.body h1 {
+  font-size: 1.4rem;
+}
+
+.body h2 {
+  font-size: 1.2rem;
+}
+
+.body h3 {
+  font-size: 1rem;
+}
+
+.body blockquote {
+  padding-left: 1.1rem;
+  border-left: 2px solid var(--hairline);
+  color: var(--muted);
+}
+
+/* Code sits in the UI register, not the prose one: monospace, a size down, and
+   on a tinted panel rather than in the reading typeface. That contrast is the
+   whole signal — this part is not sentences and is not to be read as them. No
+   syntax colouring, deliberately: it would mean shipping a grammar per
+   language and getting it wrong in the ones we did not ship. */
+.body pre {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--raise);
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  letter-spacing: 0;
+  /* Long lines scroll inside the block. Wrapping code changes what it says. */
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.body pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.body code {
+  padding: 0.1em 0.32em;
+  border-radius: 4px;
+  background: var(--raise);
+  font-family: var(--mono);
+  font-size: 0.88em;
+  letter-spacing: 0;
+}
+
+/* A link is text with an address, drawn as text. Nothing is fetched to
+   decorate it — no card, no favicon, no title looked up. See core/links.ts. */
+.body a[href] {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.body a[href]:hover {
+  text-decoration-thickness: 2px;
+}
+
+.body ul,
+.body ol {
+  padding-left: 1.5rem;
+}
+
+/* The same idea one level down: a list item holding two paragraphs is a list
+   item that needs a gap between them. This used to be outranked by a
+   `.body li p { margin: 0 }` sitting under it. */
+.body li > * + * {
+  margin-top: 0.4em;
+}
+
+.body ul ul,
+.body ol ol,
+.body ul ol,
+.body ol ul {
+  margin-top: 0.3em;
+}
+
+.body ul[data-type='taskList'] {
+  padding-left: 0.15rem;
+  list-style: none;
+}
+
+.body ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.body ul[data-type='taskList'] li > label {
+  flex: none;
+  /* Nudge the box onto the text baseline of the first line. */
+  padding-top: 0.34em;
+  user-select: none;
+}
+
+.body ul[data-type='taskList'] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.body ul[data-type='taskList'] input[type='checkbox'] {
+  width: 0.85rem;
+  height: 0.85rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.body ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: var(--faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.body s {
+  text-decoration-thickness: 1px;
+}
+
+.scene-break {
+  /* The stack already supplies a gap above and below; this only adds to it. */
+  margin: 0.55em 0;
+  text-align: center;
+  color: var(--muted);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  user-select: none;
+}
+
+.scene-break.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/*
+  Stickers. Sized in em rather than px so one keeps its proportion to the
+  writing when the prose size changes, and given no margin: a sticker on its
+  own line is a paragraph and already has the stack's gap around it, while one
+  at the end of a sentence should sit against the full stop the way a piece of
+  punctuation does.
+
+  `vertical-align` puts its middle near the x-height instead of on the
+  baseline, which is what stops a tall sticker dragging its line apart.
+*/
+.sticker {
+  display: inline-block;
+  height: 2.6em;
+  width: auto;
+  vertical-align: -0.9em;
+  user-select: none;
+}
+
+.sticker.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/*
+  Images. Block-level, centred, and never wider than the measure — the column
+  is 40rem because that is how long a line should be to read, and a picture
+  that breaks out of it breaks the page it is on.
+
+  `height: auto` with the intrinsic ratio would need the size in the document.
+  It is not there on purpose, so the browser reflows once when the bytes
+  arrive. On a local read that is a frame.
+*/
+.image {
+  display: block;
+  max-width: 100%;
+  margin: 0.9em auto;
+  border-radius: 4px;
+  /* Something to look at while the bytes come out of the database, so a page
+     of pictures does not open as a page of nothing. */
+  min-height: 2rem;
+  background: var(--raise);
+}
+
+.image[src] {
+  min-height: 0;
+  background: none;
+}
+
+.image.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/*
+  ----------------------------------------------------------------- gallery
+
+  Several pictures as a grid. The cells are square and the pictures are
+  cropped to them, which is the one place in the app where a picture is shown
+  as something other than itself: a grid of mixed heights is a pile, and the
+  point of grouping them was to be able to look at them at once. The whole
+  picture is one Ungroup away.
+*/
+.gallery {
+  position: relative;
+  margin: 0.9em 0;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.gallery[data-columns='2'] .gallery-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gallery[data-columns='4'] .gallery-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gallery .image {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  margin: 0;
+  min-height: 0;
+  background: var(--raise);
+}
+
+/* An empty one says what it is for. `/gallery` makes an empty gallery on
+   purpose, and an empty grid with no words in it is a bug from the outside. */
+.gallery-grid.is-empty {
+  display: block;
+  padding: 1.5rem;
+  border: 1px dashed var(--line);
+  border-radius: 5px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
+.gallery-grid.is-empty::before {
+  content: 'Drop pictures here, or press Add';
+}
+
+.gallery-chrome {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.15rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+  opacity: 0;
+  transition: opacity 140ms var(--ease);
+}
+
+.gallery:hover .gallery-chrome,
+.gallery-chrome:focus-within {
+  opacity: 1;
+}
+
+.gallery-button {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--muted);
+  border-radius: 4px;
+}
+
+.gallery-button:hover {
+  color: var(--ink);
+  background: var(--raise);
+}
+
+.gallery-button.is-active {
+  color: var(--ink);
+  background: var(--raise);
+}
+
+.gallery-button:disabled {
+  color: var(--faint);
+}
+
+.gallery.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* An image whose bytes have gone. Left visible for the reason a dead page link
+   is: something was here, and saying so beats a silent gap. */
+.image.is-missing {
+  min-height: 3rem;
+  border: 1px dashed var(--line);
+  background: none;
+}
+
+/* Art that has left the set. Shown rather than dropped, for the reason a dead
+   page link is: the writer put something here on purpose. */
+.sticker.is-missing {
+  height: auto;
+  padding: 0 0.3em;
+  vertical-align: baseline;
+  font-size: 0.8em;
+  color: var(--faint);
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+}
+
+/* Tiptap's placeholder rides on an empty node rather than an attribute. */
+.body p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--faint);
+}
+
+/*
+  --------------------------------------------------------- selection bar
+
+  What a selection is met by. A pill above the words, holding what can be done
+  to writing that already exists — see ui/SelectionBar.tsx for when it is
+  there and where it goes.
+
+  It is drawn a step above the rest of the chrome on purpose: rounder, softer
+  shadow, a little more air between the controls. Everything else in this app
+  sits in a bar you went to; this is the one surface that comes to you, and it
+  should look like it was lifted off the page rather than ruled onto it.
+*/
+.bubble {
+  position: fixed;
+  z-index: 26;
+  display: flex;
+  align-items: center;
+  gap: 0.08rem;
+  padding: 0.3rem;
+  background: var(--page);
+  border: 1px solid var(--hairline);
+  border-radius: 0.8rem;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 5%),
+    0 4px 10px rgb(0 0 0 / 6%),
+    0 14px 34px rgb(0 0 0 / 10%);
+  animation: bubble-in var(--settle) var(--spring) both;
+}
+
+:root[data-theme='dark'] .bubble {
+  border-color: var(--line);
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 40%),
+    0 16px 40px rgb(0 0 0 / 38%);
+}
+
+/*
+  The reason this file has a bar rather than a fade.
+
+  The surface settles first and its contents follow it in, one beat apart,
+  left to right — so the eye is walked along the row it is about to use
+  instead of being handed a finished rectangle. `--turn` is the slot each
+  control sits in, counted as the row is written; separators take a turn too,
+  because the gaps are part of the shape arriving.
+*/
+.bubble > * {
+  animation: bubble-part var(--unfold) var(--spring) both;
+  animation-delay: calc(40ms + var(--turn, 0) * 22ms);
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 5px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* Below the words it comes down onto them, so it always travels away from
+   the selection rather than across it. */
+.bubble[data-placement='below'] {
+  animation-name: bubble-in-below;
+}
+
+@keyframes bubble-in-below {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 -5px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes bubble-part {
+  from {
+    opacity: 0;
+    scale: 0.82;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* Leaving is one movement, not eleven: the parts arrive in sequence because
+   sequence is legible, and go together because a queue to leave is not. */
+.bubble.is-closing {
+  animation: bubble-out 120ms var(--glide) forwards;
+  pointer-events: none;
+}
+
+.bubble.is-closing > * {
+  animation: none;
+}
+
+@keyframes bubble-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.bubble-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0 0.32rem;
+  border-radius: 0.55rem;
+  color: var(--muted);
+}
+
+.bubble-btn:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.bubble-btn.is-active,
+.bubble-btn.is-open {
+  color: var(--ink);
+  background: var(--raise);
+}
+
+.bubble-sep {
+  flex: none;
+  width: 1px;
+  height: 1.1rem;
+  margin: 0 0.25rem;
+  background: var(--hairline);
+}
+
+.bubble-group {
+  position: relative;
+}
+
+/* The one control that says what it is in words: which block type you are in
+   is a fact about the paragraph, and an icon for "Heading 2" is a riddle. */
+.bubble-style {
+  padding: 0 0.25rem 0 0.45rem;
+  font-size: 0.75rem;
+  color: var(--ink);
+  letter-spacing: -0.004em;
+}
+
+.bubble-caret {
+  flex: none;
+  color: var(--faint);
+  transition: rotate var(--settle) var(--glide);
+}
+
+.bubble-btn.is-open .bubble-caret {
+  rotate: 180deg;
+}
+
+/* The highlighter carries its own colour under it, the way a pen does. */
+.bubble-pen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.bubble-tone-bar {
+  width: 1rem;
+  height: 0.15rem;
+  border-radius: 1px;
+  background: var(--line);
+  transition: background var(--quick) var(--glide);
+}
+
+/* The colour under the pen is the state, so this one control says what it is
+   holding without also going dark the way a pressed button does. */
+.bubble-tone.is-on:not(:hover):not(.is-open) {
+  background: none;
+  color: var(--ink);
+}
+
+.bubble-menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  z-index: 1;
+  min-width: 10.5rem;
+  padding: 0.25rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  animation: rise var(--settle) var(--glide) both;
+}
+
+/* The last control in the row opens against its own edge rather than off the
+   end of the bar. */
+.bubble-group:last-child .bubble-menu {
+  left: auto;
+  right: 0;
+}
+
+.bubble-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.28rem 0.4rem;
+  border-radius: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
+  /* The list arrives the way the bar did, a beat per row. */
+  animation: bubble-part var(--settle) var(--spring) both;
+  animation-delay: calc(var(--turn, 0) * 18ms);
+}
+
+.bubble-item:hover,
+.bubble-item.is-active {
+  background: var(--raise);
+}
+
+.bubble-item svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.bubble-item-label {
+  flex: 1;
+}
+
+.bubble-item.is-clear {
+  margin-top: 0.2rem;
+  padding-left: 1.3rem;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0 0 0.35rem 0.35rem;
+  color: var(--muted);
+}
+
+/* Word keeps its count in the status bar; so does this. */
+.status {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: var(--status);
+  padding: 0 0.85rem;
+  background: var(--page);
+  border-top: 1px solid var(--hairline);
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.status-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-counts {
+  display: flex;
+  gap: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status .dot {
+  color: var(--faint);
+}
+
+.empty {
+  margin: auto;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.empty .ghost {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 52rem) {
+  .sheet {
+    padding: 1.75rem 1.25rem 4rem;
+  }
+}
+
+/* ---------------------------------------------------------------- dialog */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: rgb(20 20 22 / 28%);
+  overflow-y: auto;
+}
+
+.dialog {
+  width: min(34rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1.25rem 1.35rem 1rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 12%);
+}
+
+.dialog-title {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.field {
+  margin: 0 0 1.1rem;
+  padding: 0;
+  border: 0;
+}
+
+.field legend {
+  padding: 0 0 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 0.5rem;
+  padding: 0.22rem 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.choice input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.choice input:disabled + .choice-label {
+  color: var(--faint);
+}
+
+.choice-note {
+  grid-column: 2;
+  color: var(--faint);
+  font-size: 0.75rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.text-field {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.6875rem;
+  color: var(--faint);
+}
+
+.text-field.wide {
+  grid-column: 1 / -1;
+}
+
+.text-field input,
+.text-field textarea {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.28rem 0.4rem;
+  resize: vertical;
+}
+
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.dialog-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.btn:hover {
+  background: var(--raise);
+}
+
+.btn.is-primary {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.btn.is-primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ----------------------------------------------------------------- print */
+
+/* What printToPDF and the browser's print dialog both render. */
+@media print {
+  .tree,
+  .tree-handle,
+  .topstrip,
+  .pagebar,
+  .status,
+  /* Whatever was open over the words when the print began. */
+  .bubble,
+  .slash,
+  .scrim,
+  .palette-scrim,
+  /* Controls that only exist to be pointed at. The cover and the gallery
+     themselves print; the buttons that change them do not. */
+  .cover-actions,
+  .gallery-chrome,
+  .sheet-tools,
+  /* What links here is a way of getting around, and paper has no clicking. */
+  .backlinks {
+    display: none !important;
+  }
+
+  /* A grid of pictures split across a page break is two half-galleries. */
+  .gallery {
+    break-inside: avoid;
+  }
+
+  .workspace {
+    display: block;
+    height: auto;
+  }
+
+  .main {
+    padding: 0;
+  }
+
+  .editor-host {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #ffffff;
+  }
+
+  .sheet {
+    max-width: none;
+    padding: 0;
+  }
+
+  .title {
+    font-size: 18pt;
+  }
+
+  .body {
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #000000;
+  }
+
+  .body h1,
+  .body h2,
+  .body h3 {
+    break-after: avoid;
+  }
+
+  /* Ink, not screen tint — and never broken across two pages if it fits on
+     one, because half a command is worse than a command overleaf. */
+  .body pre {
+    background: none;
+    border: 1px solid #cccccc;
+    font-size: 9.5pt;
+    white-space: pre-wrap;
+    break-inside: avoid;
+  }
+
+  .body code {
+    background: none;
+    font-size: 0.92em;
+  }
+
+  /* The address printed after the text, because a link on paper that only
+     says "the issue" has thrown away the only part that matters. */
+  .body a[href] {
+    color: #000000;
+    text-decoration: underline;
+  }
+
+  .body a[href]:not([data-page])::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+}
+
+/* ------------------------------------------------------------------ menu */
+
+.menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.menu {
+  position: fixed;
+  min-width: 12rem;
+  padding: 0.25rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  outline: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0.28rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.menu-item.is-active {
+  background: var(--raise);
+}
+
+.menu-hint {
+  color: var(--faint);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one destructive entry, set apart by a rule rather than by colour. */
+.menu-item.is-destructive {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0 0 4px 4px;
+  padding-top: 0.4rem;
+}
+
+.menu-item.is-destructive.is-active {
+  background: #fdeceb;
+  color: #a3231a;
+}
+
+:root[data-theme='dark'] .menu-item.is-destructive.is-active {
+  background: #3a1f1d;
+  color: #f2a49c;
+}
+
+.ghost.is-destructive:hover {
+  color: #a3231a;
+}
+
+:root[data-theme='dark'] .ghost.is-destructive:hover {
+  color: #f2a49c;
+}
+
+/* ---------------------------------------------------------- insert menu */
+
+/*
+  The `/` menu. It borrows the context menu's surface deliberately — the two
+  are the same gesture in different places, and a second visual language for
+  "a list you pick one thing from" would be a third thing to learn.
+
+  No scrim: it is dismissed by typing, which means the writing underneath has
+  to stay live in a way a right-click menu's does not.
+*/
+.slash {
+  position: fixed;
+  z-index: 25;
+  width: 15rem;
+  max-height: 17rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+}
+
+.slash-group {
+  margin: 0.4rem 0 0.2rem;
+  padding: 0 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.slash-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.24rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  text-align: left;
+}
+
+/* Hover moves the selection rather than painting a second one, so the mouse
+   and the arrow keys never disagree about what Enter would do. */
+.slash-item.is-active {
+  background: var(--raise);
+}
+
+.slash-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Where a page sits, so two called "Notes" can be told apart. Shrinks before
+   the title does — a truncated trail still disambiguates, a truncated title
+   does not. */
+.slash-note {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: var(--faint);
+}
+
+.slash-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--muted);
+}
+
+.slash-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/*
+  ------------------------------------------------------------------ blocks
+
+  The gutter that appears beside the block under the pointer, and the menu its
+  handle opens.
+
+  It hangs off the left of the measure rather than sitting inside it. The
+  column is 40rem because that is how long a line should be to read, and
+  narrowing it to make room for two buttons that are invisible most of the time
+  would be paying for the affordance with the writing. The sheet's own 2rem of
+  padding is most of the room needed; the rest is the 0.55rem it reaches past
+  the sheet's edge, into space the card has to spare at every width the window
+  can be.
+
+  Two buttons, small and grey, in the register the rest of the chrome is in.
+  They are not a toolbar — they are the answer to "can I pick this up", and the
+  answer should be quiet enough that a page of prose still reads as a page of
+  prose while the pointer crosses it.
+*/
+.block-gutter {
+  position: absolute;
+  left: 2rem;
+  margin-left: -2.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+  /* Its own vertical centre on the line it points at, rather than its top. */
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  /* Over the prose, under everything that opens on top of the page. */
+  z-index: 3;
+}
+
+.block-gutter.is-shown {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.block-btn {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  color: var(--faint);
+}
+
+.block-btn:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+:root[data-theme='dark'] .block-btn:hover {
+  background: rgb(255 255 255 / 6%);
+}
+
+/* The one control in the app whose cursor says what it is for before it is
+   pressed, because dragging is the thing about it nobody would guess. */
+.block-handle {
+  cursor: grab;
+}
+
+.block-handle:active {
+  cursor: grabbing;
+}
+
+/*
+  A block held as an object.
+
+  A wash rather than an outline, and the difference matters at this size: an
+  outline around a single line of prose reads as an error state, while a fill
+  reads as a selection — which is what every list, table and file manager has
+  taught. The bleed puts the colour slightly outside the text so a held
+  paragraph looks like a held *block* rather than like selected words.
+*/
+.body .ProseMirror-selectednode:where(p, h1, h2, h3, li, blockquote, pre, ul, ol) {
+  background: var(--held);
+  border-radius: 3px;
+  box-shadow: 0 0 0 4px var(--held);
+}
+
+/* ProseMirror puts the class on the item; the marker sits outside its box and
+   would otherwise be the one part of a held bullet that was not held. */
+.body li.ProseMirror-selectednode::marker {
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------- block menu */
+
+.block-menu {
+  min-width: 13.5rem;
+}
+
+/* The heading over the second half of the menu. Matches the `/` menu's own
+   group label, because they are the same kind of thing said in two places. */
+.menu-group {
+  margin: 0.35rem 0 0.15rem;
+  padding: 0.25rem 0.45rem 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+/* Centred rather than on the baseline: these rows carry an icon, and an icon
+   sitting on a text baseline sits slightly too low. */
+.block-item {
+  align-items: center;
+  gap: 1rem;
+}
+
+.block-item .menu-label {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.block-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--muted);
+}
+
+.block-item.is-active {
+  background: var(--raise);
+}
+
+.block-item.is-active .block-glyph {
+  color: var(--accent);
+}
+
+.block-item:hover:not(:disabled) {
+  background: var(--raise);
+}
+
+:root[data-theme='dark'] .block-item:hover:not(:disabled) {
+  background: rgb(255 255 255 / 5%);
+}
+
+/* Greyed rather than gone: a menu whose items move between openings is a menu
+   you have to read every time. */
+.block-item:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+.block-item:disabled .block-glyph {
+  opacity: 0.5;
+}
+
+/* --------------------------------------------------------------- toolbar */
+
+/* Formatting shares the page bar, so the writing loses no height to it. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+  margin-left: auto;
+  padding-left: 0.75rem;
+  flex: none;
+}
+
+.tool {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 5px;
+  color: var(--muted);
+  transition: background 110ms var(--ease), color 110ms var(--ease);
+}
+
+.tool:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.tool.is-active {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.tool-sep {
+  width: 1px;
+  height: 1.05rem;
+  margin: 0 0.3rem;
+  background: var(--line);
+}
+
+.tool-group {
+  position: relative;
+}
+
+.tones {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 20;
+  min-width: 10.5rem;
+  padding: 0.25rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+}
+
+.tone {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.26rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tone:hover,
+.tone.is-active {
+  background: var(--raise);
+}
+
+.tone-swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+  flex: none;
+}
+
+.tone.is-clear {
+  margin-top: 0.2rem;
+  padding-left: 1.55rem;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0 0 4px 4px;
+  color: var(--muted);
+}
+
+/*
+  Four highlights, fixed, and named for the colour they are — see
+  editor/Highlight.ts.
+
+  Marker colours rather than tints. The pale version read as a wash and left
+  the four hard to tell apart at a glance down a page, which is the one job a
+  highlight has; these are saturated enough to be found by colour alone. The
+  prose over them is near-black, so even the brightest clears 10:1.
+
+  One variable per colour, so the swatch in a menu, the bar under the
+  highlighter and the mark in the prose can never drift apart.
+*/
+:root {
+  --tone-yellow: #ffe95c;
+  --tone-green: #a6f083;
+  --tone-blue: #86ddff;
+  --tone-pink: #ffa3ce;
+}
+
+/*
+  Dark does not get the same four values. A marker colour that is bright on
+  white is a light box on charcoal, and the words inside it stop being
+  readable — so dark keeps the hue and the saturation and gives up the
+  lightness. Every one of these clears 4.5:1 against the prose colour, which
+  is the number that decides how dark they are allowed to be.
+*/
+:root[data-theme='dark'] {
+  --tone-yellow: #7d6510;
+  --tone-green: #2e6b28;
+  --tone-blue: #12657f;
+  --tone-pink: #a5306e;
+}
+
+.tone-yellow .tone-swatch,
+.tone-yellow .bubble-tone-bar,
+mark[data-tone='yellow'] {
+  background: var(--tone-yellow);
+}
+.tone-green .tone-swatch,
+.tone-green .bubble-tone-bar,
+mark[data-tone='green'] {
+  background: var(--tone-green);
+}
+.tone-blue .tone-swatch,
+.tone-blue .bubble-tone-bar,
+mark[data-tone='blue'] {
+  background: var(--tone-blue);
+}
+.tone-pink .tone-swatch,
+.tone-pink .bubble-tone-bar,
+mark[data-tone='pink'] {
+  background: var(--tone-pink);
+}
+
+.body mark {
+  color: inherit;
+  border-radius: 2px;
+  padding: 0.05em 0.06em;
+  box-decoration-break: clone;
+}
+
+:root[data-theme='dark'] .body mark {
+  color: var(--ink);
+}
+
+/* ----------------------------------------------------------------- caret */
+
+/* Only ever set once our own caret has painted — see editor/caret.ts. */
+.body.caret-hidden {
+  caret-color: transparent;
+}
+
+.caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 90ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation: caret-blink 1.15s steps(1) infinite;
+}
+
+/* Nothing to slide from on the first paint, or after a jump the writer made. */
+.caret.is-still {
+  transition: none;
+}
+
+@keyframes caret-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Room under the last line, so writing at the end of a page is not writing
+   against the bottom of the window. It was 55vh when the page moved itself and
+   needed somewhere to move to; now that nothing scrolls but the writer, half a
+   screen of void is just something to scroll back out of. */
+.sheet {
+  padding-bottom: 20vh;
+}
+
+/* -------------------------------------------------------------- palette */
+
+/* Sits high rather than centred: the list grows downwards, and a box that
+   grows from the middle of the screen moves its own first row every keystroke.
+   The scrim is lighter than a dialog's — this is navigation, not a decision,
+   and the page behind it should still read as the place you are going back to. */
+.palette-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  padding: 12vh 1rem 2rem;
+  background: rgb(20 20 22 / 20%);
+}
+
+.palette {
+  width: min(34rem, 100%);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 14%);
+  overflow: hidden;
+}
+
+.palette-field {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.palette-glass {
+  flex: none;
+  color: var(--faint);
+}
+
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--ui);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+.palette-input::placeholder {
+  color: var(--faint);
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.42rem 0.55rem;
+  border-radius: 5px;
+  font-family: var(--ui);
+  font-size: 0.87rem;
+  color: var(--ink);
+  text-align: left;
+}
+
+/* One highlight, driven by the keyboard. `:hover` sets the same index rather
+   than painting a second one, so the pointer and the arrows never disagree. */
+.palette-row.is-at {
+  background: var(--raise);
+}
+
+.palette-title {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-trail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.78rem;
+  color: var(--faint);
+}
+
+.palette-empty {
+  margin: 0;
+  padding: 1rem 0.9rem;
+  font-family: var(--ui);
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------ backlinks */
+
+/* What points here, at the foot of the writing rather than in a panel beside
+   it: this is something you read after the page, not something you consult
+   while writing it. Chrome register throughout — small, tracked out, grey — so
+   a page with a dozen references still reads as one page and a footnote, not
+   as two documents stacked. */
+.backlinks {
+  margin-top: 3rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.backlinks-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.45rem;
+  font-family: var(--ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.backlinks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Pulled left by its own padding so the titles line up with the prose above
+   and the hover state still has room to breathe around them. */
+.backlink {
+  display: block;
+  width: 100%;
+  margin-left: -0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 5px;
+  font-family: var(--ui);
+  text-align: left;
+  transition: background 120ms var(--ease);
+}
+
+.backlink:hover {
+  background: var(--raise);
+}
+
+.backlink-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.backlink-count {
+  color: var(--faint);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* Two lines and then stop. The context is here to remind you what the mention
+   was, not to reproduce the page it came from. */
+.backlink-context {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 0.1rem;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------ doc icons */
+
+.doc-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+/* The stand-in when nothing has been chosen: present, but never competing
+   with the titles it sits beside. */
+.doc-icon.is-placeholder {
+  color: var(--faint);
+  opacity: 0.55;
+}
+
+.row-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 4px;
+}
+
+.row-icon:hover {
+  background: var(--raise);
+}
+
+.row-icon:hover .doc-icon.is-placeholder {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.picker {
+  position: fixed;
+  width: 19rem;
+  max-height: 21rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 14px 36px rgb(0 0 0 / 12%);
+  overflow: hidden;
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.picker-search {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.24rem 0.45rem;
+}
+
+.picker-body {
+  overflow-y: auto;
+  padding: 0.35rem 0.5rem 0.6rem;
+}
+
+.picker-group {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.25rem, 1fr));
+  gap: 0.1rem;
+}
+
+.picker-choice {
+  height: 2.25rem;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  line-height: 1;
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+.picker-choice:hover,
+.picker-choice.is-active {
+  background: var(--raise);
+}
+
+.picker-empty {
+  margin: 0.8rem 0.1rem;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+
+/* Toggles in the menu: a tick gutter, and a line of consequence under the
+   label for the ones whose effect is not obvious from the name. */
+.menu-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.menu-tick {
+  flex: none;
+  width: 0.7rem;
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+.menu-note {
+  display: block;
+  max-width: 15rem;
+  margin-top: 0.1rem;
+  color: var(--faint);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.menu-item.is-checkable {
+  align-items: flex-start;
+}
+
+/* ---------------------------------------------------------------- import */
+
+.tree-import {
+  margin-left: auto;
+  font-size: 0.6875rem;
+}
+
+.dialog.is-narrow {
+  width: min(27rem, 100%);
+}
+
+/* ----------------------------------------------------------------- guide */
+
+.guide-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.guide-head .dialog-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-search {
+  flex: none;
+  width: 11rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.24rem 0.45rem;
+}
+
+.guide {
+  display: flex;
+  gap: 1.1rem;
+  height: min(30rem, 62vh);
+  margin-bottom: 0.9rem;
+}
+
+.guide-topics {
+  flex: none;
+  width: 10.5rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--hairline);
+}
+
+.guide-topic {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: left;
+}
+
+.guide-topic:hover:not(:disabled) {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.guide-topic.is-active {
+  background: var(--raise);
+  color: var(--ink);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* A topic with nothing matching the search is left in place rather than
+   removed, so the list does not reshuffle under the pointer while typing. */
+.guide-topic:disabled {
+  color: var(--faint);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.guide-body {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scroll-behavior: smooth;
+}
+
+.guide-section + .guide-section {
+  margin-top: 1.6rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.guide-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.006em;
+}
+
+.guide-intro {
+  margin: 0 0 0.8rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Keys in one column, meaning in the other, so the eye can run down either.
+   One grid for the whole list rather than one per row, so the columns line up
+   across a section — and sized to its widest key rather than to a number
+   picked in advance, which leaves a gulf beside the short ones. */
+.guide-rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 1.1rem;
+  row-gap: 0.35rem;
+  align-items: baseline;
+}
+
+.guide-row {
+  display: contents;
+}
+
+.guide-row dt {
+  margin: 0;
+  min-width: 0;
+}
+
+.guide-row dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.guide-row kbd {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  white-space: nowrap;
+}
+
+/* The reasoning, set apart because it is worth reading once and not every
+   time you come here for a key. */
+.guide-aside {
+  margin: 0.85rem 0 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--hairline);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--faint);
+}
+
+.setting-action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.35rem 0.45rem;
+  border-radius: 5px;
+}
+
+.setting-action:hover {
+  background: var(--raise);
+}
+
+/* --------------------------------------------------------------- history */
+
+/* Wide, because it holds a version of the page at something like the width it
+   was written at. Narrower and the line breaks stop matching the memory of it. */
+.dialog.is-wide {
+  width: min(54rem, 100%);
+}
+
+.history {
+  display: flex;
+  gap: 0.9rem;
+  height: min(26rem, 55vh);
+  margin-bottom: 0.9rem;
+}
+
+.history-list {
+  flex: none;
+  width: 12rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--hairline);
+}
+
+.history-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border-radius: 5px;
+  text-align: left;
+}
+
+.history-entry:hover {
+  background: var(--raise);
+}
+
+/* The chosen one is marked by the accent it is previewed under, not by a fill,
+   so hovering the list never looks like choosing from it. */
+.history-entry.is-active {
+  background: var(--raise);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.history-when {
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.history-count {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.6875rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-delta {
+  color: #a3231a;
+}
+
+.history-delta.is-up {
+  color: #2f6b3a;
+}
+
+:root[data-theme='dark'] .history-delta {
+  color: #f2a49c;
+}
+
+:root[data-theme='dark'] .history-delta.is-up {
+  color: #93cfa1;
+}
+
+.history-preview {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0.2rem 0.4rem;
+}
+
+/* A version is read, not written in. It borrows the prose styles wholesale so
+   it looks like the page it came from, and gives back the things only a live
+   editor needs. */
+.body.is-preview {
+  min-height: 0;
+  cursor: default;
+}
+
+.dialog-body {
+  margin: 0 0 0.6rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.dialog-body code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.75rem;
+  background: var(--canvas);
+  border-radius: 3px;
+  padding: 0.05rem 0.2rem;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn.is-destructive {
+  color: #a3231a;
+  border-color: var(--line);
+}
+
+.btn.is-destructive:hover {
+  background: #fdeceb;
+}
+
+:root[data-theme='dark'] .btn.is-destructive {
+  color: #f2a49c;
+}
+
+:root[data-theme='dark'] .btn.is-destructive:hover {
+  background: #3a1f1d;
+}
+
+/* --------------------------------------------------------------- welcome */
+
+/* Launch, when there is nothing in particular to come back to. Every route
+   out of here ends with a caret in a page. */
+.welcome {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 2rem 1.5rem 6rem;
+}
+
+.welcome-inner {
+  width: min(32rem, 100%);
+  text-align: center;
+}
+
+.welcome-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+}
+
+.welcome-mark {
+  color: var(--ink);
+  opacity: 0.9;
+}
+
+.welcome-question {
+  margin: 0.5rem 0 1.9rem;
+  font-size: 1.05rem;
+  color: var(--muted);
+  letter-spacing: -0.006em;
+}
+
+.welcome-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.4rem 0.4rem 0.85rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+  transition: border-color 140ms var(--ease);
+}
+
+.welcome-field:focus-within {
+  border-color: var(--faint);
+}
+
+.welcome-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  outline: none;
+  padding: 0.35rem 0;
+}
+
+.welcome-input::placeholder {
+  color: var(--faint);
+}
+
+.welcome-go {
+  flex: none;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8125rem;
+  color: #ffffff;
+  background: var(--accent);
+  border-radius: 5px;
+}
+
+.welcome-go:disabled {
+  color: var(--faint);
+  background: var(--raise);
+  cursor: default;
+}
+
+.welcome-starts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.welcome-start {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  text-align: left;
+  transition: background 130ms var(--ease), border-color 130ms var(--ease);
+}
+
+.welcome-start svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.welcome-start:hover {
+  background: var(--raise);
+  border-color: var(--faint);
+}
+
+.welcome-start:hover svg {
+  color: var(--ink);
+}
+
+.welcome-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.6rem;
+  font-size: 0.75rem;
+  color: var(--faint);
+  transition: color 130ms var(--ease);
+}
+
+.welcome-skip:hover {
+  color: var(--muted);
+}
+
+.welcome-hint {
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 34rem) {
+  .welcome-starts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -------------------------------------------------------------- settings */
+
+.setting {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  column-gap: 0.6rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+.setting input {
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent);
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.setting-label {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.setting-note {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
+
+/* ----------------------------------------------------------- page links */
+
+/* The title and icon are painted from the decoration, so a page renamed
+   anywhere updates every mention of it. */
+.body .page-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0 0.08em;
+  cursor: pointer;
+  font-size: 0;
+  transition: background 120ms var(--ease), border-color 120ms var(--ease);
+}
+
+.body .page-link::before {
+  content: attr(data-icon) ' ';
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  font-size: 0.9rem;
+}
+
+.body .page-link::after {
+  content: attr(data-title);
+  font-size: 1rem;
+}
+
+.body .page-link:hover {
+  background: var(--raise);
+  border-color: var(--faint);
+}
+
+/* Archived out from under a sentence that still points at it. Left visible on
+   purpose — deleting the sentence would be worse than showing the gap. */
+.body .page-link.is-missing {
+  color: var(--faint);
+  border-bottom-style: dashed;
+  cursor: default;
+}
+
+.body .page-link.is-missing:hover {
+  background: none;
+  border-color: var(--line);
+}
+
+/* ---------------------------------------------------------- pdf reader */
+
+/* Fills the card the writing usually occupies, rather than opening a second
+   window. Edge's own viewer does the rendering inside the frame. */
+.reader {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.reader-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: var(--topbar);
+  padding: 0 0.5rem 0 0.9rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.reader-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.reader-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #303030;
+}
+
+/* ------------------------------------------------------- import preview */
+
+/* What is about to be written, before it is written. Indentation shows the
+   shape the tree will take. */
+.preview {
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--canvas);
+  padding: 0.3rem 0;
+}
+
+.preview-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-right: 0.6rem;
+  min-height: 1.5rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.preview-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.preview-words {
+  flex: none;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+/*
+  ---------------------------------------------------------------- motion
+
+  Everything that moves, in one place.
+
+  Spread across the file it was thirty numbers, most of them different for no
+  reason; gathered here it is a handful of rules that say what kind of thing
+  each element is. That is the actual difference between an app that feels
+  considered and one that feels assembled — not that it animates more, but
+  that everything animates the same.
+
+  Three rules govern the whole surface:
+
+  · anything a pointer can touch answers at --quick, and answers on the
+    properties that were going to change anyway;
+  · anything that appears out of nothing rises a few pixels while it fades,
+    so it reads as having come from somewhere;
+  · anything pressed gives, slightly, and gives back faster than it took —
+    a press is the one moment the interface should feel like it has a surface.
+
+  Nothing here loops, nothing here is longer than 280ms, and every one of
+  them is off under prefers-reduced-motion.
+*/
+
+/* One answer to a pointer, everywhere. */
+.row,
+.row-icon,
+.tab,
+.tab-close,
+.twisty,
+.chrome-btn,
+.wincontrol,
+.navbtn,
+.crumb,
+.tool,
+.tone,
+.bubble-btn,
+.bubble-item,
+.slash-item,
+.menu-item,
+.palette-row,
+.picker-choice,
+.guide-topic,
+.history-entry,
+.backlink,
+.btn,
+.ghost,
+.add-row,
+.cover-action,
+.gallery-button,
+.setting-action,
+.welcome-start,
+.welcome-skip,
+.sheet-tool,
+.row-star,
+.row-add,
+.block-btn {
+  transition:
+    background-color var(--quick) var(--glide),
+    border-color var(--quick) var(--glide),
+    box-shadow var(--quick) var(--glide),
+    color var(--quick) var(--glide),
+    opacity var(--quick) var(--glide),
+    scale var(--quick) var(--glide);
+}
+
+/*
+  A press has to be answered inside the frame it happens in, or it reads as
+  lag rather than as feedback. Scale rather than a colour change: colour is
+  already saying whether the thing is active, and a control that dents is
+  legible even when it is the same colour pressed as unpressed.
+*/
+.chrome-btn:active,
+.navbtn:active:not(:disabled),
+.tool:active,
+.bubble-btn:active,
+.btn:active,
+.add-row:active,
+.cover-action:active,
+.gallery-button:active,
+.row-icon:active,
+.tab-close:active,
+.welcome-start:active,
+.wincontrol:active,
+.block-btn:active {
+  scale: 0.93;
+  transition-duration: 60ms;
+}
+
+/*
+  The gutter arrives from the side rather than from below.
+
+  The rule everywhere else is that a thing appearing out of nothing rises four
+  pixels while it fades, because it should read as having come from somewhere.
+  This one comes from the left — it is already vertically placed against the
+  line it belongs to, and lifting it would break that association in the two
+  hundred milliseconds it most needs to hold. Sliding it in from outside the
+  measure says the same thing about where it came from and keeps the line.
+
+  Composed with the translateY that centres it, because a transform is one
+  property and the last one written wins.
+*/
+.block-gutter {
+  transform: translateY(-50%) translateX(-3px);
+  transition:
+    opacity var(--quick) var(--glide),
+    transform var(--settle) var(--spring);
+}
+
+.block-gutter.is-shown {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* The wash under a held block, so picking one up is not an instant repaint. */
+.body .ProseMirror-selectednode:where(p, h1, h2, h3, li, blockquote, pre, ul, ol) {
+  transition:
+    background-color var(--quick) var(--glide),
+    box-shadow var(--quick) var(--glide);
+}
+
+.bubble-item:active,
+.tone:active,
+.slash-item:active,
+.menu-item:active,
+.picker-choice:active {
+  scale: 0.985;
+  transition-duration: 60ms;
+}
+
+/* The disclosure triangle turns rather than being swapped for another glyph.
+   Same 90 degrees either way, so the sidebar opening and closing is one
+   movement played in both directions. */
+.twisty {
+  display: inline-grid;
+  place-items: center;
+  height: 1.05rem;
+}
+
+.twisty svg {
+  transition: rotate var(--settle) var(--glide);
+}
+
+.twisty.is-open svg {
+  rotate: 90deg;
+}
+
+/*
+  Anything that was not there a moment ago.
+
+  The rise is 4 pixels and the scale is a hair under 1: enough that the eye
+  catches a direction, not enough to look like a card being dealt. Menus and
+  dialogs share it, because they are the same event — something opened.
+*/
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.menu,
+.slash,
+.tones,
+.picker,
+.palette,
+.dialog {
+  animation: rise var(--settle) var(--glide) both;
+}
+
+/* The reader fills the card rather than floating over it, and a full-bleed
+   panel that scales reads as the window resizing. It only fades. */
+.reader {
+  animation: fade var(--quick) linear both;
+}
+
+/* The dialog is the one that gets the spring: it is the largest thing that
+   ever appears, and the only one where the extra beat of settling reads as
+   weight rather than as delay. */
+.dialog {
+  animation-duration: var(--unfold);
+  animation-timing-function: var(--spring);
+}
+
+.scrim,
+.palette-scrim {
+  animation: fade var(--settle) linear both;
+}
+
+/* The sidebar's own hover affordances fade in rather than blinking on. */
+.gallery-chrome,
+.cover-actions {
+  transition: opacity var(--settle) var(--glide);
+}
+
+/*
+  Reduced motion is not "less of this" — it is none of it. Durations rather
+  than `animation: none`, so anything that animates *into* its resting state
+  still ends up there rather than staying at the first frame.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

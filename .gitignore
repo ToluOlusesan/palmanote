@@ -1,0 +1,27 @@
+node_modules/
+dist/
+dist-electron/
+release/
+desktop-smoke.png
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+src-tauri/target/
+src-tauri/gen/
+
+# Working artwork, not sources. Neither of these is read by the build — the
+# nine stickers the app actually ships are checked in under
+# src/assets/stickers/ and imported by name in src/editor/stickers.ts.
+#
+# captures/  is what `npm run capture` draws: reference shots and re-renders of
+#            the running interface, to animate from.
+# stickers/  is the original sticker art at full size, 27 MB of it.
+#
+# Both are anchored with a leading slash so they mean *these* folders at the
+# root. Written bare, `stickers/` also matches src/assets/stickers/ and quietly
+# drops the nine the app ships.
+#
+# Delete these two lines if you want them in the clone.
+/captures/
+/stickers/

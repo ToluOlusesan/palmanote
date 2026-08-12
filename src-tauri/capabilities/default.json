@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Everything the window needs and nothing else. Tauri denies core commands unless they are listed here, so this file is the desktop equivalent of the Electron preload: a hand-written list of exactly what the page may ask for.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-is-maximized",
+    "core:window:allow-set-focus",
+    "core:webview:default"
+  ]
+}
