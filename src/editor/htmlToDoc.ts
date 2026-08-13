@@ -3,7 +3,7 @@
  *
  * This is the same mechanism paste already relies on: ProseMirror cannot parse
  * a node type that does not exist, so anything Word puts in its HTML that
- * Springboard has no place for — tables, images, colours, fonts, comments —
+ * PalmaNote has no place for — tables, images, colours, fonts, comments —
  * has nowhere to land and is dropped. Nothing here maintains a list of what to
  * strip, which is why it cannot fall out of date with the schema.
  */

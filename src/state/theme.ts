@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const THEME_KEY = 'springboard:theme';
+const THEME_KEY = 'palmanote:theme';
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 export type Theme = 'light' | 'dark';

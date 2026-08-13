@@ -40,14 +40,15 @@ const inset = (size) => (size <= 32 ? 0.05 : size <= 64 ? 0.1 : 0.15);
 /**
  * Optical bolding, in viewBox units.
  *
- * The artwork is filled paths whose thinnest features — the document's outline
- * and the coil — are under 1% of the 1053-unit box. Rasterised honestly at
+ * The artwork is filled paths whose thinnest features — the palm fronds and
+ * the waterline — are under 1% of the 1139-unit box. Rasterised honestly at
  * 32px that is a third of a pixel, which comes out as pale grey mush. Stroking
  * each path in its own fill colour grows it outward, so the shapes hold their
  * weight when there are only a few pixels to hold it in. Above 64px the
  * artwork can speak for itself.
  */
-const bolden = (size) => (size <= 24 ? 26 : size <= 32 ? 20 : size <= 48 ? 12 : size <= 64 ? 6 : 0);
+const bolden = (size) =>
+  size <= 20 ? 18 : size <= 24 ? 14 : size <= 32 ? 10 : size <= 48 ? 6 : size <= 64 ? 3 : 0;
 
 const svg = readFileSync('assets/logo.svg', 'utf8')
   // The artwork carries its own stylesheet; the tile decides the colour.

@@ -1,4 +1,4 @@
-# Springboard — the feature set
+# PalmaNote — the feature set
 
 What the app actually does, as of the code in this repository. Written against
 the source rather than the brief: every binding, limit and behaviour below was
@@ -26,6 +26,16 @@ a browser.
 | PDF reading | yes, WebView2's own viewer | no |
 | Backups | nightly `VACUUM INTO` Documents, last 30 kept | none |
 | Snapshot restore | yes | no |
+
+The app was called Springboard until 13 August 2026, and every name that
+*addresses* something keeps that spelling on purpose: the bundle identifier
+`com.springboard.app`, the library file `springboard.sqlite`, the IndexedDB
+database `springboard`, the `springboard://page/<id>` link form, the
+`Documents/Springboard Snapshots` folder and the `springboard-<stamp>.sqlite`
+files in it. Renaming any of them would leave an existing install launching
+happily onto an empty library. Electron pins `userData` to the old folder for
+the same reason — see the note at the top of [electron/main.ts](electron/main.ts).
+These are addresses, not titles.
 
 The seam is [src/data/bridge.ts](src/data/bridge.ts) — twenty-odd methods,
 resolved once at load. Nothing above that file knows which shell it is in.
@@ -79,7 +89,7 @@ The sidebar is the whole library. Source: [src/ui/TreePane.tsx](src/ui/TreePane.
   inside, Copy link, icon, Favourite, Delete. One level, no submenus; it flips
   upward near the bottom of the window rather than overflowing.
 - **Expansion state and sidebar visibility persist** across launches
-  (`springboard:ui` in `localStorage`).
+  (`palmanote:ui` in `localStorage`).
 - A thin **edge handle** brings a hidden sidebar back without knowing the
   shortcut.
 
@@ -245,6 +255,26 @@ block under it: a `+` and a drag handle.
 | `Alt+Shift+↑` / `↓` | move the block the caret is in |
 | `Alt+Shift+D` | duplicate it, caret in the copy |
 
+### List items are not dragged
+
+`isCarryable` in [blocks.ts](src/editor/blocks.ts). A bullet is a block by every
+other measure — it has a handle, a menu, and all six verbs — but it cannot be
+picked up by the pointer, and that is a decision rather than a gap.
+
+Dropping *into* a list has no target worth offering. ProseMirror resolves a
+point inside an item to the gap after it, so the first item of a list has no
+reachable slot above it however carefully you aim; and items sit flush against
+one another, so the two-pixel line that says where a block will land has nowhere
+to draw but across the text of the row above, where it reads as a strikethrough.
+Both fall out of a list being one node holding items rather than a run of
+siblings, and neither is reachable without replacing drop targeting wholesale.
+
+`Alt+Shift+↑`/`↓` moves an item among its siblings, exactly, every time, and it
+is the same chord that moves a paragraph. One gesture that works is a better
+offer than two where the more inviting one misleads. The handle stops saying
+otherwise: on an item it is not `draggable`, and the cursor stays an arrow
+rather than promising a grab.
+
 The menu is four verbs — duplicate, move up, move down, delete — and then the
 nine block types a block can be turned into. Move up and move down are greyed
 at the ends rather than hidden, because a menu whose items move between
@@ -325,7 +355,7 @@ is the honest boundary of this pass.
 ## 6. Highlights
 
 [src/editor/Highlight.ts](src/editor/Highlight.ts). Four highlights, named for
-the colour they are: **Yellow**, **Green**, **Blue**, **Pink**.
+the colour they are: **Yellow**, **Green**, **Blue**, **Red**.
 
 They were once named for what they meant — *Check this*, *Might cut*,
 *Continuity*, *Aside* — which asked everyone to learn a private vocabulary
@@ -600,7 +630,7 @@ A greeting with four starting points that open **templates**, not blank pages:
 |---|---|
 | Make a to-do list | *Today* and *This week*, each with tasks |
 | Draft a story | a story folder — premise, people, places — with *Chapter One* inside it, scene break included |
-| Plan a project | a folder with *What it is*, *What done looks like*, *Next*, and a *Notes* page |
+| Plan a project | a folder with *What it is*, *What are you trying to achieve*, *Next*, and a *Notes* page |
 | Jot down thoughts | a page dated today, and nothing else |
 
 Typing a name first uses it for whatever is created. Every template is a small
@@ -676,7 +706,7 @@ creates one blank page rather than showing an empty room.
 |---|---|
 | `.md`, `.markdown`, `.txt` | own parser, front matter honoured (`title`, `kind`, `icon`) |
 | `.docx` | `mammoth` → HTML → the same schema filter a paste goes through |
-| `springboard-export.json` | our own bundle format, parent relationships rebuilt |
+| `palmanote-export.json` | our own bundle format, parent relationships rebuilt |
 | a whole folder | nested directories become nested pages |
 
 - **Nothing is written until you have looked at it.** The dialog previews the
@@ -724,10 +754,10 @@ alphabetically) with title, kind, word count, timestamp and id in front matter.
 
 **Everything** — the escape hatch, sitting with the rest rather than hidden in a
 menu. Nested markdown, an `assets/` folder of every image named by its own hash
-and linked with ordinary relative paths, `springboard-export.json` holding every
+and linked with ordinary relative paths, `palmanote-export.json` holding every
 document and every revision, and a `README.txt` explaining the folder to someone
 who has never heard of this app. A person with that folder can rebuild the
-archive without Springboard existing.
+archive without PalmaNote existing.
 
 Correctness is asserted mechanically in
 [docx.test.ts](src/export/docx.test.ts): generated files are unzipped and checked

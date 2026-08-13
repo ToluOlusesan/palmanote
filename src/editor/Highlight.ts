@@ -23,14 +23,14 @@ declare module '@tiptap/core' {
  * arrives in an editor's copy as a real Word highlight they can clear from the
  * ribbon.
  */
-export const HIGHLIGHT_TONES = ['yellow', 'green', 'blue', 'pink'] as const;
+export const HIGHLIGHT_TONES = ['yellow', 'green', 'blue', 'red'] as const;
 export type HighlightTone = (typeof HIGHLIGHT_TONES)[number];
 
 export const HIGHLIGHT_LABELS: Record<HighlightTone, string> = {
   yellow: 'Yellow',
   green: 'Green',
   blue: 'Blue',
-  pink: 'Pink',
+  red: 'Red',
 };
 
 /**
@@ -44,9 +44,14 @@ export const HIGHLIGHT_LABELS: Record<HighlightTone, string> = {
  */
 const RENAMED: Record<string, HighlightTone> = {
   check: 'yellow',
-  cut: 'pink',
+  cut: 'red',
   continuity: 'blue',
   note: 'green',
+  // The fourth was pink until 13 August 2026. Every page marked with it still
+  // says so in the database, and this is what keeps those marks drawing,
+  // exporting and toggling as the one colour rather than falling back to
+  // yellow — which is what an unrecognised tone does.
+  pink: 'red',
 };
 
 /** Whatever is on the mark, as one of the four. */
@@ -69,6 +74,18 @@ export const Highlight = Mark.create({
   name: 'highlight',
   // Highlights sit under other marks so bold text can still be highlighted.
   priority: 900,
+  /*
+    A highlight ends where the block does.
+
+    Bold and italic carry across an Enter because they describe how you are
+    writing, and you are usually still writing that way on the next line. A
+    highlight describes a *piece of text* — it is the last thing you do to a
+    sentence before leaving it — so carrying it means the new block arrives
+    already painted, which reads as the app having broken rather than as a
+    formatting choice. Word and Google Docs carry it; a block editor should not,
+    because there a block is a new object rather than a continuation.
+  */
+  keepOnSplit: false,
 
   addAttributes() {
     return {

@@ -810,7 +810,7 @@ function resolveFamily(stack) {
 }
 
 /** Absent by construction, so it always falls through to the default face. */
-const ABSENT = '"__springboard_no_such_family__"';
+const ABSENT = '"__palmanote_no_such_family__"';
 
 function installed(name) {
   const ctx = context();

@@ -1,4 +1,5 @@
 import { DotsSixVertical, Plus } from '@phosphor-icons/react';
+import type { Node as PMNode } from '@tiptap/pm/model';
 import type { Editor } from '@tiptap/react';
 import {
   useCallback,
@@ -12,20 +13,71 @@ import {
 import {
   blockAt,
   blockFrom,
+  currentBlock,
   insertBlockAfter,
+  isCarryable,
   runBlockCommand,
   selectBlock,
   type BlockInfo,
 } from '../editor/blocks.ts';
 import { BlockMenu } from './BlockMenu.tsx';
+import { carryBlock, clearLifts } from './blockLift.ts';
 
 /** Where the handle sits when a block's own line height cannot be read. */
 const FALLBACK_LINE = 1.5;
+
+/**
+ * The `dragend` event is asked one question only: did anything happen.
+ *
+ * Not where it happened. `dragend` carries coordinates and they cannot be
+ * trusted — under a browser driven by the smoke suite they are the point the
+ * drag *started* from rather than the point it ended at, which is enough to
+ * make any position read there confidently wrong. The document, by contrast, is
+ * the same object it was unless a step changed it.
+ */
+function movedSomething(before: PMNode | null, editor: Editor): boolean {
+  return before !== null && editor.state.doc !== before;
+}
 
 interface Spot {
   /** The block this is about, so a scroll can re-measure the same one. */
   pos: number;
   top: number;
+  /** Null until measured; the stylesheet's own `left` stands in until then. */
+  left: number | null;
+}
+
+/**
+ * The edge a block's controls belong beside.
+ *
+ * For everything else that is the block itself. A list item is the exception,
+ * and measuring it is the trap: an item's box begins *after* its marker, so
+ * putting the handle against that edge lands it squarely on top of the bullet.
+ * The list is the column the item lives in, and its edge is the one with
+ * nothing drawn against it.
+ *
+ * This is also what makes the handle step in with the indent instead of staying
+ * pinned to the measure — a level-three bullet used to be seventy-five pixels
+ * away from a control that was supposed to belong to it. Stepping in is safe
+ * for the same reason: each level's marker column is the previous level's empty
+ * space, and the handle is only ever on one row.
+ */
+function columnOf(dom: HTMLElement): HTMLElement {
+  return dom.tagName === 'LI' ? (dom.parentElement ?? dom) : dom;
+}
+
+/**
+ * The element whose first line the handle should centre on.
+ *
+ * Usually the block itself, but a list item is a wrapper: a plain one holds a
+ * paragraph, and a task item holds a checkbox label and a div before it gets
+ * to one. The item's own box starts above that paragraph, so centring on the
+ * item put the handle six pixels high beside every task — the same error as
+ * measuring the wrong edge horizontally, in the other direction. The first
+ * paragraph inside is the text, and the text is what a reader lines it up with.
+ */
+function lineOf(dom: HTMLElement): HTMLElement {
+  return dom.tagName === 'LI' ? (dom.querySelector('p') ?? dom) : dom;
 }
 
 /**
@@ -51,19 +103,57 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
   const [quiet, setQuiet] = useState(false);
   // Anything that moves the block a measured gutter is beside.
   const [moved, setMoved] = useState(0);
+  // A block is in the air. Separate from `dragging` because the gutter has to
+  // go quiet for it, and a ref does not repaint.
+  const [lifting, setLifting] = useState(false);
   const gutter = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  /** The document as it was when the handle was taken hold of. */
+  const grabbedDoc = useRef<PMNode | null>(null);
 
-  /** The block under a point, or null if the point is not over one. */
+  /**
+   * The block beside a point.
+   *
+   * Beside rather than under, and that word is the whole of it. `posAtCoords`
+   * answers about the text, and the strip this control lives in is not text —
+   * it is the forty pixels of margin between the sheet's edge and the start of
+   * the measure. Asked about a point out there it returns nothing, and nothing
+   * used to mean "hide", so reaching diagonally for the handle crossed the
+   * margin just below it and put it out exactly as the hand arrived. The strip
+   * was unreachable by any path that did not come at it dead level.
+   *
+   * Pulling the question back onto the near edge of the text makes the whole
+   * margin live: what matters out there is the line you are level with, and
+   * that is the one thing the horizontal position has nothing to say about.
+   */
   const blockUnder = useCallback(
     (x: number, y: number): BlockInfo | null => {
       if (!editor) return null;
-      const found = editor.view.posAtCoords({ left: x, top: y });
+      const text = editor.view.dom.getBoundingClientRect();
+      const onto = Math.min(Math.max(x, text.left + 1), text.right - 1);
+      const found = editor.view.posAtCoords({ left: onto, top: y });
       if (!found) return null;
       return blockAt(editor.state, found.pos);
     },
     [editor],
   );
+
+  /**
+   * Put the gutter beside a block.
+   *
+   * A block of `null` leaves it where it was rather than taking it away. Inside
+   * the card there is always a nearest block, so no answer means the question
+   * was badly aimed — above the first line, in the space under the last one —
+   * and blinking the control out on the way past is the same flicker as above.
+   * Leaving the card is what hides it, and `mouseleave` says so plainly.
+   */
+  const placeAt = useCallback((block: BlockInfo | null) => {
+    setSpot((current) =>
+      block === null || current?.pos === block.pos
+        ? current
+        : { pos: block.pos, top: current?.top ?? 0, left: current?.left ?? null },
+    );
+  }, []);
 
   useEffect(() => {
     if (!editor) return;
@@ -78,19 +168,27 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
       // to be nearest, which is how a handle ends up jumping to its neighbour
       // as you reach for it.
       if (gutter.current?.contains(event.target as Node)) return;
-      const block = blockUnder(event.clientX, event.clientY);
+      /*
+        Above the first line or below the last one is beside nothing at all.
+
+        The card runs to the bottom of the window and the writing usually does
+        not, so most of it is blank — and since `placeAt` holds its position
+        rather than blinking out, without this the handle sits pointing at
+        whichever block it last saw while the pointer is an inch of empty page
+        away from it. The horizontal question is answered by pulling the point
+        onto the text; the vertical one has no answer to pull it to.
+      */
+      const text = dom.getBoundingClientRect();
+      if (event.clientY < text.top || event.clientY > text.bottom) {
+        setSpot(null);
+        return;
+      }
       // Returning `current` unchanged when the pointer is still over the same
       // block is what makes a mousemove free. Every setter in this handler is a
       // no-op in that case, so crossing a paragraph costs one `posAtCoords` and
       // no render — and the re-measure below is driven by `spot` changing
       // identity rather than by a counter bumped on every event.
-      setSpot((current) =>
-        block === null
-          ? null
-          : current?.pos === block.pos
-            ? current
-            : { pos: block.pos, top: current?.top ?? 0 },
-      );
+      placeAt(blockUnder(event.clientX, event.clientY));
     };
 
     // Only when the pointer has left the card entirely. The gutter lives inside
@@ -108,7 +206,17 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
       host.removeEventListener('mouseleave', onLeave);
       dom.removeEventListener('keydown', onType);
     };
-  }, [editor, blockUnder]);
+  }, [editor, blockUnder, placeAt]);
+
+  // A drag that is abandoned by unmount — the page is closed mid-gesture —
+  // leaves the card dimmed and a carrier standing.
+  useEffect(
+    () => () => {
+      clearLifts();
+      document.querySelector('.editor-host')?.classList.remove('is-lifting');
+    },
+    [],
+  );
 
   // The document moves under a gutter that is already up — a block above this
   // one grows a line, an image finishes loading, the sheet scrolls.
@@ -135,6 +243,11 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
     middle of a four-line paragraph. `lineHeight` is `normal` often enough to
     need the fallback, and `normal` is roughly 1.2–1.5 of the font size in every
     engine this runs on.
+
+    Vertically it follows the block; horizontally it follows the block's column,
+    which is a different element for a list item — see `columnOf`. For every
+    top-level block the two are the same and this lands exactly where the
+    stylesheet's own `left` had it.
   */
   useLayoutEffect(() => {
     if (!editor || !spot) return;
@@ -143,36 +256,55 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
     const sheet = editor.view.dom.closest('.sheet');
     if (!(dom instanceof HTMLElement) || !(sheet instanceof HTMLElement)) return;
 
-    const box = dom.getBoundingClientRect();
+    const line1 = lineOf(dom);
+    const box = line1.getBoundingClientRect();
     const frame = sheet.getBoundingClientRect();
-    const style = window.getComputedStyle(dom);
+    const style = window.getComputedStyle(line1);
     const parsed = Number.parseFloat(style.lineHeight);
     const line = Number.isFinite(parsed)
       ? parsed
       : Number.parseFloat(style.fontSize) * FALLBACK_LINE;
 
     const top = box.top - frame.top + line / 2;
-    setSpot((current) =>
-      current && Math.abs(current.top - top) > 0.5 ? { ...current, top } : current,
-    );
+    const left = columnOf(dom).getBoundingClientRect().left - frame.left;
+    setSpot((current) => {
+      if (!current) return current;
+      const moved = Math.abs(current.top - top) > 0.5 || current.left === null
+        || Math.abs(current.left - left) > 0.5;
+      return moved ? { ...current, top, left } : current;
+    });
   }, [editor, spot, moved]);
 
   if (!editor) return null;
 
   const block = spot ? blockFrom(editor.state, spot.pos) : null;
   const hidden = !spot || !block || (quiet && !menu);
+  // A list item is not carried by hand — see `isCarryable`. The handle stays,
+  // because everything else it does still applies; only the drag comes off.
+  const carryable = block !== null && isCarryable(block);
 
   const press = (run: () => void) => (event: ReactMouseEvent) => {
     event.preventDefault();
     run();
   };
 
+  /** Under the handle, wherever it currently is. Two gestures arrive here. */
+  const openMenu = () => {
+    const box = gutter.current?.getBoundingClientRect();
+    if (box) setMenu({ x: box.left, y: box.bottom + 6 });
+  };
+
   return (
     <>
       <div
-        className={`block-gutter${hidden ? '' : ' is-shown'}`}
+        /*
+          `is-lifting` fades it rather than unmounting it: the handle is the
+          drag source, and a source removed from the document mid-gesture
+          cancels the drag in every engine this runs on.
+        */
+        className={`block-gutter${hidden ? '' : ' is-shown'}${lifting ? ' is-lifting' : ''}`}
         ref={gutter}
-        style={{ top: spot?.top ?? 0 }}
+        style={{ top: spot?.top ?? 0, left: spot?.left ?? undefined }}
         aria-hidden="true"
         /*
           No `preventDefault` on mousedown here, unlike every other control that
@@ -204,30 +336,52 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
           type="button"
           className="block-btn block-handle"
           tabIndex={-1}
-          title="Drag to move, click for actions"
-          draggable
+          title={carryable ? 'Drag to move, click for actions' : 'Click for actions'}
+          /*
+            `false`, not absent. React writes `draggable="false"` for it, which
+            is what the stylesheet reads to drop the grab cursor — a control
+            that says it can be picked up and then cannot is worse than one that
+            never offered.
+          */
+          draggable={carryable}
           onClick={press(() => {
             if (!block) return;
             runBlockCommand(editor, selectBlock(block));
-            const box = gutter.current?.getBoundingClientRect();
-            if (box) setMenu({ x: box.left, y: box.bottom + 6 });
+            openMenu();
           })}
           onDragStart={(event) => {
-            if (!block) return;
+            // Belt to the `draggable` braces: a stray `draggable` attribute
+            // from anywhere else would otherwise reopen the gesture silently.
+            if (!block || !carryable) {
+              event.preventDefault();
+              return;
+            }
             dragging.current = true;
+            setLifting(true);
             const view = editor.view;
             // Held as an object first, so what leaves is the whole block and
             // ProseMirror's own drop handler has a selection to remove when it
             // lands. This is also what draws the block as chosen while it is in
             // the air.
             runBlockCommand(editor, selectBlock(block));
+            // After the selection, not before: holding a block is a transaction
+            // too, and only steps that change the document replace this object.
+            grabbedDoc.current = view.state.doc;
             const slice = view.state.selection.content();
             event.dataTransfer.effectAllowed = 'move';
             // Something has to be on the transfer or the drag never starts, and
             // the text is what a drop outside this window should produce.
             event.dataTransfer.setData('text/plain', block.node.textContent);
             const dom = view.nodeDOM(block.pos);
-            if (dom instanceof HTMLElement) event.dataTransfer.setDragImage(dom, 12, 12);
+            if (dom instanceof HTMLElement) {
+              // Grabbed where the pointer actually is, so the block lifts off
+              // the page instead of jumping to meet the cursor.
+              carryBlock(event.dataTransfer, view.dom, dom, event.clientX, event.clientY);
+            }
+            // The page reads as having a hole in it where the block was. Set on
+            // the card rather than on the editor's own element, whose class
+            // list ProseMirror owns and rewrites.
+            view.dom.closest('.editor-host')?.classList.add('is-lifting');
             // The whole of the move: prosemirror-view's drop handler reads this
             // and does the rest, and prosemirror-dropcursor reads it to snap the
             // indicator to a position the block can actually go.
@@ -235,10 +389,49 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
           }}
           onDragEnd={() => {
             dragging.current = false;
+            setLifting(false);
+            clearLifts();
+            editor.view.dom.closest('.editor-host')?.classList.remove('is-lifting');
             // A drop outside the editor never reaches the handler that would
             // have cleared this, and a stale one would move the wrong block on
             // the next drag.
             editor.view.dragging = null;
+
+            const before = grabbedDoc.current;
+            grabbedDoc.current = null;
+
+            /*
+              Nothing moved, so the gesture was a press that the hand did not
+              hold quite still.
+
+              The browser calls anything past about four pixels a drag, and once
+              it has decided that it sends no `click` at all — which is how
+              reaching for the handle used to hold the block, open nothing, and
+              then take the handle away with it. The block is held either way,
+              since that happens at `dragstart`; the menu is the missing half.
+              A drag abandoned halfway lands here too, and a menu is a fair
+              answer to picking a block up and putting it back.
+            */
+            if (!movedSomething(before, editor)) {
+              openMenu();
+              return;
+            }
+
+            /*
+              It did move, and no mousemove has fired since the drag began — so
+              the gutter is still measured against a position that now holds
+              somebody else's block. The block that was just dropped is where
+              the hand is, and it is the one thing here that is known rather
+              than guessed.
+
+              Read now rather than a frame later. `drop` has already run by the
+              time this fires, so the state is current — and a `requestAnimation
+              Frame` scheduled from inside `dragend` is not reliably called at
+              all, which is a quiet way for the gutter to stay where the drag
+              began. Measuring is the layout effect's job and it has its own
+              turn after the commit.
+            */
+            placeAt(currentBlock(editor.state));
           }}
         >
           <DotsSixVertical size={15} weight="bold" />

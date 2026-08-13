@@ -1,5 +1,5 @@
 /**
- * IndexedDB implementation of SpringboardStore.
+ * IndexedDB implementation of PalmaNoteStore.
  *
  * Row shapes match schema.sql exactly. One deliberate divergence: document
  * bodies live in a separate `contents` object store keyed by document id,
@@ -25,9 +25,17 @@ import type {
   CreateDocumentInput,
   MoveDocumentInput,
   SaveContentInput,
-  SpringboardStore,
+  PalmaNoteStore,
 } from './store.ts';
 
+/*
+  Still the old name, and it stays that way.
+
+  The app was renamed to PalmaNote on 13 August 2026; an IndexedDB database is
+  addressed by its name, so changing this would open an empty second database
+  next to the one holding every page anyone has written in a browser. The name
+  is where the writing lives rather than what the app is called.
+*/
 const DB_NAME = 'springboard';
 // 2 added `assets`. `onupgradeneeded` runs every intermediate version, so
 // bumping this is additive rather than a migration.
@@ -68,7 +76,7 @@ function normalize(row: DocumentMeta): DocumentMeta {
   };
 }
 
-export class IdbStore implements SpringboardStore {
+export class IdbStore implements PalmaNoteStore {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private readonly name: string;
 

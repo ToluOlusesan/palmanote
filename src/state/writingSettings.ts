@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const KEY = 'springboard:writing';
+const KEY = 'palmanote:writing';
 
 export interface WritingSettings {
   /** A drawn cursor that slides between positions, the way Word's does. */

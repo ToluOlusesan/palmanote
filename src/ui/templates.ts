@@ -90,7 +90,7 @@ export function project(name: string): TemplateNode {
     content: doc(
       h(2, 'What it is'),
       p(),
-      h(2, 'What done looks like'),
+      h(2, 'What are you trying to achieve'),
       p(),
       h(2, 'Next'),
       tasks(3),

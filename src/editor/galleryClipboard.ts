@@ -41,7 +41,7 @@ export async function copyImages(ids: string[]): Promise<CopyOutcome> {
       // The shell could not have the clipboard — something else was holding
       // it, most likely. The page's own write is a worse copy but a real one,
       // so it is tried rather than reported.
-      console.warn('Springboard could not copy those images as files.', error);
+      console.warn('PalmaNote could not copy those images as files.', error);
     }
   }
 
@@ -71,7 +71,7 @@ async function writeMarkup(ids: string[]): Promise<void> {
       // nothing, which is what an absent flavour looks like when pasted.
       'text/plain': markup.then(
         () =>
-          new Blob([`${ids.length} image${ids.length === 1 ? '' : 's'} from Springboard`], {
+          new Blob([`${ids.length} image${ids.length === 1 ? '' : 's'} from PalmaNote`], {
             type: 'text/plain',
           }),
       ),

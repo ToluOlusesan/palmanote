@@ -830,7 +830,7 @@ mod tests {
     /// A library from before covers existed, written with the schema of the
     /// day. The point is to open one, not to make one.
     fn old_library() -> PathBuf {
-        let file = std::env::temp_dir().join(format!("springboard-migrate-{}.sqlite", new_id()));
+        let file = std::env::temp_dir().join(format!("palmanote-migrate-{}.sqlite", new_id()));
         let db = Connection::open(&file).expect("a database");
         db.execute_batch(
             "CREATE TABLE documents (
@@ -869,7 +869,7 @@ mod tests {
 
     #[test]
     fn the_sweep_leaves_covers_alone() {
-        let file = std::env::temp_dir().join(format!("springboard-sweep-{}.sqlite", new_id()));
+        let file = std::env::temp_dir().join(format!("palmanote-sweep-{}.sqlite", new_id()));
         let store = Store::open(&file).expect("a database");
         let page = store
             .create_document(CreateDocumentInput {
@@ -985,7 +985,7 @@ mod tests {
 
     #[test]
     fn backlinks_reads_the_graph_backwards() {
-        let file = std::env::temp_dir().join(format!("springboard-backlinks-{}.sqlite", new_id()));
+        let file = std::env::temp_dir().join(format!("palmanote-backlinks-{}.sqlite", new_id()));
         let store = Store::open(&file).expect("a store");
 
         let target = store

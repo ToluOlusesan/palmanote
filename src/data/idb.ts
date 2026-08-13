@@ -10,7 +10,7 @@ export function openDatabase(
     request.onupgradeneeded = (event) => upgrade(request.result, event.oldVersion);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
-    request.onblocked = () => reject(new Error('Springboard is open in another tab. Close it and reload.'));
+    request.onblocked = () => reject(new Error('PalmaNote is open in another tab. Close it and reload.'));
   });
 }
 

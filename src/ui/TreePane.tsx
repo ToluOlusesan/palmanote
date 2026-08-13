@@ -7,7 +7,7 @@ import { useLibrary } from '../state/library.tsx';
 import { useTabs } from '../state/tabs.tsx';
 import { DocumentIcon, IconPicker } from './IconPicker.tsx';
 import { RowMenu, type MenuItem } from './RowMenu.tsx';
-import { SpringMark } from './SpringMark.tsx';
+import { PalmaMark } from './PalmaMark.tsx';
 
 type DropZone = 'before' | 'after' | 'into';
 
@@ -261,8 +261,8 @@ export function TreePane({
       )}
 
       <header className="tree-head">
-        <SpringMark size={22} />
-        <span className="visually-hidden">Springboard</span>
+        <PalmaMark size={22} />
+        <span className="visually-hidden">PalmaNote</span>
         <button
           type="button"
           className="ghost tree-import"

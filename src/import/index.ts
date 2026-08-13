@@ -1,7 +1,7 @@
 /**
  * The way in.
  *
- * Springboard could already leave five ways and arrive none, which made the
+ * PalmaNote could already leave five ways and arrive none, which made the
  * escape hatch one-directional and made the nightly snapshots useful to
  * someone with a SQLite client rather than to the person who wrote them.
  *
@@ -11,7 +11,7 @@
 
 import { htmlToDoc } from '../editor/htmlToDoc.ts';
 import type { DocumentKind, PMDoc } from '../core/types.ts';
-import type { SpringboardStore } from '../data/store.ts';
+import type { PalmaNoteStore } from '../data/store.ts';
 import { parseMarkdown } from './markdown.ts';
 
 export interface IncomingFile {
@@ -110,7 +110,7 @@ export async function planImport(files: IncomingFile[]): Promise<ImportPlan[]> {
   return plans;
 }
 
-/** `springboard-export.json` — our own format, so nothing is guessed at. */
+/** `palmanote-export.json` — our own format, so nothing is guessed at. */
 function planBundle(raw: string, parent: number | null): ImportPlan[] {
   let parsed: { documents?: unknown };
   try {
@@ -144,7 +144,7 @@ function planBundle(raw: string, parent: number | null): ImportPlan[] {
 
 /** Writes a plan into the library, parents before children. */
 export async function runImport(
-  store: SpringboardStore,
+  store: PalmaNoteStore,
   plans: ImportPlan[],
   parentId: string | null,
   countWords: (doc: PMDoc) => number,

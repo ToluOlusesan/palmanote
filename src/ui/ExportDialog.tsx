@@ -7,7 +7,7 @@ import { buildExport, type DocxPreset, type ExportFormat, type ManuscriptDetails
 import { safeFileName } from '../export/walk.ts';
 import { useLibrary } from '../state/library.tsx';
 
-const SETTINGS_KEY = 'springboard:export';
+const SETTINGS_KEY = 'palmanote:export';
 
 type Scope = 'document' | 'subtree' | 'all';
 
@@ -44,7 +44,7 @@ const FORMATS: { value: Settings['format']; label: string; note: string }[] = [
 ];
 
 /**
- * One dialog for every way out of Springboard.
+ * One dialog for every way out of PalmaNote.
  *
  * "Everything" is the escape hatch and sits with the rest rather than hidden
  * in a menu: it is the guarantee the owner can leave at any moment, and it
@@ -92,7 +92,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
             : ({ kind: 'document', id: current.id } as const);
 
       if (settings.format === 'pdf') {
-        const title = safeFileName(current?.title ?? 'Springboard');
+        const title = safeFileName(current?.title ?? 'PalmaNote');
         if (!bridge) {
           onClose();
           // The browser's own print dialog is the only route to a PDF here.

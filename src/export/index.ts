@@ -5,7 +5,7 @@
  */
 
 import { extensionFor, fromBase64 } from '../editor/assets.ts';
-import type { SpringboardStore } from '../data/store.ts';
+import type { PalmaNoteStore } from '../data/store.ts';
 import type { DocxPreset, ManuscriptDetails } from './docx.ts';
 import { markdownFromDoc } from './markdown.ts';
 import {
@@ -48,7 +48,7 @@ export interface ExportResult {
  * would otherwise be reaching into the database halfway through rendering a
  * paragraph.
  */
-async function loadAssets(store: SpringboardStore, walk: Walk) {
+async function loadAssets(store: PalmaNoteStore, walk: Walk) {
   const entries = await Promise.all(
     assetIdsIn(walk).map(async (id) => [id, await store.getAsset(id)] as const),
   );
@@ -76,7 +76,7 @@ function assetFiles(assets: Awaited<ReturnType<typeof loadAssets>>): ExportFile[
 }
 
 export async function buildExport(
-  store: SpringboardStore,
+  store: PalmaNoteStore,
   request: ExportRequest,
 ): Promise<ExportResult> {
   const raw = await walkScope(store, request.scope);
@@ -85,7 +85,7 @@ export async function buildExport(
     raw,
     new Map([...assets].map(([id, asset]) => [id, asset.extension])),
   );
-  const base = safeFileName(walk.title, 'Springboard');
+  const base = safeFileName(walk.title, 'PalmaNote');
 
   switch (request.format) {
     case 'docx': {
@@ -116,7 +116,7 @@ export async function buildExport(
 
     case 'everything': {
       // The escape hatch: the tree as nested markdown, plus the complete raw
-      // database. Someone with this folder and no Springboard can reconstruct
+      // database. Someone with this folder and no PalmaNote can reconstruct
       // everything, by hand if they have to.
       const stamp = new Date().toISOString().slice(0, 10);
       return {
@@ -124,7 +124,7 @@ export async function buildExport(
         files: [
           ...markdownTree(walk),
           ...assetFiles(assets),
-          { path: 'springboard-export.json', data: await rawBundle(store) },
+          { path: 'palmanote-export.json', data: await rawBundle(store) },
           { path: 'README.txt', data: escapeHatchNote(walk.documents.length, assets.size) },
         ],
       };
@@ -177,7 +177,7 @@ function markdownTree(walk: Awaited<ReturnType<typeof walkScope>>): ExportFile[]
   });
 }
 
-async function rawBundle(store: SpringboardStore): Promise<string> {
+async function rawBundle(store: PalmaNoteStore): Promise<string> {
   const documents = await store.listDocuments();
   const records = await Promise.all(documents.map((doc) => store.getDocument(doc.id)));
   const revisions = (
@@ -185,7 +185,7 @@ async function rawBundle(store: SpringboardStore): Promise<string> {
   ).flat();
   return JSON.stringify(
     {
-      format: 'springboard-export/1',
+      format: 'palmanote-export/1',
       exportedAt: new Date().toISOString(),
       documents: records.filter(Boolean),
       revisions,
@@ -197,7 +197,7 @@ async function rawBundle(store: SpringboardStore): Promise<string> {
 
 function escapeHatchNote(count: number, images: number): string {
   return [
-    'Springboard export',
+    'PalmaNote export',
     '',
     `${count} document${count === 1 ? '' : 's'}, written twice over:`,
     '',
@@ -205,7 +205,7 @@ function escapeHatchNote(count: number, images: number): string {
     '    directory reads in the same order as the tree. Each file carries its',
     '    own title, kind, word count and id in front matter.',
     '',
-    '  * As springboard-export.json, the complete raw database: every document',
+    '  * As palmanote-export.json, the complete raw database: every document',
     '    with its ProseMirror content, and every revision snapshot.',
     '',
     ...(images > 0
@@ -213,7 +213,7 @@ function escapeHatchNote(count: number, images: number): string {
           `Alongside them, assets/ holds the ${images} image${images === 1 ? '' : 's'} the pages link`,
           'to, each named by the hash of its own contents. The markdown points at',
           'them with ordinary relative links, so the folder reads correctly in any',
-          'markdown editor with Springboard nowhere near it.',
+          'markdown editor with PalmaNote nowhere near it.',
           '',
         ]
       : []),

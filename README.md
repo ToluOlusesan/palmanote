@@ -1,4 +1,4 @@
-# Springboard
+# PalmaNote
 
 A writing app for one person. Page tree, tabs, a Tiptap editor, export to
 Word, and a Windows desktop shell over SQLite.
@@ -114,7 +114,7 @@ src/
     SlashMenu.tsx  the list a "/" or an "@" opens
     ExportDialog.tsx  one dialog for every route out
     WindowControls.tsx  Windows caption buttons
-    SpringMark.tsx the wordmark's spring
+    PalmaMark.tsx  the mark: a page, a palm, a waterline
   electron/
     main.ts        window, IPC handlers, nightly snapshots
     preload.ts     the whole surface the page can see
@@ -173,7 +173,7 @@ what it removes and why. It deliberately keeps four things it could delete:
 are the graphics fallback path, and their absence shows up as a blank window
 on somebody else's GPU rather than on the machine that built it.
 
-**What is left is Electron.** `Springboard.exe` is 215 MB of the 279 MB, and
+**What is left is Electron.** `PalmaNote.exe` is 215 MB of the 279 MB, and
 it is byte-identical to the stock `electron.exe` — a whole browser engine,
 statically linked. Add `icudtl.dat`, `resources.pak` and the graphics DLLs and
 roughly 95% of this app is Chromium. There is no configuration that changes
@@ -229,7 +229,7 @@ blank pages:
 |---|---|
 | Make a to-do list | a page with *Today* and *This week*, each with tasks |
 | Draft a story | a story folder — premise, people, places — with *Chapter One* inside it, scene break included |
-| Plan a project | a folder with *What it is*, *What done looks like*, *Next*, and a *Notes* page |
+| Plan a project | a folder with *What it is*, *What are you trying to achieve*, *Next*, and a *Notes* page |
 | Jot down thoughts | a page dated today, and nothing else |
 
 Typing a name first uses it for whatever is created. Templates live in
@@ -280,8 +280,8 @@ this page, this page and everything inside it, or everything.
 - **Markdown**, as one file or as a folder mirroring the tree.
 - **Everything** — the escape hatch. Nested folders of markdown, one numbered
   file per page with its metadata in front matter, plus
-  `springboard-export.json` holding every document and every revision. A
-  person with that folder can rebuild the archive without Springboard
+  `palmanote-export.json` holding every document and every revision. A
+  person with that folder can rebuild the archive without PalmaNote
   existing.
 
 `src/export/docx.test.ts` unzips generated files and asserts the structure:
@@ -465,11 +465,11 @@ building it here:
 - `npm run electron:rebuild` has to run once after install, and again after
   any Electron upgrade. `better-sqlite3` is native and needs the ABI Electron
   is on, not the one Node is on.
-- On this machine electron-builder cannot write into `E:\springboard
+- On this machine electron-builder cannot write into `E:\palmanote
 elease`
   — the drive rejects the directory rename it does at the end. Building to
   another location works (`npx electron-builder --dir --config.directories.output=<path>`),
-  and the packaged `Springboard.exe` was verified running from there, writing
+  and the packaged `PalmaNote.exe` was verified running from there, writing
   to SQLite, with the caption buttons drawn. If `npm run dist` fails with
   `EPERM ... rename`, that is this and not the config.
 

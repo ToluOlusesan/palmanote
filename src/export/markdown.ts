@@ -1,7 +1,7 @@
 /**
  * ProseMirror JSON to markdown. Nearly free once the walk exists, and half of
  * the escape hatch: a folder of these plus the raw JSON is enough to rebuild
- * the archive without Springboard existing.
+ * the archive without PalmaNote existing.
  */
 
 import type { PMDoc, PMNode } from '../core/types.ts';

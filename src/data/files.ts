@@ -75,7 +75,7 @@ function download(path: string, data: string | Uint8Array): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = path.split('/').pop() ?? 'springboard';
+  anchor.download = path.split('/').pop() ?? 'palmanote';
   anchor.click();
   URL.revokeObjectURL(url);
 }

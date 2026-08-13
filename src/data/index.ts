@@ -8,10 +8,10 @@
 
 import { bridge } from './bridge.ts';
 import { IdbStore } from './idbStore.ts';
-import type { SpringboardStore } from './store.ts';
+import type { PalmaNoteStore } from './store.ts';
 
 /** The bridge already implements the contract; it just needs naming as such. */
-function desktopStore(desktop: NonNullable<typeof bridge>): SpringboardStore {
+function desktopStore(desktop: NonNullable<typeof bridge>): PalmaNoteStore {
   return {
     listDocuments: () => desktop.listDocuments(),
     getDocument: (id) => desktop.getDocument(id),
@@ -35,4 +35,4 @@ function desktopStore(desktop: NonNullable<typeof bridge>): SpringboardStore {
   };
 }
 
-export const store: SpringboardStore = bridge ? desktopStore(bridge) : new IdbStore();
+export const store: PalmaNoteStore = bridge ? desktopStore(bridge) : new IdbStore();

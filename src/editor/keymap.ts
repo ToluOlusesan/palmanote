@@ -28,7 +28,7 @@ function listContext(state: EditorState): { itemType: string | null; depth: numb
  * out of the editor for keyboard users who need it to.
  */
 export const Shortcuts = Extension.create({
-  name: 'springboardKeymap',
+  name: 'palmanoteKeymap',
   // Above the list extensions, which bind Tab to an uncapped sinkListItem.
   priority: 1000,
 

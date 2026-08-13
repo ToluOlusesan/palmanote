@@ -48,7 +48,7 @@ export interface WindowState {
   fullScreen: boolean;
 }
 
-export interface SpringboardBridge {
+export interface PalmaNoteBridge {
   readonly platform: NodeJS.Platform;
   readonly dataDirectory: string;
 
@@ -113,19 +113,19 @@ export interface SpringboardBridge {
 
 declare global {
   interface Window {
-    springboard?: SpringboardBridge;
+    palmanote?: PalmaNoteBridge;
   }
 }
 
-function detect(): SpringboardBridge | null {
+function detect(): PalmaNoteBridge | null {
   if (typeof globalThis === 'undefined') return null;
   // Tauri first: it is the shell we ship.
   if (isTauri()) return createTauriBridge();
   // Electron exposes itself through the preload script.
-  return (globalThis as { springboard?: SpringboardBridge }).springboard ?? null;
+  return (globalThis as { palmanote?: PalmaNoteBridge }).palmanote ?? null;
 }
 
-export const bridge: SpringboardBridge | null = detect();
+export const bridge: PalmaNoteBridge | null = detect();
 
 /** True when running inside the desktop shell. */
 export const isDesktop = bridge !== null;

@@ -57,7 +57,7 @@ const pending = new Map<string, Promise<string | null>>();
  */
 export async function storeImage(file: Blob): Promise<StoredImage> {
   if (!ACCEPTED.includes(file.type)) {
-    throw new Error('That is not an image Springboard can read.');
+    throw new Error('That is not an image PalmaNote can read.');
   }
   if (file.size > MAX_BYTES) {
     throw new Error('That image is over 32MB.');

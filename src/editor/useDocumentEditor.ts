@@ -65,7 +65,7 @@ function takeImages(view: EditorView, items: DataTransferItem[], at: number | nu
         // Nothing is thrown at the writer here: the paste either worked or it
         // did not, and a dialog over the page they were writing on is a worse
         // answer than the picture simply not being there.
-        console.warn('Springboard could not read that image.', error);
+        console.warn('PalmaNote could not read that image.', error);
       }
     }
     if (stored.length === 0) return;
@@ -365,7 +365,7 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
   useEffect(() => {
     if (!editor) return;
     const extension = editor.extensionManager.extensions.find(
-      (candidate) => candidate.name === 'springboardCaret',
+      (candidate) => candidate.name === 'palmanoteCaret',
     );
     if (extension) Object.assign(extension.options, settings);
     editor.view.dispatch(editor.state.tr);

@@ -11,7 +11,7 @@
 import { chromium } from 'playwright-core';
 
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const URL = process.env.SPRINGBOARD_URL ?? 'http://localhost:5273/';
+const URL = process.env.PALMANOTE_URL ?? 'http://localhost:5273/';
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -160,6 +160,82 @@ check('** ** becomes bold', /<strong>bold<\/strong>/.test(marksHtml), true);
 check('* * becomes italic', /<em>slanted<\/em>/.test(marksHtml), true);
 check('~~ ~~ becomes strikethrough', /<s>struck<\/s>/.test(marksHtml), true);
 check('delimiters are gone', /\*|~~/.test(await bodyText()), false);
+
+// What an Enter carries. Bold and italic describe how you are writing and
+// usually continue; a highlight, a code span and a link describe one piece of
+// text, and carrying those makes the next block arrive already painted.
+await freshPage('Carry');
+await page.keyboard.press('Control+KeyB');
+await page.keyboard.type('bold');
+await page.keyboard.press('Enter');
+await page.keyboard.type('still bold');
+await page.waitForTimeout(300);
+check(
+  'bold carries onto the next block',
+  /<strong>bold<\/strong>.*<strong>still bold<\/strong>/s.test(await bodyHtml()),
+  true,
+);
+
+// Applied from the bar rather than with Mod-Shift-H, because that chord also
+// reaches the shell, where it is "browse history" — see the note in App.tsx.
+await freshPage('NoCarry');
+await page.keyboard.type('marked');
+await page.waitForTimeout(200);
+await page.keyboard.press('Control+KeyA');
+await page.waitForSelector('.bubble', { timeout: 4000 });
+await page.locator('.bubble-btn[aria-label="Highlight"]').click();
+await page.waitForSelector('.bubble-menu');
+await page.locator('.bubble-item', { hasText: 'Yellow' }).first().click();
+await page.waitForTimeout(350);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+// Collapses the selection to its right edge, which is where the caret has to
+// be for the Enter below to be a split rather than a replacement.
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(120);
+await page.keyboard.press('Enter');
+await page.waitForTimeout(150);
+await page.keyboard.type('clean');
+await page.waitForTimeout(300);
+check(
+  'a highlight stops at the end of its block',
+  await bodyHtml(),
+  '<p><mark data-tone="yellow">marked</mark></p><p>clean</p>',
+);
+
+await freshPage('NoCarryCode');
+await page.keyboard.press('Control+KeyE');
+await page.keyboard.type('snippet');
+await page.keyboard.press('Enter');
+await page.keyboard.type('prose');
+await page.waitForTimeout(300);
+check('and so does a code span', await bodyHtml(), '<p><code>snippet</code></p><p>prose</p>');
+
+// Splitting inside a marked run is the other half: what is already painted
+// stays painted, and only what you type next comes out clean.
+await freshPage('SplitInside');
+await page.keyboard.type('one two');
+await page.waitForTimeout(200);
+await page.keyboard.press('Control+KeyA');
+await page.waitForSelector('.bubble', { timeout: 4000 });
+await page.locator('.bubble-btn[aria-label="Highlight"]').click();
+await page.waitForSelector('.bubble-menu');
+await page.locator('.bubble-item', { hasText: 'Yellow' }).first().click();
+await page.waitForTimeout(350);
+await page.keyboard.press('Escape');
+await page.keyboard.press('End');
+for (let i = 0; i < 3; i++) {
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(60);
+}
+await page.keyboard.press('Enter');
+await page.keyboard.type('X');
+await page.waitForTimeout(300);
+check(
+  'splitting a marked run keeps the mark on the words, not on what comes after',
+  await bodyHtml(),
+  '<p><mark data-tone="yellow">one </mark></p><p>X<mark data-tone="yellow">two</mark></p>',
+);
 
 await freshPage('Typography');
 await page.keyboard.type('He said "stop" -- then... it didn\'t.');
@@ -342,7 +418,7 @@ await page.waitForSelector('.bubble-menu');
 check(
   'the highlights are named for the colour they are',
   await page.locator('.bubble-menu .bubble-item-label').allInnerTexts(),
-  ['Yellow', 'Green', 'Blue', 'Pink', 'None'],
+  ['Yellow', 'Green', 'Blue', 'Red', 'None'],
 );
 await page.locator('.bubble-item', { hasText: 'Blue' }).first().click();
 await page.waitForTimeout(400);
@@ -1115,6 +1191,8 @@ check(
   'and the hidden descendant goes with it',
   await page.evaluate(async () => {
     const db = await new Promise((resolve) => {
+      // Still 'springboard': the database is an address, not a title. See the
+      // note beside DB_NAME in src/data/idbStore.ts.
       const request = indexedDB.open('springboard');
       request.onsuccess = () => resolve(request.result);
     });
@@ -1346,6 +1424,47 @@ check(
   true,
 );
 
+/*
+  The margin the handle lives in has to be hoverable ground.
+
+  `posAtCoords` is about text and answers nothing out there, and nothing used to
+  mean hide — so the control put itself out as the hand arrived, and could only
+  be reached by coming at it exactly level. Walked here rather than jumped,
+  because a single `hover()` lands on the far side of the strip and sails past
+  the bug entirely.
+*/
+const margin = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('.body > p')];
+  const box = (t) => rows.find((p) => p.textContent.includes(t)).getBoundingClientRect();
+  const a = box('alpha');
+  const c = box('charlie');
+  return { x: Math.round(a.left) - 22, alphaY: Math.round((a.top + a.bottom) / 2), charlieY: Math.round((c.top + c.bottom) / 2) };
+});
+const besideNow = () => page.evaluate(() => {
+  const gutter = document.querySelector('.block-gutter');
+  if (!gutter.classList.contains('is-shown')) return '(hidden)';
+  const box = gutter.getBoundingClientRect();
+  const mid = box.top + box.height / 2;
+  const row = [...document.querySelectorAll('.body > *')].find((el) => {
+    const b = el.getBoundingClientRect();
+    return mid >= b.top - 2 && mid <= b.bottom + 2;
+  });
+  return row ? row.textContent.trim() : '(nothing)';
+});
+
+await hoverBlock('charlie');
+// Straight out of the text into the strip, then up it — the way a hand reaches.
+await page.mouse.move(margin.x + 60, margin.charlieY);
+await page.mouse.move(margin.x, margin.charlieY, { steps: 8 });
+await page.waitForTimeout(200);
+check('the strip the handle lives in is hoverable ground', await besideNow(), 'charlie');
+for (let y = margin.charlieY; y >= margin.alphaY; y -= 6) {
+  await page.mouse.move(margin.x, y);
+}
+await page.waitForTimeout(250);
+check('and walking up it carries the handle along', await besideNow(), 'alpha');
+
+await hoverBlock('bravo');
 await page.locator('.block-gutter .block-btn').first().click();
 await page.waitForSelector('.slash', { timeout: 4000 });
 check('"+" puts a block under it and opens the insert menu', await page.locator('.slash').count(), 1);
@@ -1403,6 +1522,31 @@ await page.locator('.block-item', { hasText: 'Heading 2' }).first().click();
 await page.waitForTimeout(350);
 check('turning a block into a heading turns the whole block', await page.locator('.body h2').count(), 1);
 
+// The gesture between a click and a drag: a press on the handle that the hand
+// does not hold quite still. The browser calls anything past about four pixels
+// a drag and then sends no `click` at all, so this used to hold the block, open
+// nothing, and take the handle away with it.
+await page.locator('.body p', { hasText: 'bravo' }).first().hover();
+await page.waitForTimeout(200);
+const nudge = await page.locator('.block-handle').boundingBox();
+const nudgeX = nudge.x + nudge.width / 2;
+const nudgeY = nudge.y + nudge.height / 2;
+await page.mouse.move(nudgeX, nudgeY);
+await page.mouse.down();
+await page.mouse.move(nudgeX + 5, nudgeY + 5, { steps: 3 });
+await page.mouse.move(nudgeX, nudgeY, { steps: 3 });
+await page.mouse.up();
+await page.waitForTimeout(450);
+check('a press that wobbles is still a press', await page.locator('.block-menu').count(), 1);
+check(
+  'and the handle is still there afterwards',
+  await page.locator('.block-gutter.is-shown').count(),
+  1,
+);
+check('and it moved nothing', await blockBody(), ['alpha', 'bravo', 'bravo', 'charlie']);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+
 // The one gesture no unit test can stand in for. HTML5 drag is also the thing
 // that breaks silently — a `preventDefault` on mousedown anywhere in the gutter
 // stops the browser starting a drag at all, and every other check here passes
@@ -1411,6 +1555,26 @@ await page.locator('.body p', { hasText: 'alpha' }).first().hover();
 await page.waitForTimeout(200);
 const grip = await page.locator('.block-handle').boundingBox();
 const foot = await page.locator('.body h2').first().boundingBox();
+// What the pointer is holding is the other thing no unit test can see. The
+// browser will not say, so the call that hands it over is recorded on the way
+// past — the numbers are the whole of whether a block lifts from where it sits
+// or jumps sideways to meet the cursor.
+await page.evaluate(() => {
+  window.__drags = [];
+  const real = DataTransfer.prototype.setDragImage;
+  DataTransfer.prototype.setDragImage = function (el, x, y) {
+    const box = el.getBoundingClientRect();
+    window.__drags.push({
+      card: el.classList.contains('block-lift'),
+      fixed: getComputedStyle(el).position === 'fixed',
+      grabInside: x >= 0 && y >= 0 && x <= box.width && y <= box.height,
+      // A screen-high blank card was `.body`'s own min-height coming along
+      // with the classes that make the clone look like the page.
+      tall: box.height > 200,
+    });
+    return real.call(this, el, x, y);
+  };
+});
 await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
 await page.mouse.down();
 await page.mouse.move(grip.x + 6, grip.y + 6, { steps: 4 });
@@ -1423,9 +1587,203 @@ check(
   ),
   1,
 );
+check('and it is carried as a card, grabbed where the pointer took it', await page.evaluate(() => window.__drags), [
+  { card: true, fixed: true, grabInside: true, tall: false },
+]);
+// The states, not the opacities they fade to. Both of these are transitions,
+// and a drag holds the page in a nested loop long enough that reading the
+// animated value here is a coin toss — what the code decides is the class.
+check(
+  'the page is marked as having a hole where the block was',
+  await page.evaluate(() => document.querySelector('.editor-host').classList.contains('is-lifting')),
+  true,
+);
+// Its own handle would otherwise hang in the middle of the page beside a block
+// the pointer left two seconds ago.
+check(
+  'and the gutter gets out of the way of its own block',
+  await page.evaluate(() => document.querySelector('.block-gutter').classList.contains('is-lifting')),
+  true,
+);
 await page.mouse.up();
 await page.waitForTimeout(500);
 check('and dropping it moves it there', await blockBody(), ['bravo', 'bravo', 'charlie', 'alpha']);
+check(
+  'nothing of the drag is left standing',
+  await page.evaluate(() => ({
+    carriers: document.querySelectorAll('.block-lift').length,
+    dimmed: document.querySelector('.editor-host').classList.contains('is-lifting'),
+  })),
+  { carriers: 0, dimmed: false },
+);
+// No mousemove fires during a drag, so without the drop point the gutter is
+// still remembering a position that now holds somebody else's block.
+// Beside the block that was dropped, which is where the hand is. What this
+// catches is the gutter left behind where the drag began — half a page away,
+// and measured against a position that now holds somebody else's block.
+check(
+  'and the handle follows the block to where it landed',
+  await page.evaluate(() => {
+    const gutter = document.querySelector('.block-gutter').getBoundingClientRect();
+    const mid = gutter.top + gutter.height / 2;
+    const moved = [...document.querySelectorAll('.body > *')].find(
+      (el) => el.textContent.trim() === 'alpha',
+    );
+    if (!moved) return 'the dragged block is gone';
+    const box = moved.getBoundingClientRect();
+    return mid >= box.top - 2 && mid <= box.bottom + 2
+      ? true
+      : `handle at ${Math.round(mid)}, block at ${Math.round(box.top)}–${Math.round(box.bottom)}`;
+  }),
+  true,
+);
+
+// ---------------------------------------------------------- nested blocks
+/*
+  A nested item's handle belongs beside that item, not out at the measure.
+
+  It used to stay pinned where a top-level block's handle goes, so a
+  level-three bullet had its controls seventy-five pixels away with two other
+  rows of indent in between. Hovered by coordinate rather than by text, because
+  a nested `li` contains its children's text and matching on it picks the
+  parent — which is how this looked fine while it was broken.
+*/
+section('nested blocks');
+await freshPage('Indents');
+await page.keyboard.type('- level one');
+await page.keyboard.press('Enter');
+await page.keyboard.press('Tab');
+await page.keyboard.type('level two');
+await page.keyboard.press('Enter');
+await page.keyboard.press('Tab');
+await page.keyboard.type('level three');
+await page.keyboard.press('Enter');
+await page.keyboard.press('Shift+Tab');
+await page.keyboard.press('Shift+Tab');
+await page.keyboard.type('back out');
+await page.waitForTimeout(400);
+
+const handleAgainst = async (label) => {
+  const at = await page.evaluate((text) => {
+    const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === text);
+    const b = p.getBoundingClientRect();
+    return { x: Math.round(b.left) + 25, y: Math.round(b.top + b.height / 2) };
+  }, label);
+  await page.mouse.move(at.x, at.y);
+  await page.waitForTimeout(300);
+  return page.evaluate((text) => {
+    const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === text);
+    const li = p.closest('li');
+    const gutter = document.querySelector('.block-gutter').getBoundingClientRect();
+    const item = li.getBoundingClientRect();
+    const line = p.getBoundingClientRect();
+    return {
+      // Clear of the marker column, which runs from the list's edge to the item's.
+      clearsMarker: Math.round(gutter.right) <= Math.round(li.parentElement.getBoundingClientRect().left) + 1,
+      // No further from the item than the one indent the marker occupies. A
+      // range rather than a number: the gutter slides three pixels in as it
+      // arrives, so an exact figure is really a measurement of the animation.
+      adrift: item.left - gutter.right > 34,
+      // Level with the item's own first line.
+      onItsRow: Math.abs(gutter.top + gutter.height / 2 - (line.top + line.height / 2)) < 2,
+    };
+  }, label);
+};
+
+const BESIDE = { clearsMarker: true, adrift: false, onItsRow: true };
+check('a top-level bullet has its handle beside it', await handleAgainst('level one'), BESIDE);
+check('and so does one three levels in', await handleAgainst('level three'), BESIDE);
+check('and coming back out brings it back', await handleAgainst('back out'), BESIDE);
+
+// A task item is a checkbox and a wrapper before it reaches a paragraph, so
+// its own box starts above the line the handle should be level with.
+await freshPage('Tasks');
+await page.keyboard.type('[] a task');
+await page.waitForTimeout(400);
+check('a task item gets its handle on the same line as its text', await handleAgainst('a task'), BESIDE);
+
+/*
+  A list item is not carried by hand, and that is settled.
+
+  Dropping into a list has no good target: a point inside an item resolves to
+  the gap after it, so the first item has no slot above it, and items sit flush
+  so the indicator draws across the row above. `Alt+Shift` with an arrow is the
+  gesture that does work, and it is checked in the blocks section above.
+
+  Two checks rather than one. The attribute is the thing the stylesheet reads
+  to drop the grab cursor, and a real mouse drag is the thing that proves the
+  browser agrees — an attribute can be right while a stray `draggable`
+  somewhere else reopens the gesture.
+*/
+await freshPage('No dragging lists');
+for (const line of ['- one', 'two', 'three']) {
+  await page.keyboard.type(line);
+  if (line !== 'three') await page.keyboard.press('Enter');
+}
+await page.waitForTimeout(400);
+const itemAt = async (text) => {
+  const at = await page.evaluate((label) => {
+    const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === label);
+    const b = p.getBoundingClientRect();
+    return { x: Math.round(b.left) + 25, y: Math.round(b.top + b.height / 2) };
+  }, text);
+  await page.mouse.move(at.x, at.y);
+  await page.waitForTimeout(280);
+  return at;
+};
+
+await itemAt('three');
+check(
+  'a list item refuses to be picked up',
+  await page.locator('.block-handle').getAttribute('draggable'),
+  'false',
+);
+check(
+  'and says so before it is pressed, rather than after',
+  await page.evaluate(() => getComputedStyle(document.querySelector('.block-handle')).cursor),
+  'pointer',
+);
+
+const listOrder = async () => (await body().innerText()).split('\n').filter(Boolean);
+const grabItem = await page.locator('.block-handle').boundingBox();
+const target = await page.evaluate(() => {
+  const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === 'one');
+  const b = p.getBoundingClientRect();
+  return { x: Math.round(b.left) + 40, y: Math.round(b.top) + 2 };
+});
+await page.mouse.move(grabItem.x + grabItem.width / 2, grabItem.y + grabItem.height / 2);
+await page.mouse.down();
+await page.mouse.move(grabItem.x + 6, grabItem.y - 6, { steps: 4 });
+await page.mouse.move(target.x, target.y, { steps: 12 });
+await page.waitForTimeout(200);
+check(
+  'nothing goes into the air over a list',
+  await page.evaluate(() => ({
+    carriers: document.querySelectorAll('.block-lift').length,
+    dimmed: document.querySelector('.editor-host').classList.contains('is-lifting'),
+    indicator: document.querySelectorAll('.prosemirror-dropcursor-block, .ProseMirror-dropcursor').length,
+  })),
+  { carriers: 0, dimmed: false, indicator: 0 },
+);
+await page.mouse.up();
+await page.waitForTimeout(400);
+check('and the list is exactly as it was', await listOrder(), ['one', 'two', 'three']);
+
+// Everything the handle does that is not carrying still works on an item.
+await itemAt('two');
+await page.locator('.block-handle').click();
+await page.waitForSelector('.block-menu', { timeout: 4000 });
+check('the handle still opens the block menu on a list item', await page.locator('.block-menu').count(), 1);
+await page.locator('.block-item', { hasText: 'Move up' }).first().click();
+await page.waitForTimeout(350);
+check('and the menu still moves it', await listOrder(), ['two', 'one', 'three']);
+await page.keyboard.press('Alt+Shift+ArrowDown');
+await page.waitForTimeout(350);
+check('as does the chord, which is the gesture that replaces the drag', await listOrder(), [
+  'one',
+  'two',
+  'three',
+]);
 
 // ------------------------------------------------------------------ export
 section('export');

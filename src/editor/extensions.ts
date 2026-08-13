@@ -1,3 +1,5 @@
+import Code from '@tiptap/extension-code';
+import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
@@ -45,6 +47,47 @@ import { SmartTypography } from './typography.ts';
  * nowhere to land — the paste handler in useDocumentEditor is what turns real
  * image *data* into an asset, and a remote URL is not data.
  */
+/**
+ * The marks that do not survive an Enter.
+ *
+ * Tiptap keeps whatever was active at the split, which is what a word processor
+ * does and what these three should not: a highlight, a code span and a link all
+ * describe a particular piece of text rather than a way of writing, so carrying
+ * them means the next block starts already painted, already monospaced or
+ * already pointing somewhere. Bold and italic are left alone — those really do
+ * usually continue onto the next line. The fourth is Highlight.ts, which sets
+ * the same flag on itself.
+ *
+ * They come out of the StarterKit and go back in extended, because
+ * `keepOnSplit` is a property of the extension rather than one of its options
+ * and there is no way to reach a kit's children to change it.
+ */
+const LEAVE_BEHIND = [
+  Code.extend({ keepOnSplit: false }),
+  /**
+   * `openOnClick` is off because opening a link is not the editor's decision
+   * to make — see the click handler in useDocumentEditor, which routes
+   * through the shell so the URL is checked in Rust before anything opens.
+   *
+   * `linkOnPaste` is on: pasting a URL over a selection makes that selection
+   * the link, which is the one thing everybody already knows how to do and
+   * would otherwise have to be taught here.
+   *
+   * Nothing is fetched to decorate a link. When a browser is the source the
+   * title is already on the clipboard as `<a href=…>Title</a>` and arrives
+   * through the ordinary HTML paste; when it is not, the URL stands as
+   * itself. See src/core/links.ts.
+   */
+  Link.extend({ keepOnSplit: false }).configure({
+    openOnClick: false,
+    linkOnPaste: true,
+    autolink: true,
+    protocols: ['mailto'],
+    defaultProtocol: 'https',
+    HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: null },
+  }),
+];
+
 export const extensions = [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
@@ -55,33 +98,15 @@ export const extensions = [
     // colouring it would mean shipping a grammar for every language you might
     // paste, and getting it wrong in the ones we did not ship.
     codeBlock: { exitOnTripleEnter: true, exitOnArrowDown: true },
-    /**
-     * `openOnClick` is off because opening a link is not the editor's decision
-     * to make — see the click handler in useDocumentEditor, which routes
-     * through the shell so the URL is checked in Rust before anything opens.
-     *
-     * `linkOnPaste` is on: pasting a URL over a selection makes that selection
-     * the link, which is the one thing everybody already knows how to do and
-     * would otherwise have to be taught here.
-     *
-     * Nothing is fetched to decorate a link. When a browser is the source the
-     * title is already on the clipboard as `<a href=…>Title</a>` and arrives
-     * through the ordinary HTML paste; when it is not, the URL stands as
-     * itself. See src/core/links.ts.
-     */
-    link: {
-      openOnClick: false,
-      linkOnPaste: true,
-      autolink: true,
-      protocols: ['mailto'],
-      defaultProtocol: 'https',
-      HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: null },
-    },
+    // Both taken out of the kit and put back below, extended. See LEAVE_BEHIND.
+    code: false,
+    link: false,
     underline: false,
     trailingNode: { node: 'paragraph' },
     dropcursor: { width: 2, color: 'var(--accent)' },
     undoRedo: { depth: 300, newGroupDelay: 400 },
   }),
+  ...LEAVE_BEHIND,
   Shortcuts,
   TaskList,
   TaskItem.configure({ nested: true }),

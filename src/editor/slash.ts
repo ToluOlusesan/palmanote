@@ -47,7 +47,7 @@ interface SlashState {
   dismissed: { from: number; to: number } | null;
 }
 
-export const slashKey = new PluginKey<SlashState>('springboardSlash');
+export const slashKey = new PluginKey<SlashState>('palmanoteSlash');
 
 /**
  * `/` or a held selection opens the menu.
@@ -66,7 +66,7 @@ export const slashKey = new PluginKey<SlashState>('springboardSlash');
  * the twenty lines below.
  */
 export const Slash = Extension.create({
-  name: 'springboardSlash',
+  name: 'palmanoteSlash',
   // Above the list extensions, whose Enter and Tab would otherwise win.
   priority: 1100,
 

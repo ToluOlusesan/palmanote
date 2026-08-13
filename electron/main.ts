@@ -13,6 +13,23 @@ import type { WriteExportRequest } from '../src/data/bridge.ts';
 
 const DEV_SERVER = process.env.VITE_DEV_SERVER_URL;
 const WINDOW_STATE_FILE = 'window-state.json';
+
+/*
+  The library lives where it has always lived.
+
+  Electron derives `userData` from the application's name, so renaming the app
+  to PalmaNote would have silently pointed it at an empty `%APPDATA%/PalmaNote`
+  and left every page behind in the old folder — an app that launches perfectly
+  and has forgotten everything. The folder is an address, not a title; the name
+  on it is history rather than identity, and it stays put so that an existing
+  install keeps its writing. Set before anything reads a path, because
+  `app.getPath` is consulted the moment a window is built.
+
+  It has to be spelled out rather than left to default even in development,
+  where the name comes from package.json's `name` instead: that is also still
+  `springboard`, and the two agreeing by accident is not the same as agreeing.
+*/
+app.setPath('userData', join(app.getPath('appData'), 'Springboard'));
 /** Nightly, and once shortly after launch so a machine that is never left on still gets one. */
 const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -146,7 +163,7 @@ function registerHandlers(): void {
       const single = request.files[0];
       const chosen = await dialog.showSaveDialog(mainWindow, {
         title: 'Export',
-        defaultPath: join(app.getPath('documents'), single?.path ?? 'springboard'),
+        defaultPath: join(app.getPath('documents'), single?.path ?? 'palmanote'),
       });
       if (chosen.canceled || !chosen.filePath) return { written: 0, location: null, cancelled: true };
       writeOne(chosen.filePath, single!);
@@ -249,7 +266,7 @@ if (!app.requestSingleInstanceLock()) {
       // Without a database there is nothing to show, and a window that never
       // appears is the worst way to say so.
       dialog.showErrorBox(
-        'Springboard cannot open its library',
+        'PalmaNote cannot open its library',
         `${String(error)}
 
 The database lives at

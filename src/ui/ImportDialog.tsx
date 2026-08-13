@@ -11,7 +11,7 @@ type Where = 'root' | 'inside';
 /**
  * The way in.
  *
- * Springboard could leave five ways and arrive none, which made the escape
+ * PalmaNote could leave five ways and arrive none, which made the escape
  * hatch one-directional. Markdown, plain text and our own export bundle come
  * back exactly as they left; .docx arrives through the same schema filter as
  * a paste, so a Word file lands as prose rather than as Word's idea of prose.
@@ -204,8 +204,8 @@ export function ImportDialog({
         <fieldset className="field">
           <legend>What to read</legend>
           <p className="dialog-body">
-            Markdown, plain text, Word documents, and Springboard&rsquo;s own{' '}
-            <code>springboard-export.json</code>. A folder keeps its shape: nested directories
+            Markdown, plain text, Word documents, and PalmaNote&rsquo;s own{' '}
+            <code>palmanote-export.json</code>. A folder keeps its shape: nested directories
             become nested pages.
           </p>
           <div className="dialog-actions">
@@ -245,7 +245,7 @@ export function ImportDialog({
           <fieldset className="field">
             <legend>Read alongside</legend>
             <p className="dialog-body">
-              Open a PDF here in Springboard — research to read beside the writing. It is not
+              Open a PDF here in PalmaNote — research to read beside the writing. It is not
               brought into the library and nothing is converted.
             </p>
             <div className="dialog-actions">
@@ -272,7 +272,7 @@ export function ImportDialog({
             <legend>Or go back</legend>
             <p className="dialog-body">
               Open one of the nightly snapshots from your Documents folder. The library you have
-              now is set aside first, and Springboard restarts.
+              now is set aside first, and PalmaNote restarts.
             </p>
             <div className="dialog-actions">
               <button

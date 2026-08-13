@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Springboard",
+  "productName": "PalmaNote",
   "version": "0.1.0",
   "identifier": "com.springboard.app",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Springboard",
+        "title": "PalmaNote",
         "width": 1180,
         "height": 820,
         "minWidth": 720,
@@ -41,7 +41,7 @@
       "nsis": {
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
-        "startMenuFolder": "Springboard"
+        "startMenuFolder": "PalmaNote"
       }
     }
   }

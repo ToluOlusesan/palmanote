@@ -13,14 +13,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-import type { SpringboardBridge, WindowState, WriteExportRequest } from './bridge.ts';
+import type { PalmaNoteBridge, WindowState, WriteExportRequest } from './bridge.ts';
 
 /** Tauri injects this before any of our code runs. */
 export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-export function createTauriBridge(): SpringboardBridge {
+export function createTauriBridge(): PalmaNoteBridge {
   return {
     platform: 'win32',
     dataDirectory: '',

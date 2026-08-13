@@ -91,7 +91,7 @@ export const Image = Node.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
-        key: new PluginKey('springboardImageSrc'),
+        key: new PluginKey('palmanoteImageSrc'),
         view: (view) => {
           const fill = () => resolveAssetImages(view.dom);
           fill();

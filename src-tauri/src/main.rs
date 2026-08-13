@@ -183,7 +183,7 @@ fn extension_for(mime: &str) -> &'static str {
 #[cfg(windows)]
 #[tauri::command]
 fn copy_images(app: Db<'_>, ids: Vec<String>) -> Result<usize, String> {
-    let directory = std::env::temp_dir().join("springboard-clipboard");
+    let directory = std::env::temp_dir().join("palmanote-clipboard");
     let _ = fs::remove_dir_all(&directory);
     fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
 
@@ -192,7 +192,7 @@ fn copy_images(app: Db<'_>, ids: Vec<String>) -> Result<usize, String> {
         // An asset that has gone is skipped rather than faked: better five
         // files than four files and an empty one.
         let Some((mime, bytes)) = app.store.asset_bytes(id)? else { continue };
-        let path = directory.join(format!("springboard-{}.{}", index + 1, extension_for(&mime)));
+        let path = directory.join(format!("palmanote-{}.{}", index + 1, extension_for(&mime)));
         fs::write(&path, bytes).map_err(|e| e.to_string())?;
         paths.push(path);
     }
@@ -384,7 +384,7 @@ async fn restore_snapshot(app: tauri::AppHandle, window: WebviewWindow) -> Resul
         .file()
         .set_title("Open a snapshot")
         .set_directory(&snapshots)
-        .add_filter("Springboard library", &["sqlite"])
+        .add_filter("PalmaNote library", &["sqlite"])
         .blocking_pick_file();
     let Some(source) = chosen.and_then(|p| p.into_path().ok()) else { return Ok(String::new()) };
 
@@ -394,7 +394,7 @@ async fn restore_snapshot(app: tauri::AppHandle, window: WebviewWindow) -> Resul
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let aside = data_directory.join(format!("springboard-replaced-{stamp}.sqlite"));
+    let aside = data_directory.join(format!("palmanote-replaced-{stamp}.sqlite"));
 
     if live.exists() {
         fs::copy(&live, &aside).map_err(|e| e.to_string())?;
@@ -590,7 +590,7 @@ fn main() {
                             data_directory.display()
                         ))
                         .kind(MessageDialogKind::Error)
-                        .title("Springboard cannot open its library")
+                        .title("PalmaNote cannot open its library")
                         .buttons(MessageDialogButtons::Ok)
                         .blocking_show();
                     std::process::exit(1);
@@ -648,5 +648,5 @@ fn main() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("Springboard failed to start");
+        .expect("PalmaNote failed to start");
 }

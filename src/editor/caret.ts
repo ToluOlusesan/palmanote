@@ -23,7 +23,7 @@ import type { EditorView } from '@tiptap/pm/view';
  * asked. Nothing scrolls the page now except the writer.
  */
 
-export const caretKey = new PluginKey('springboardCaret');
+export const caretKey = new PluginKey('palmanoteCaret');
 
 export interface CaretOptions {
   animatedCaret: boolean;
@@ -175,7 +175,7 @@ class CaretView {
 }
 
 export const Caret = Extension.create<CaretOptions>({
-  name: 'springboardCaret',
+  name: 'palmanoteCaret',
 
   addOptions() {
     return { animatedCaret: true };

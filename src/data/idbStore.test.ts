@@ -15,7 +15,7 @@ let counter = 0;
 
 /** Each test gets its own database so nothing leaks between them. */
 function fresh() {
-  return new IdbStore(`springboard-test-${counter++}`);
+  return new IdbStore(`palmanote-test-${counter++}`);
 }
 
 async function titles(store: IdbStore): Promise<string[]> {

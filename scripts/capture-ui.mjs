@@ -4,7 +4,7 @@
  *   npm run dev            # in one terminal
  *   npm run capture        # in another
  *
- * Writes `springboard-ui.svg` beside a `.png` of the same frame, so there is
+ * Writes `palmanote-ui.svg` beside a `.png` of the same frame, so there is
  * something to hold the vectors against. `--dark` / `--light` pick the theme,
  * `--size WxH` the window, `--out <path>` where it lands.
  *
@@ -32,8 +32,8 @@ const flag = (name, fallback) => {
 };
 
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const URL = process.env.SPRINGBOARD_URL ?? 'http://localhost:5273/';
-const OUT = flag('out', 'springboard-ui.svg').replace(/\.svg$/i, '');
+const URL = process.env.PALMANOTE_URL ?? 'http://localhost:5273/';
+const OUT = flag('out', 'palmanote-ui.svg').replace(/\.svg$/i, '');
 const DARK = !args.includes('--light');
 const [WIDTH, HEIGHT] = flag('size', '1400x900').split('x').map(Number);
 const STATE = flag('state', 'page');

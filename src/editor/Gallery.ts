@@ -186,7 +186,7 @@ export const Gallery = Node.create({
             const end = pos + current.nodeSize - 1;
             editor.view.dispatch(editor.view.state.tr.insert(end, image));
           } catch (error) {
-            console.warn('Springboard could not read that image.', error);
+            console.warn('PalmaNote could not read that image.', error);
           }
         })();
       });

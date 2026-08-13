@@ -44,8 +44,8 @@ export interface ManuscriptDetails {
   contact: string;
 }
 
-const BULLETS = 'springboard-bullets';
-const NUMBERS = 'springboard-numbers';
+const BULLETS = 'palmanote-bullets';
+const NUMBERS = 'palmanote-numbers';
 const LIST_STYLE = 'ListParagraph';
 
 /** Word's own styles for code, so an editor can restyle it in one go. */
@@ -70,7 +70,7 @@ const HIGHLIGHT_COLOURS: Record<HighlightTone, DocxHighlight> = {
   yellow: 'yellow',
   green: 'green',
   blue: 'cyan',
-  pink: 'magenta',
+  red: 'red',
 };
 
 /** Pictures, already read out of the library — see loadAssets in index.ts. */
@@ -112,7 +112,7 @@ export async function docxFromWalk(
   });
 
   const document = new Document({
-    creator: details.author || 'Springboard',
+    creator: details.author || 'PalmaNote',
     title: details.title || walk.title,
     numbering: { config: numbering() },
     styles: manuscript ? manuscriptStyles() : readingStyles(),

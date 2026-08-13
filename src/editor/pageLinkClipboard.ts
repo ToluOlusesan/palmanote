@@ -6,11 +6,11 @@
  *
  *   text/html   `<a data-page=… data-label=…>` — which is exactly what
  *               PageLink.parseHTML already looks for, so pasting inside
- *               Springboard produces a live link with no new code. The paste
+ *               PalmaNote produces a live link with no new code. The paste
  *               transform in useDocumentEditor strips style, class, id, lang
  *               and dir, and leaves data attributes alone.
  *   text/plain  A `springboard://page/<id>` URI. Honest outside the app —
- *               it says what it is and admits it needs Springboard to mean
+ *               it says what it is and admits it needs PalmaNote to mean
  *               anything — and recognised on the way back in, for the paste
  *               that arrives without HTML (Ctrl+Shift+V, a plain-text field,
  *               a note passed through somewhere else).

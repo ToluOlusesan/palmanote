@@ -9,11 +9,11 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 
-import type { SpringboardBridge, WindowState, WriteExportRequest } from '../src/data/bridge.ts';
+import type { PalmaNoteBridge, WindowState, WriteExportRequest } from '../src/data/bridge.ts';
 
-const api: SpringboardBridge = {
+const api: PalmaNoteBridge = {
   platform: process.platform,
-  dataDirectory: process.env.SPRINGBOARD_DATA_DIR ?? '',
+  dataDirectory: process.env.PALMANOTE_DATA_DIR ?? '',
 
   listDocuments: () => ipcRenderer.invoke('db:listDocuments'),
   getDocument: (id) => ipcRenderer.invoke('db:getDocument', id),
@@ -54,4 +54,4 @@ const api: SpringboardBridge = {
   close: () => ipcRenderer.send('window:close'),
 };
 
-contextBridge.exposeInMainWorld('springboard', api);
+contextBridge.exposeInMainWorld('palmanote', api);

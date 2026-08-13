@@ -4,7 +4,7 @@
  *
  * Every method is async and every argument and return value is structured-clone
  * safe, because in the Electron build this becomes the preload IPC contract
- * verbatim: renderer calls `window.springboard.<method>()`, main process runs
+ * verbatim: renderer calls `window.palmanote.<method>()`, main process runs
  * better-sqlite3 against schema.sql. Keeping that constraint now means the port
  * touches one file.
  */
@@ -43,7 +43,7 @@ export interface SaveContentInput {
   snapshot?: boolean;
 }
 
-export interface SpringboardStore {
+export interface PalmaNoteStore {
   /** Metadata for every document, archived included. The tree loads this once. */
   listDocuments(): Promise<DocumentMeta[]>;
   getDocument(id: string): Promise<DocumentRecord | null>;

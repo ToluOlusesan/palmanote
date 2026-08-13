@@ -23,7 +23,7 @@ import type { CreateDocumentInput, MoveDocumentInput } from '../data/store.ts';
 import { wordCountOf } from '../core/pmText.ts';
 import { recoverPending } from './pending.ts';
 
-const UI_STATE_KEY = 'springboard:ui';
+const UI_STATE_KEY = 'palmanote:ui';
 
 /** How far back you can go. Long enough to never notice, short enough to bound. */
 const NAV_LIMIT = 100;

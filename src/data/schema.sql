@@ -1,4 +1,4 @@
--- Canonical Springboard schema.
+-- Canonical PalmaNote schema.
 --
 -- Not executed by the web build (IndexedDB stands in for now — see idbStore.ts),
 -- but kept here as the single source of truth for row shapes so the Electron

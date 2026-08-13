@@ -69,7 +69,7 @@ export const GUIDE: GuideSection[] = [
     id: 'highlights',
     title: 'Highlights',
     intro:
-      'Four highlights: yellow, green, blue and pink. Reach them from the highlighter in the page bar, or from the bar that appears when you select text.',
+      'Four highlights: yellow, green, blue and red. Reach them from the highlighter in the page bar, or from the bar that appears when you select text.',
     rows: [
       { keys: 'Ctrl + Shift + H', what: 'Yellow, straight away' },
       { what: 'Picking the colour a run already has takes it off again.' },
@@ -113,7 +113,7 @@ export const GUIDE: GuideSection[] = [
     id: 'blocks',
     title: 'Moving blocks',
     intro:
-      'Every paragraph, heading, bullet, quote and picture is a block you can pick up. Rest the pointer anywhere on the page and two controls appear in the margin beside whichever block you are over.',
+      'Every paragraph, heading, bullet, quote and picture is a block. Rest the pointer anywhere on the page and two controls appear in the margin beside whichever block you are over.',
     rows: [
       { keys: 'drag the ⠿ handle', what: 'Move the block anywhere on the page — a line shows where it will land' },
       { keys: 'click the ⠿ handle', what: 'Hold the block and open its menu: duplicate, move, delete, turn into' },
@@ -123,6 +123,9 @@ export const GUIDE: GuideSection[] = [
       { what: 'Each bullet is its own block, not the list — so one point moves without the ones around it.' },
       { what: 'A quote moves as one thing, with every paragraph inside it.' },
       { what: 'A block only ever moves among its own neighbours: the last bullet in a list will not climb out of it.' },
+      {
+        what: 'List items are moved with the arrows rather than by dragging. Everything else the handle does still works on a bullet — it just is not picked up.',
+      },
     ],
     aside:
       'The handle is the only place the app asks you to reach outside the writing, so it stays out of it — the column keeps its width, the controls sit in the margin, and they disappear the moment you start typing. Everything here also has a chord, because a control you have to find with the mouse is a slow control once you know what it does.',
@@ -256,7 +259,7 @@ export const GUIDE: GuideSection[] = [
       { what: 'Everything — the markdown tree, the picture files, and the complete raw database.' },
     ],
     aside:
-      '“Everything” is the escape hatch and sits with the rest rather than hidden away. Someone with that folder and no copy of Springboard can rebuild what was here, by hand if they have to. On the desktop app a copy of the whole library is also written to your Documents folder each night, and the last thirty are kept.',
+      '“Everything” is the escape hatch and sits with the rest rather than hidden away. Someone with that folder and no copy of PalmaNote can rebuild what was here, by hand if they have to. On the desktop app a copy of the whole library is also written to your Documents folder each night, and the last thirty are kept.',
   },
   {
     id: 'settings',

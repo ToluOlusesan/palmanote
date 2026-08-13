@@ -13,7 +13,7 @@ import type { DocumentMeta } from '../core/types.ts';
  * touched, so nothing here reaches undo, autosave or export.
  */
 
-export const pageLinkKey = new PluginKey('springboardPageLink');
+export const pageLinkKey = new PluginKey('palmanotePageLink');
 
 export interface PageLinkContext {
   /** Current metadata for a page, or undefined once it is gone. */
@@ -27,7 +27,7 @@ export interface PageLinkContext {
  * ends up rendering its stale stored label instead of the live title.
  */
 export const PageLinkView = Extension.create<PageLinkContext>({
-  name: 'springboardPageLinkView',
+  name: 'palmanotePageLinkView',
 
   addOptions() {
     return { lookup: () => undefined, open: () => {} };

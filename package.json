@@ -31,6 +31,8 @@
     "@phosphor-icons/react": "^2.1.10",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/cli": "^2.11.4",
+    "@tiptap/extension-code": "^3.29.2",
+    "@tiptap/extension-link": "^3.29.2",
     "@tiptap/extension-placeholder": "^3.29.2",
     "@tiptap/extension-task-item": "^3.29.2",
     "@tiptap/extension-task-list": "^3.29.2",
@@ -56,11 +58,11 @@
   "main": "dist-electron/electron/main.js",
   "description": "A writing app for one person.",
   "author": {
-    "name": "Springboard"
+    "name": "PalmaNote"
   },
   "build": {
     "appId": "com.springboard.app",
-    "productName": "Springboard",
+    "productName": "PalmaNote",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -92,7 +94,7 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Springboard"
+      "shortcutName": "PalmaNote"
     },
     "publish": null,
     "compression": "maximum",

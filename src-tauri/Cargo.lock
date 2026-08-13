@@ -2381,6 +2381,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "palmanote"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "url",
+ "uuid",
+ "webview2-com",
+ "windows",
+]
+
+[[package]]
 name = "pango"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3229,24 +3247,6 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps",
-]
-
-[[package]]
-name = "springboard"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "rusqlite",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "url",
- "uuid",
- "webview2-com",
- "windows",
 ]
 
 [[package]]

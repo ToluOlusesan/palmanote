@@ -1,5 +1,5 @@
 /**
- * better-sqlite3 implementation of SpringboardStore, main process only.
+ * better-sqlite3 implementation of PalmaNoteStore, main process only.
  *
  * Same row shapes and same behaviour as the IndexedDB one — the tests in
  * src/data/idbStore.test.ts describe both. Differences are only where SQL can
@@ -28,7 +28,7 @@ import type {
   CreateDocumentInput,
   MoveDocumentInput,
   SaveContentInput,
-  SpringboardStore,
+  PalmaNoteStore,
 } from '../src/data/store.ts';
 
 const REVISION_COALESCE_MS = 2 * 60 * 1000;
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS assets (
 const META_COLUMNS =
   'id, parent_id, position, title, kind, favorite, icon, cover, cover_offset, word_count, created_at, updated_at, archived_at';
 
-export class SqliteStore implements SpringboardStore {
+export class SqliteStore implements PalmaNoteStore {
   private readonly db: Database.Database;
 
   constructor(private readonly file: string) {

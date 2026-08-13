@@ -11,7 +11,7 @@ import {
 
 import { useLibrary } from './library.tsx';
 
-const TABS_KEY = 'springboard:tabs';
+const TABS_KEY = 'palmanote:tabs';
 const REOPEN_LIMIT = 20;
 /** How long a pinned tab stays armed after the first Ctrl+W. */
 const PIN_CONFIRM_MS = 1500;

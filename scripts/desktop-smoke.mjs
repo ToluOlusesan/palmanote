@@ -3,7 +3,7 @@
  * drives it over the Chrome DevTools protocol.
  *
  *   npm run desktop:build && npm run desktop:smoke
- *   SPRINGBOARD_EXE=path/to/Springboard.exe npm run desktop:smoke
+ *   PALMANOTE_EXE=path/to/PalmaNote.exe npm run desktop:smoke
  *
  * The counterpart to scripts/smoke.mjs. That one covers the editor; this one
  * covers what a browser cannot — the native window and the SQLite store — and
@@ -20,8 +20,8 @@ const PORT = 9333;
 const SHOT = process.env.PROBE_OUT ?? 'desktop-smoke.png';
 
 const CANDIDATES = [
-  process.env.SPRINGBOARD_EXE,
-  'src-tauri/target/release/springboard.exe',
+  process.env.PALMANOTE_EXE,
+  'src-tauri/target/release/palmanote.exe',
 ].filter(Boolean);
 
 const exe = CANDIDATES.find((path) => existsSync(path));

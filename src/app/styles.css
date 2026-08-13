@@ -1,5 +1,5 @@
 /*
-  Springboard.
+  PalmaNote.
 
   A sidebar that is part of the window rather than a panel in it, and a single
   white card floating on the window's own grey. Chrome sits in the strip above
@@ -207,7 +207,7 @@ button {
 
 /* Chrome recedes; the mark in the sidebar is a wordmark, not a button. The
    greeting overrides this — that one is the loudest thing on its screen. */
-.springmark {
+.palmamark {
   flex: none;
   color: var(--muted);
 }
@@ -1996,6 +1996,10 @@ button.crumb:hover {
 */
 .block-gutter {
   position: absolute;
+  /* Where a top-level block's column starts, and what stands in until the
+     first measurement. BlockGutter.tsx sets `left` per block from there on, so
+     the handle steps in with a list's indent instead of staying pinned out
+     here while the bullet it belongs to is three levels away. */
   left: 2rem;
   margin-left: -2.55rem;
   display: flex;
@@ -2012,6 +2016,19 @@ button.crumb:hover {
 .block-gutter.is-shown {
   opacity: 1;
   pointer-events: auto;
+}
+
+/*
+  Out of the way while its block is in the air.
+
+  It stayed parked beside the source for the length of a drag, so a `+` and a
+  handle hung in the middle of the page pointing at a block that was no longer
+  under the pointer. Faded rather than unmounted, and its pointer events left
+  alone: the handle is the drag source, and taking either away mid-gesture is
+  how a drag gets cancelled.
+*/
+.block-gutter.is-lifting {
+  opacity: 0;
 }
 
 .block-btn {
@@ -2033,12 +2050,16 @@ button.crumb:hover {
 }
 
 /* The one control in the app whose cursor says what it is for before it is
-   pressed, because dragging is the thing about it nobody would guess. */
-.block-handle {
+   pressed, because dragging is the thing about it nobody would guess.
+
+   Only when there is something to guess: on a list item the handle opens the
+   menu and nothing else, and a hand-shaped cursor over a control that will not
+   be picked up is a promise the app does not keep. */
+.block-handle[draggable='true'] {
   cursor: grab;
 }
 
-.block-handle:active {
+.block-handle[draggable='true']:active {
   cursor: grabbing;
 }
 
@@ -2061,6 +2082,55 @@ button.crumb:hover {
    would otherwise be the one part of a held bullet that was not held. */
 .body li.ProseMirror-selectednode::marker {
   color: var(--accent);
+}
+
+/*
+  A block that has left the page.
+
+  Held and in-the-air are two different states and looked identical until now:
+  a click on the handle washes the block, and so did a drag, so the only sign
+  that anything was moving was a ghost the app did not draw. Faded, the page
+  reads as having a hole where the block was — which is the question being
+  asked during a drag, and the answer that makes the drop indicator mean
+  something.
+*/
+.editor-host.is-lifting .body .ProseMirror-selectednode {
+  opacity: 0.32;
+}
+
+/*
+  The picture that leaves with the pointer.
+
+  A card rather than bare prose: out of the page, a block should look like an
+  object being carried instead of like a paragraph that has come loose.
+
+  Only what it looks like is here. Where it sits is set from src/ui/blockLift.ts,
+  because this element wears the editor's own classes and a stylesheet cannot
+  win against what prosemirror-view injects at runtime — the reason is written
+  out there.
+*/
+.block-lift {
+  background: var(--page);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 14%), 0 1px 3px rgb(0 0 0 / 8%);
+}
+
+:root[data-theme='dark'] .block-lift {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 40%), 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+/*
+  Where it would land.
+
+  prosemirror-dropcursor draws a bare div and sets only its colour, which at two
+  pixels across the whole measure is a scene break — the app has one of those and
+  it looks like this. Rounded ends and a little bloom of the same colour are what
+  separate an insertion point from a rule.
+*/
+.ProseMirror-dropcursor,
+.prosemirror-dropcursor-block {
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--held);
 }
 
 /* -------------------------------------------------------------- block menu */
@@ -2233,7 +2303,7 @@ button.crumb:hover {
   --tone-yellow: #ffe95c;
   --tone-green: #a6f083;
   --tone-blue: #86ddff;
-  --tone-pink: #ffa3ce;
+  --tone-red: #ff9b93;
 }
 
 /*
@@ -2247,7 +2317,7 @@ button.crumb:hover {
   --tone-yellow: #7d6510;
   --tone-green: #2e6b28;
   --tone-blue: #12657f;
-  --tone-pink: #a5306e;
+  --tone-red: #9c3630;
 }
 
 .tone-yellow .tone-swatch,
@@ -2265,10 +2335,10 @@ mark[data-tone='green'] {
 mark[data-tone='blue'] {
   background: var(--tone-blue);
 }
-.tone-pink .tone-swatch,
-.tone-pink .bubble-tone-bar,
-mark[data-tone='pink'] {
-  background: var(--tone-pink);
+.tone-red .tone-swatch,
+.tone-red .bubble-tone-bar,
+mark[data-tone='red'] {
+  background: var(--tone-red);
 }
 
 .body mark {
@@ -3379,11 +3449,18 @@ mark[data-tone='pink'] {
   transform: translateY(-50%) translateX(0);
 }
 
-/* The wash under a held block, so picking one up is not an instant repaint. */
-.body .ProseMirror-selectednode:where(p, h1, h2, h3, li, blockquote, pre, ul, ol) {
+/*
+  The wash under a held block, so picking one up is not an instant repaint, and
+  the fade as it leaves the page, so a lift is not a blink.
+
+  Unfiltered, unlike the rule that draws the wash: a picture and a scene break
+  are lifted the same way a paragraph is, and neither is in that rule's list.
+*/
+.body .ProseMirror-selectednode {
   transition:
     background-color var(--quick) var(--glide),
-    box-shadow var(--quick) var(--glide);
+    box-shadow var(--quick) var(--glide),
+    opacity var(--quick) var(--glide);
 }
 
 .bubble-item:active,

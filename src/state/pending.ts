@@ -12,7 +12,7 @@ import { wordCountOf } from '../core/pmText.ts';
 import type { PMDoc } from '../core/types.ts';
 import { store } from '../data/index.ts';
 
-const PENDING_KEY = 'springboard:pending';
+const PENDING_KEY = 'palmanote:pending';
 
 interface PendingWrite {
   id: string;

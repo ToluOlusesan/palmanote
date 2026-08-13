@@ -392,7 +392,7 @@ export function SlashMenu({ editor }: { editor: Editor | null }) {
     chosenImage = (file) => {
       void storeImage(file)
         .then((stored) => editor.chain().focus().insertImage({ id: stored.id, alt: file.name }).run())
-        .catch((error: unknown) => console.warn('Springboard could not read that image.', error));
+        .catch((error: unknown) => console.warn('PalmaNote could not read that image.', error));
     };
     return () => {
       chosenImage = null;

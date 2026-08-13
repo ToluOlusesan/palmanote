@@ -33,8 +33,9 @@ import type { Editor } from '@tiptap/react';
  * The node types that are a block in their own right despite being nested.
  *
  * A list is one node holding six items, but nobody thinks of a bulleted list as
- * one thing — they think of six bullets, each of which can be dragged
- * somewhere else. So an item is a block, and the list that holds it is not.
+ * one thing — they think of six bullets, each of which is its own line to be
+ * moved, retyped or thrown away. So an item is a block, and the list that holds
+ * it is not.
  */
 const ITEMS = new Set(['listItem', 'taskItem']);
 
@@ -44,6 +45,27 @@ export interface BlockInfo {
   node: PMNode;
   /** Depth in the document; 1 is a direct child of the doc. */
   depth: number;
+}
+
+/**
+ * Whether a block can be picked up and carried by pointer.
+ *
+ * List items cannot, and this is settled rather than pending. Dropping into a
+ * list is a question with no good answer: ProseMirror resolves a point inside
+ * an item to the gap *after* it, so the first item has no reachable slot above
+ * it, and items sit flush against each other, so the indicator that says where
+ * a block will land has nowhere to draw but across the text of the row above.
+ * Both follow from a list being one node rather than a run of siblings, and
+ * neither is fixable without replacing drop targeting wholesale.
+ *
+ * Nothing is lost that a writer had. `Alt+Shift` with an arrow moves an item
+ * among its siblings, exactly and every time, and it is the same key that moves
+ * a paragraph — so the honest offer is one gesture that works rather than two
+ * where the interesting one misleads. The handle still opens the block menu on
+ * a list item, and every verb in that menu still applies to it.
+ */
+export function isCarryable(block: BlockInfo): boolean {
+  return !ITEMS.has(block.node.type.name);
 }
 
 /** The far side of a block. */

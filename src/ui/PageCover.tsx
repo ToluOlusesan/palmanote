@@ -12,7 +12,7 @@ import { useLibrary } from '../state/library.tsx';
  * prose uses, stored the same way, deduplicated by the same hash. Using a
  * picture that is already in the page as its cover therefore costs nothing,
  * and the sweep in `collectAssets` knows to count this reference; see
- * `SpringboardStore.setCover`.
+ * `PalmaNoteStore.setCover`.
  *
  * It is deliberately not a block in the document. A cover belongs to the page
  * rather than to a position in it: it survives the writer selecting everything
@@ -71,7 +71,7 @@ function useChooseCover(doc: DocumentMeta): () => void {
         // The old offset was a fact about a different image.
         await library.setCover(doc.id, stored.id, 50);
       } catch (error) {
-        console.warn('Springboard could not read that image.', error);
+        console.warn('PalmaNote could not read that image.', error);
       }
     })();
   }, [doc.id, library]);

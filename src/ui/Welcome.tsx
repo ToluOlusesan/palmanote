@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLibrary } from '../state/library.tsx';
 import { useTabs } from '../state/tabs.tsx';
 import { useWritingSettings, whatToCallYou } from '../state/writingSettings.ts';
-import { SpringMark } from './SpringMark.tsx';
+import { PalmaMark } from './PalmaMark.tsx';
 import { project, story, thoughts, toDoList, type TemplateNode } from './templates.ts';
 
 interface Start {
@@ -76,7 +76,7 @@ export function Welcome({ onLeave }: { onLeave: () => void }) {
     <div className="welcome">
       <div className="welcome-inner">
         <h1 className="welcome-greeting">
-          <SpringMark size={34} className="welcome-mark" />
+          <PalmaMark size={34} className="welcome-mark" />
           <span>Hey {whatToCallYou(settings.name)},</span>
         </h1>
         <p className="welcome-question">What do you want to do today?</p>

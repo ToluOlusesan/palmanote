@@ -9,7 +9,7 @@
 
 import { buildTree, findNode, flattenAll, type TreeNode } from '../core/tree.ts';
 import type { DocumentMeta, DocumentRecord, PMDoc, PMNode } from '../core/types.ts';
-import type { SpringboardStore } from '../data/store.ts';
+import type { PalmaNoteStore } from '../data/store.ts';
 
 export type ExportScope =
   | { kind: 'all' }
@@ -32,7 +32,7 @@ export interface Walk {
   totalWords: number;
 }
 
-export async function walkScope(store: SpringboardStore, scope: ExportScope): Promise<Walk> {
+export async function walkScope(store: PalmaNoteStore, scope: ExportScope): Promise<Walk> {
   const all = await store.listDocuments();
   const tree = buildTree(all);
 
@@ -40,7 +40,7 @@ export async function walkScope(store: SpringboardStore, scope: ExportScope): Pr
   let title: string;
   if (scope.kind === 'all') {
     roots = tree;
-    title = 'Springboard';
+    title = 'PalmaNote';
   } else {
     const node = findNode(tree, scope.kind === 'subtree' ? scope.rootId : scope.id);
     if (!node) throw new Error('That page is no longer in the tree.');

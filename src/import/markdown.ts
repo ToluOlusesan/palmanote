@@ -1,7 +1,7 @@
 /**
  * Markdown to ProseMirror JSON — the mirror of `src/export/markdown.ts`.
  *
- * Deliberately small: it understands exactly what Springboard can represent
+ * Deliberately small: it understands exactly what PalmaNote can represent
  * and quietly flattens everything else to prose. A parser that handled all of
  * CommonMark would produce nodes this schema has no place for, and the writer
  * would find them missing later. Better to be honest at the door.
