@@ -280,3 +280,85 @@ test('a link is a real Word hyperlink with a relationship behind it', async () =
   assert.match(rels, /https:\/\/example\.com\/issues\/7/);
   assert.match(rels, /TargetMode="External"/);
 });
+
+/**
+ * A table has to arrive as a table.
+ *
+ * The failure this guards is the one the whole file is about: something that
+ * looks correct in the window and is a picture of a table in the file — tab
+ * stops, or a paragraph per row. `<w:tbl>` is what makes it sortable, what
+ * lets a row be added, and what survives the trip through Google Docs.
+ */
+const TABLE_WALK: Walk = {
+  title: 'Rates',
+  totalWords: 12,
+  documents: [
+    entry('Rates', {
+      type: 'doc',
+      content: [
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [
+                {
+                  type: 'tableHeader',
+                  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Band' }] }],
+                },
+                {
+                  type: 'tableHeader',
+                  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Rate' }] }],
+                },
+              ],
+            },
+            {
+              type: 'tableRow',
+              content: [
+                {
+                  type: 'tableCell',
+                  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Basic' }] }],
+                },
+                {
+                  type: 'tableCell',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: '20%', marks: [{ type: 'bold' }] }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+  ],
+};
+
+test('a table is a real Word table, with a repeating header row', async () => {
+  const files = unzip(await docxFromWalk(TABLE_WALK, 'reading', DETAILS));
+  const document = files.get('word/document.xml')!;
+
+  assert.match(document, /<w:tbl>/, 'a table element, not a picture of one');
+  assert.equal((document.match(/<w:tr\b/g) ?? []).length, 2, 'two rows');
+  assert.equal((document.match(/<w:tc>/g) ?? []).length, 4, 'four cells');
+
+  // Word repeats a row marked this way at the top of every page the table runs
+  // onto, which is the whole reason a header row is a different node type.
+  assert.match(document, /<w:tblHeader\b/);
+  // Formatting inside a cell is ordinary formatting, so a bold rate is bold.
+  assert.match(document, /<w:b\b/);
+});
+
+test('a table brings its borders with it rather than borrowing them', async () => {
+  const files = unzip(await docxFromWalk(TABLE_WALK, 'reading', DETAILS));
+  const document = files.get('word/document.xml')!;
+
+  // Declared in the file, not left to whatever table style the reader's
+  // template happens to define — the same reason every other style here is
+  // written out. A borderless table is the default in a bare Word template.
+  assert.match(document, /<w:tblBorders>/);
+  assert.match(document, /w:insideH[^>]+w:val="single"/);
+});

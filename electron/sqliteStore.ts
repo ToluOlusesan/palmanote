@@ -12,9 +12,12 @@ import { randomUUID } from 'node:crypto';
 import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { accrueSeconds } from '../src/core/activity.ts';
 import { referencesTo } from '../src/core/backlinks.ts';
 import { keyBetween } from '../src/core/fracIndex.ts';
 import type {
+  ActivityDay,
+  StickyNote,
   AssetMeta,
   AssetRecord,
   Backlink,
@@ -27,6 +30,7 @@ import type {
 import type {
   CreateDocumentInput,
   MoveDocumentInput,
+  RecordActivityInput,
   SaveContentInput,
   PalmaNoteStore,
 } from '../src/data/store.ts';
@@ -49,6 +53,22 @@ interface DocumentRow {
   updated_at: number;
   archived_at: number | null;
   content?: string | null;
+}
+
+interface StickyRow {
+  id: string;
+  document_id: string;
+  text: string;
+  colour: StickyNote['colour'];
+  created_at: number;
+  updated_at: number;
+}
+
+interface ActivityRow {
+  day: string;
+  words: number;
+  seconds: number;
+  last_at: number;
 }
 
 function toMeta(row: DocumentRow): DocumentMeta {
@@ -110,6 +130,23 @@ CREATE TABLE IF NOT EXISTS assets (
   height     INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS activity (
+  day      TEXT PRIMARY KEY,
+  words    INTEGER NOT NULL DEFAULT 0,
+  seconds  INTEGER NOT NULL DEFAULT 0,
+  last_at  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sticky_notes (
+  id          TEXT PRIMARY KEY,
+  document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  text        TEXT    NOT NULL DEFAULT '',
+  colour      TEXT    NOT NULL,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sticky_notes_document ON sticky_notes (document_id);
 `;
 
 const META_COLUMNS =
@@ -298,6 +335,90 @@ export class SqliteStore implements PalmaNoteStore {
         content: row.content ? (JSON.parse(row.content) as PMDoc) : null,
         wordCount: row.word_count,
         createdAt: row.created_at,
+      }));
+  }
+
+  /**
+   * Read then write, wrapped in a transaction.
+   *
+   * The whole thing would go in one `ON CONFLICT DO UPDATE`, but the gap rule
+   * would then be written a second time in SQL and could drift from the one in
+   * core/activity.ts. better-sqlite3 is synchronous, so a transaction around a
+   * read and a write costs nothing and keeps a single definition of what
+   * counts as still writing.
+   */
+  async recordActivity({ day, words, at }: RecordActivityInput): Promise<ActivityDay> {
+    return this.db.transaction(() => {
+      const existing = this.db
+        .prepare<[string], ActivityRow>('SELECT * FROM activity WHERE day = ?')
+        .get(day);
+      const next: ActivityDay = existing
+        ? {
+            day,
+            words: existing.words + words,
+            seconds: existing.seconds + accrueSeconds(existing.last_at, at),
+            lastAt: at,
+          }
+        : { day, words, seconds: 0, lastAt: at };
+      this.db
+        .prepare(
+          `INSERT INTO activity (day, words, seconds, last_at) VALUES (?, ?, ?, ?)
+             ON CONFLICT(day) DO UPDATE SET
+               words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at`,
+        )
+        .run(next.day, next.words, next.seconds, next.lastAt);
+      return next;
+    })();
+  }
+
+  async listStickies(documentId: string): Promise<StickyNote[]> {
+    return this.db
+      .prepare<[string], StickyRow>(
+        'SELECT * FROM sticky_notes WHERE document_id = ? ORDER BY created_at',
+      )
+      .all(documentId)
+      .map((row) => ({
+        id: row.id,
+        documentId: row.document_id,
+        text: row.text,
+        colour: row.colour,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+  }
+
+  async putSticky(note: StickyNote): Promise<StickyNote> {
+    this.db
+      .prepare(
+        `INSERT INTO sticky_notes (id, document_id, text, colour, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             text = excluded.text, colour = excluded.colour, updated_at = excluded.updated_at`,
+      )
+      .run(
+        note.id,
+        note.documentId,
+        note.text,
+        note.colour,
+        note.createdAt,
+        note.updatedAt,
+      );
+    return note;
+  }
+
+  async deleteSticky(id: string): Promise<void> {
+    this.db.prepare('DELETE FROM sticky_notes WHERE id = ?').run(id);
+  }
+
+  async listActivity(sinceDay: string): Promise<ActivityDay[]> {
+    return this.db
+      .prepare<[string], ActivityRow>('SELECT * FROM activity WHERE day >= ? ORDER BY day')
+      .all(sinceDay)
+      .map((row) => ({
+        day: row.day,
+        words: row.words,
+        seconds: row.seconds,
+        lastAt: row.last_at,
       }));
   }
 

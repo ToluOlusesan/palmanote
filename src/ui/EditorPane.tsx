@@ -188,6 +188,7 @@ export function EditorPane({
         <BlockGutter editor={editor} />
       </div>
 
+
       <SlashMenu editor={editor} />
 
       {/* The two never appear together: the `/` menu wants a caret and this

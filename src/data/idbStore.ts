@@ -8,9 +8,12 @@
  * same split is just `SELECT` without the content column.
  */
 
+import { accrueSeconds } from '../core/activity.ts';
 import { referencesTo } from '../core/backlinks.ts';
 import { keyBetween } from '../core/fracIndex.ts';
 import type {
+  ActivityDay,
+  StickyNote,
   AssetMeta,
   AssetRecord,
   Backlink,
@@ -24,6 +27,7 @@ import { getAll, openDatabase, promisify, txDone } from './idb.ts';
 import type {
   CreateDocumentInput,
   MoveDocumentInput,
+  RecordActivityInput,
   SaveContentInput,
   PalmaNoteStore,
 } from './store.ts';
@@ -37,14 +41,17 @@ import type {
   is where the writing lives rather than what the app is called.
 */
 const DB_NAME = 'springboard';
-// 2 added `assets`. `onupgradeneeded` runs every intermediate version, so
-// bumping this is additive rather than a migration.
-const DB_VERSION = 2;
+// 2 added `assets`, 3 added `activity`, 4 added `stickies`. `onupgradeneeded`
+// runs every intermediate version, so bumping this is additive rather than a
+// migration.
+const DB_VERSION = 4;
 
 const DOCUMENTS = 'documents';
 const CONTENTS = 'contents';
 const REVISIONS = 'revisions';
 const ASSETS = 'assets';
+const ACTIVITY = 'activity';
+const STICKIES = 'stickies';
 
 /** One snapshot per document per window of active editing; see notes in README. */
 const REVISION_COALESCE_MS = 2 * 60 * 1000;
@@ -99,6 +106,15 @@ export class IdbStore implements PalmaNoteStore {
       }
       if (!db.objectStoreNames.contains(ASSETS)) {
         db.createObjectStore(ASSETS, { keyPath: 'id' });
+      }
+      // Keyed by the day itself. `YYYY-MM-DD` sorts chronologically as text,
+      // so the key order is the reading order and a range over it is "since".
+      if (!db.objectStoreNames.contains(ACTIVITY)) {
+        db.createObjectStore(ACTIVITY, { keyPath: 'day' });
+      }
+      if (!db.objectStoreNames.contains(STICKIES)) {
+        const stickies = db.createObjectStore(STICKIES, { keyPath: 'id' });
+        stickies.createIndex('byDocument', ['documentId', 'createdAt']);
       }
     });
     return this.dbPromise;
@@ -205,8 +221,12 @@ export class IdbStore implements PalmaNoteStore {
     collect(id);
 
     const db = await this.db();
-    const tx = db.transaction([DOCUMENTS, CONTENTS, REVISIONS], 'readwrite');
+    const tx = db.transaction([DOCUMENTS, CONTENTS, REVISIONS, STICKIES], 'readwrite');
     const revisions = tx.objectStore(REVISIONS);
+    // The two SQLite shells get this from `ON DELETE CASCADE`; IndexedDB has no
+    // such thing, so the notes have to be swept by hand or they outlive the
+    // page they were stuck to.
+    const stickies = tx.objectStore(STICKIES);
     for (const doomedId of doomed) {
       tx.objectStore(DOCUMENTS).delete(doomedId);
       tx.objectStore(CONTENTS).delete(doomedId);
@@ -215,6 +235,8 @@ export class IdbStore implements PalmaNoteStore {
         documentRange(doomedId),
       );
       for (const row of rows) revisions.delete(row.id);
+      const notes = await getAll<StickyNote>(stickies.index('byDocument'), documentRange(doomedId));
+      for (const note of notes) stickies.delete(note.id);
     }
     await txDone(tx);
     return doomed;
@@ -385,6 +407,61 @@ export class IdbStore implements PalmaNoteStore {
     for (const row of doomed) store.delete(row.id);
     await txDone(tx);
     return doomed.length;
+  }
+
+  /**
+   * Read, add, write — inside one transaction, so two saves landing in the
+   * same tick cannot both read 400 and both write 900.
+   */
+  async recordActivity({ day, words, at }: RecordActivityInput): Promise<ActivityDay> {
+    const db = await this.db();
+    const tx = db.transaction(ACTIVITY, 'readwrite');
+    const store = tx.objectStore(ACTIVITY);
+    const existing = await promisify<ActivityDay | undefined>(store.get(day));
+    const next: ActivityDay = existing
+      ? {
+          day,
+          words: existing.words + words,
+          seconds: existing.seconds + accrueSeconds(existing.lastAt, at),
+          lastAt: at,
+        }
+      : { day, words, seconds: 0, lastAt: at };
+    store.put(next);
+    await txDone(tx);
+    return next;
+  }
+
+  async listStickies(documentId: string): Promise<StickyNote[]> {
+    const db = await this.db();
+    const rows = await getAll<StickyNote>(
+      db.transaction(STICKIES, 'readonly').objectStore(STICKIES).index('byDocument'),
+      documentRange(documentId),
+    );
+    return rows;
+  }
+
+  async putSticky(note: StickyNote): Promise<StickyNote> {
+    const db = await this.db();
+    const tx = db.transaction(STICKIES, 'readwrite');
+    tx.objectStore(STICKIES).put(note);
+    await txDone(tx);
+    return note;
+  }
+
+  async deleteSticky(id: string): Promise<void> {
+    const db = await this.db();
+    const tx = db.transaction(STICKIES, 'readwrite');
+    tx.objectStore(STICKIES).delete(id);
+    await txDone(tx);
+  }
+
+  async listActivity(sinceDay: string): Promise<ActivityDay[]> {
+    const db = await this.db();
+    const rows = await getAll<ActivityDay>(
+      db.transaction(ACTIVITY, 'readonly').objectStore(ACTIVITY),
+      IDBKeyRange.lowerBound(sinceDay),
+    );
+    return rows.sort((a, b) => a.day.localeCompare(b.day));
   }
 
   private async needsSnapshot(documentId: string, now: number): Promise<boolean> {

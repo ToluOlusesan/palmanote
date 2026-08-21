@@ -3,10 +3,28 @@ import { useEffect, useRef, useState } from 'react';
 import { wordCountOf } from '../core/pmText.ts';
 import { bridge } from '../data/bridge.ts';
 import { store } from '../data/index.ts';
+import { mimeForName, storeImage } from '../editor/assets.ts';
 import { planImport, runImport, type ImportPlan, type IncomingFile } from '../import/index.ts';
 import { useLibrary } from '../state/library.tsx';
 
 type Where = 'root' | 'inside';
+
+/** What a picture may arrive as, alongside the pages that point at it. */
+const PICTURES = '.png,.jpg,.jpeg,.gif,.webp';
+
+/**
+ * A picture named by a markdown file, put in the library.
+ *
+ * Bytes and a path rather than a `File`, because that is all the desktop shell
+ * has to send: it reads the path off the disk, and nothing on the way carries
+ * a mime type. Everything else — the size limit, the downscale, the hash that
+ * becomes the id — is `storeImage`'s, exactly as it is for a paste or a drop.
+ */
+const putImage = async (bytes: Uint8Array, path: string): Promise<string | null> => {
+  const blob = new Blob([bytes as unknown as BlobPart], { type: mimeForName(path) });
+  const stored = await storeImage(blob);
+  return stored.id;
+};
 
 /**
  * The way in.
@@ -68,7 +86,7 @@ export function ImportDialog({
     if (!plan) return;
     setBusy(true);
     const parentId = where === 'inside' && current ? current.id : null;
-    const result = await runImport(store, plan, parentId, wordCountOf);
+    const result = await runImport(store, plan, parentId, wordCountOf, putImage);
     await library.refresh();
     if (result.firstId) library.select(result.firstId);
     setMessage(`${result.created} page${result.created === 1 ? '' : 's'} added.`);
@@ -115,7 +133,10 @@ export function ImportDialog({
         // webkitRelativePath is set when a directory was chosen, which is how
         // a folder keeps its shape on the way in.
         const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
-        if (/\.docx$/i.test(file.name)) {
+        // Pictures come in as bytes beside the pages that link them, which is
+        // what makes `![shot](assets/shot.png)` in a chosen folder arrive as a
+        // picture rather than as a hole.
+        if (/\.(docx|png|jpe?g|gif|webp)$/i.test(file.name)) {
           files.push({ path, bytes: new Uint8Array(await file.arrayBuffer()) });
         } else if (/\.(md|markdown|txt|json)$/i.test(file.name)) {
           files.push({ path, text: await file.text() });
@@ -233,7 +254,7 @@ export function ImportDialog({
                   type="file"
                   multiple
                   hidden
-                  accept=".md,.markdown,.txt,.docx,.json"
+                  accept={`.md,.markdown,.txt,.docx,.json${PICTURES}`}
                   onChange={(event) => void fromBrowser(event.target.files)}
                 />
               </>

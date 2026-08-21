@@ -8,6 +8,7 @@ import {
   ImageSquare,
   Quotes,
   SquaresFour,
+  Table,
   TextAa,
   TextHOne,
   TextHThree,
@@ -47,9 +48,15 @@ interface Entry {
 /**
  * Everything the menu can insert, in the order it offers it.
  *
- * Only what the schema actually has. There is no code block, no table and no
- * link here because there is none in `extensions.ts`, and a menu that offers
- * what the document cannot hold is worse than no menu.
+ * Only what the schema actually has, and that is the whole rule: a menu that
+ * offers what the document cannot hold is worse than no menu. This list has
+ * grown twice by the schema growing first — a code block, and now a table —
+ * and never the other way round. Nothing goes in here that `extensions.ts`
+ * cannot already make.
+ *
+ * There is still no link, and that one is not an omission: a link is made from
+ * words that are already there, so it belongs to the selection bar rather than
+ * to a menu whose whole question is "what should go here".
  *
  * The hints are not decoration: every block here already had a shortcut and an
  * input rule before this menu existed. `/` is the discoverable route to them,
@@ -67,27 +74,27 @@ const BLOCKS: Entry[] = [
   },
   {
     id: 'h1',
-    label: 'Heading 1',
+    label: 'Heading',
     group: 'Blocks',
-    keywords: 'title big',
+    keywords: 'heading h1 title big',
     hint: 'Ctrl+Alt+1',
     glyph: TextHOne,
     run: (chain) => chain.toggleHeading({ level: 1 }),
   },
   {
     id: 'h2',
-    label: 'Heading 2',
+    label: 'Subheading',
     group: 'Blocks',
-    keywords: 'subtitle section',
+    keywords: 'subheading h2 subtitle section',
     hint: 'Ctrl+Alt+2',
     glyph: TextHTwo,
     run: (chain) => chain.toggleHeading({ level: 2 }),
   },
   {
     id: 'h3',
-    label: 'Heading 3',
+    label: 'Small heading',
     group: 'Blocks',
-    keywords: 'subsection small',
+    keywords: 'small heading h3 subsection',
     hint: 'Ctrl+Alt+3',
     glyph: TextHThree,
     run: (chain) => chain.toggleHeading({ level: 3 }),
@@ -145,6 +152,17 @@ const BLOCKS: Entry[] = [
     hint: '***',
     glyph: DotsThree,
     run: (chain) => chain.setSceneBreak(),
+  },
+  {
+    id: 'table',
+    label: 'Table',
+    group: 'Blocks',
+    keywords: 'table grid rows columns cells comparison',
+    glyph: Table,
+    // Three by three with a header row, which is the size that reads as a
+    // table rather than as a pair of boxes, and small enough that trimming it
+    // is one keystroke. Rows arrive from Tab off the last cell — see keymap.ts.
+    run: (chain) => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
   },
   {
     id: 'image',

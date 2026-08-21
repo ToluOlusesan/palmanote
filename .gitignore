@@ -25,3 +25,6 @@ src-tauri/gen/
 # Delete these two lines if you want them in the clone.
 /captures/
 /stickers/
+
+# Machine-local permissions for the agent tooling, not a project setting.
+.claude/settings.local.json

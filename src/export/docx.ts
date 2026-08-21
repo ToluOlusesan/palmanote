@@ -25,14 +25,31 @@ import {
   PageNumber,
   Packer,
   Paragraph,
+  BorderStyle,
+  ShadingType,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
   UnderlineType,
+  WidthType,
   convertInchesToTwip,
 } from 'docx';
 
 import { toneOf, type HighlightTone } from '../editor/Highlight.ts';
 import type { PMDoc, PMNode } from '../core/types.ts';
 import type { Walk, WalkedDocument } from './walk.ts';
+
+/**
+ * What a document's body is a list of.
+ *
+ * It was `Paragraph[]` everywhere until tables arrived, and it had to stop
+ * being that: a `Table` is a sibling of a paragraph in Word's model rather
+ * than something that can live inside one, so the array that collects a page
+ * has to be able to hold both. Everything that walks a document threads this
+ * type, which is why the change is wide and shallow rather than deep.
+ */
+type DocxBlock = Paragraph | Table;
 
 export type DocxPreset = 'reading' | 'manuscript';
 
@@ -100,7 +117,7 @@ export async function docxFromWalk(
   assets: Map<string, ExportAsset> = new Map(),
 ): Promise<Uint8Array> {
   const manuscript = preset === 'manuscript';
-  const children: Paragraph[] = [];
+  const children: DocxBlock[] = [];
   // The walk is depth-first and synchronous all the way down; threading a map
   // through nine functions to reach one `case` would cost more than it says.
   assetsForRun = assets;
@@ -152,8 +169,8 @@ function documentParagraphs(
   entry: WalkedDocument,
   manuscript: boolean,
   first: boolean,
-): Paragraph[] {
-  const out: Paragraph[] = [];
+): DocxBlock[] {
+  const out: DocxBlock[] = [];
   const heading = entry.depth === 0 ? HeadingLevel.HEADING_1 : HeadingLevel.HEADING_2;
   const isChapter = entry.depth === 0;
 
@@ -174,14 +191,14 @@ function documentParagraphs(
   return out;
 }
 
-function bodyParagraphs(doc: PMDoc | null, manuscript: boolean): Paragraph[] {
+function bodyParagraphs(doc: PMDoc | null, manuscript: boolean): DocxBlock[] {
   if (!doc?.content) return [];
-  const out: Paragraph[] = [];
+  const out: DocxBlock[] = [];
   for (const node of doc.content) block(node, out, manuscript, 0);
   return out;
 }
 
-function block(node: PMNode, out: Paragraph[], manuscript: boolean, level: number): void {
+function block(node: PMNode, out: DocxBlock[], manuscript: boolean, level: number): void {
   switch (node.type) {
     case 'heading': {
       const value = Number(node.attrs?.level ?? 1);
@@ -268,6 +285,9 @@ function block(node: PMNode, out: Paragraph[], manuscript: boolean, level: numbe
       );
       return;
     }
+    case 'table':
+      out.push(docxTable(node));
+      return;
     case 'paragraph':
       out.push(
         new Paragraph({
@@ -281,10 +301,63 @@ function block(node: PMNode, out: Paragraph[], manuscript: boolean, level: numbe
   }
 }
 
+/**
+ * A real Word table, not a picture of one and not tab stops.
+ *
+ * Everything about it is deliberately plain, for the same reason the rest of
+ * this file uses named styles: what arrives should be a table the recipient
+ * can restyle, add a row to and sort, rather than a shape that happens to look
+ * right. Hairline borders in grey, a shaded header row marked `tableHeader` so
+ * Word repeats it across a page break, and no widths — Word's own auto layout
+ * sizes columns to their contents exactly as the screen does.
+ *
+ * The cells are rendered as though the preset were the reading one, and that
+ * is the point of passing `false` below rather than threading the preset in:
+ * the manuscript preset indents the first line of every paragraph by half an
+ * inch, which is right for prose and absurd in a table cell, where it pushes
+ * the first word of every entry away from its own left border.
+ */
+function docxTable(node: PMNode): Table {
+  const edge = { style: BorderStyle.SINGLE, size: 2, color: '999999' };
+  const rows = node.content ?? [];
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: edge,
+      bottom: edge,
+      left: edge,
+      right: edge,
+      insideHorizontal: edge,
+      insideVertical: edge,
+    },
+    rows: rows.map((row) => {
+      const header = (row.content ?? []).every((cell) => cell.type === 'tableHeader');
+      return new TableRow({
+        tableHeader: header,
+        children: (row.content ?? []).map((cell) => {
+          const body: DocxBlock[] = [];
+          for (const child of cell.content ?? []) block(child, body, false, 0);
+          return new TableCell({
+            shading: header
+              ? { type: ShadingType.CLEAR, color: 'auto', fill: 'F2F2F2' }
+              : undefined,
+            columnSpan: Number(cell.attrs?.colspan ?? 1),
+            rowSpan: Number(cell.attrs?.rowspan ?? 1),
+            // A cell is never empty in Word's model; one empty paragraph is
+            // what an empty cell is made of.
+            children: body.length > 0 ? body : [new Paragraph({ children: [] })],
+          });
+        }),
+      });
+    }),
+  });
+}
+
 function listItem(
   listType: string,
   item: PMNode,
-  out: Paragraph[],
+  out: DocxBlock[],
   manuscript: boolean,
   level: number,
 ): void {

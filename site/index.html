@@ -1,0 +1,1496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PalmaNote — a small, local place to write</title>
+<meta name="description" content="PalmaNote is a small, local place to keep pages, notes and lists. One file on your own disk. No account, no cloud, no AI. For Windows." />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201183.17%201183.17%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%231d5fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c5cff%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%221183.17%22%20height%3D%221183.17%22%20rx%3D%22248.47%22%20fill%3D%22url(%23g)%22%2F%3E%3Cg%20transform%3D%22translate(118%20103)%20scale(0.8313)%22%20fill%3D%22%23fff%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2212%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m583.78%2C489.18c3.31%2C14.4%2C6.42%2C26.86%2C9.03%2C39.42%2C10.85%2C52.33%2C9.6%2C104.92.7%2C157.19-5.93%2C34.85-15.1%2C69.13-21.99%2C103.84-2.28%2C11.47-3.01%2C23.49-2.62%2C35.2%2C1%2C30.59%2C19.36%2C52.05%2C50.89%2C59.36%2C37.06%2C8.58%2C71.13-1.34%2C104.4-18.3-2.58-6.95-5.37-13.22-7.26-19.76-9.77-33.8-5.59-65.58%2C14.7-94.71%2C7.56-10.85%2C17.51-18.97%2C29.82-24.14%2C33.72-14.17%2C65.62%2C4.99%2C68.23%2C41.51%2C1.81%2C25.28-7.18%2C47.74-21.39%2C67.91-9.02%2C12.8-19.97%2C24.25-30.41%2C36.73%2C12.14%2C8.12%2C26.34%2C12.03%2C41.4%2C13.29%2C37.93%2C3.17%2C74.06-5.35%2C108.88-18.95%2C35.19-13.75%2C71.1-20.54%2C108.87-19.34%2C27.05.86%2C54.15.15%2C81.23.2%2C13.13.03%2C20.92%2C7.1%2C20.92%2C18.8%2C0%2C11.07-7.89%2C18.41-20.45%2C18.47-28.52.13-57.06.71-85.56-.1-32.24-.92-62.77%2C5.67-92.92%2C16.49-39.29%2C14.1-79.58%2C23.43-121.84%2C20-25.19-2.04-48.81-8.65-68.66-25.07-4.28-3.54-7.17-1.65-10.74.3-29.04%2C15.85-59.86%2C25.45-93.17%2C25.42-34.38-.03-65.26-10.31-91.18-33.36-4.53-4.03-7.17-2.52-11.04-.01-32.89%2C21.31-68.47%2C34.1-108.13%2C33.3-30.08-.61-57.25-9.11-79.72-30.16-1.63-1.53-5.38-2.58-7.28-1.79-48.77%2C20.4-98.88%2C19.22-149.53%2C9.61-51.72-9.81-103.79-7.95-155.9-4.73-7.47.46-14.92%2C1.39-22.39%2C1.83-10.85.63-18.76-5.58-20.41-15.71-1.66-10.21%2C4.43-19.69%2C15.01-21.83%2C6.71-1.36%2C13.72-1.46%2C20.6-1.72%2C48.93-1.81%2C97.9-4.26%2C146.68%2C2.25%2C19.97%2C2.66%2C39.72%2C6.98%2C59.71%2C9.34%2C26.83%2C3.16%2C53.51%2C1.49%2C79.54-6.46%2C3.48-1.06%2C6.86-2.46%2C7.89-2.84-2.76-19.83-7.05-38.15-7.44-56.56-.53-25.02%2C8.84-47.4%2C26.18-65.83%2C13.29-14.12%2C29.72-22.07%2C49.37-20.45%2C29.09%2C2.39%2C47.94%2C28.48%2C44.08%2C60.21-4.3%2C35.37-22.5%2C62.9-48.98%2C85.63-2.56%2C2.2-5.29%2C4.2-8.01%2C6.34%2C28.49%2C27.48%2C101.32%2C20.76%2C143.35-12.39-3.26-12.35-7.44-24.35-9.47-36.69-4.09-24.83%2C2.03-48.55%2C9.75-71.99%2C13.33-40.46%2C26.58-80.93%2C32.54-123.37%2C6.22-44.32%2C5.75-88.4-3.13-132.31-.22-1.1-.7-2.14-1.55-4.68-55.36%2C27.47-99.89%2C65.51-129.07%2C120.53-10.56-21.81-2.51-65.23%2C17.73-92.1%2C20.54-27.25%2C49.43-41.09%2C82.05-48.69-61.43-16.73-120.54-10.09-177.99%2C17.51%2C8.22-29.73%2C42.9-62.59%2C83.28-70.67%2C39.26-7.86%2C74.48%2C3.16%2C108.14%2C22.97-30.68-48.25-70.76-85.56-125.38-109.37%2C36.91-9.68%2C69.67-6.18%2C100.04%2C14.09%2C30.22%2C20.17%2C43.6%2C50.95%2C54.36%2C84.76%2C1.53-4.67%2C3.04-9.36%2C4.6-14.02%2C11.73-35.04%2C32.07-63.01%2C66.16-79.24%2C26.54-12.63%2C54.03-14.21%2C83.67-5.57-52.78%2C24.94-93.33%2C61.91-125.08%2C109.51%2C4.01-2.18%2C7.99-4.39%2C12.02-6.53%2C27.93-14.87%2C57.36-23.15%2C89.05-17.04%2C40.15%2C7.74%2C67.18%2C31.98%2C84.56%2C71.55-57.07-28.81-114.41-34.08-173.94-17.77%2C40.89%2C9.71%2C74.57%2C28.92%2C92.58%2C68.83%2C10.3%2C22.82%2C11.4%2C46.54%2C5.57%2C72.62-27.94-55.31-71.73-91.58-124.97-120.77Zm-219.64%2C354.58c7.86-7.89%2C16.05-15.03%2C22.94-23.27%2C11.79-14.09%2C20.45-29.9%2C21.13-48.88.26-7.16-1.38-14-8.2-17.81-6.89-3.85-13.36-.98-19.49%2C2.55-1.73%2C1-3.34%2C2.24-4.86%2C3.55-20.64%2C17.82-26.74%2C58.72-11.51%2C83.86Zm389.78%2C2.31c21.06-18.93%2C38.3-39.19%2C41.52-67.97.85-7.63.22-15.65-7.43-19.73-7.99-4.26-15.15-.02-21.27%2C5.04-21.09%2C17.42-27.66%2C57.63-12.83%2C82.66Z%22%2F%3E%3Cpath%20d%3D%22m186.34%2C827.03c-14.32-1.45-27.39-2.77-41.05-4.15%2C0-3.37%2C0-6.22%2C0-9.07-.02-222.97-.06-445.95-.04-668.92%2C0-79.08%2C63.75-144.31%2C142.99-144.59%2C156.42-.55%2C312.85-.19%2C469.28-.1%2C27.57.02%2C51.42%2C10.1%2C70.66%2C29.58%2C53.24%2C53.89%2C105.65%2C108.63%2C159.25%2C162.15%2C28.02%2C27.98%2C40.77%2C60.59%2C40.65%2C100-.51%2C168.24-.25%2C336.47-.28%2C504.71%2C0%2C5.96%2C0%2C11.92%2C0%2C18.09-14.05.62-26.87%2C1.19-40.62%2C1.81%2C0-3.94%2C0-7.62%2C0-11.29-.03-170.54-.03-341.09-.12-511.63-.02-38.73-21.27-59.6-60.12-59.56-25.93.03-51.85.16-77.78.05-38.22-.16-60.21-22.16-60.27-60.15-.05-29.96.03-59.92-.09-89.88-.1-27.19-15.22-42.64-42.16-42.66-151.53-.12-303.06-.28-454.59-.09-56.12.07-105.53%2C50.44-105.57%2C107.14-.14%2C199.92-.12%2C399.85-.15%2C599.77%2C0%2C25.88%2C0%2C51.76%2C0%2C78.78Z%22%2F%3E%3Cpath%20d%3D%22m1026.43%2C919.62c.71%2C2.08%2C1.23%2C2.87%2C1.22%2C3.66-.11%2C43.19.57%2C86.41-.6%2C129.58-1.66%2C61.23-54.47%2C125.85-133.81%2C129.26-42.26%2C1.82-84.66.72-126.99.74-158.13.04-316.26-.02-474.38%2C0-34.22%2C0-65.55-8.92-92.53-30.48-34.9-27.89-53.53-64.18-54.01-109.1-.37-35.14-.06-70.28-.06-105.42%2C0-3.11%2C0-6.23%2C0-10.79%2C14%2C1.44%2C27%2C2.78%2C41.11%2C4.23%2C0%2C4.18%2C0%2C7.55%2C0%2C10.91%2C0%2C30.24%2C1.07%2C60.53-.24%2C90.72-2.42%2C56.02%2C46.4%2C109.6%2C108.68%2C109.38%2C151.21-.53%2C302.43-.18%2C453.65-.19%2C42.63%2C0%2C85.26-.03%2C127.88.02%2C64.05.07%2C110.71-46.52%2C110.75-110.66.02-32.55.39-65.1-.18-97.64-.15-8.61%2C2.6-11.87%2C10.76-12.21%2C9.66-.4%2C19.31-1.34%2C28.74-2.02Z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E" />
+<meta property="og:title" content="PalmaNote" />
+<meta property="og:description" content="A small, local place to keep pages, notes and lists. No account, no cloud, no AI." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<style>
+/*
+  PalmaNote — the marketing page.
+
+  Built on the app's own tokens rather than a second system: the palette, the
+  two type registers and the grain are lifted from src/app/styles.css so the
+  site and the window are one material.
+
+  The identity layer (FEATURES.md §Brand) allows the Cobalt→Violet gradient in
+  the icon, the installer and marketing, and nowhere else. This page is the
+  third of those, so the gradient appears on the mark and the waterline, and on
+  nothing else.
+
+  Motion follows Emil Kowalski's standards (skills/review-animations): strong
+  custom ease-out, transform and opacity only, transitions rather than
+  keyframes for anything interruptible, press feedback at scale(0.97), hover
+  gated behind a fine pointer, and reduced motion that keeps the fades and
+  drops the movement.
+*/
+
+:root {
+  /* The platform stack. The app ships no fonts because it promises to fetch
+     nothing; this page keeps the same promise, so the display voice is made
+     from size, weight and tracking rather than from a face nobody has. */
+  --prose: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', 'Consolas', 'SF Mono', 'Menlo', ui-monospace, monospace;
+
+  --paper: #ffffff;
+  --below: #f7f7f6;
+  --card: #ffffff;
+  --ink: #0a0a0a;
+  --muted: rgb(10 10 10 / 58%);
+  --faint: rgb(10 10 10 / 40%);
+  --hairline: rgb(10 10 10 / 12%);
+  --line: rgb(10 10 10 / 20%);
+  --raise: rgb(10 10 10 / 5%);
+
+  --accent: #1d5fff;
+  --accent-ink: #ffffff;
+  --accent-wash: rgb(29 95 255 / 10%);
+  --violet: #7c5cff;
+
+  /* The writing chart's four steps: the accent mixed toward the page.
+     --heat-0 is a neutral, because nothing is the absence of the scale, not
+     its floor. */
+  --heat-0: #e8e6e1;
+  --heat-1: #cddcff;
+  --heat-2: #9cb9ff;
+  --heat-3: #618fff;
+  --heat-4: #1d5fff;
+  --heat-text-3: var(--ink);
+  --heat-text-4: #ffffff;
+
+  /* Sticky paper. The one place colour is allowed outside the accent, because
+     a sticky is an object the writer made rather than part of the interface. */
+  --lime: #d8f533;
+  --orange: #ffa32e;
+  --sky: #4cc9f0;
+  --pink: #ff5fa2;
+
+  --grain-blend: multiply;
+  --grain-opacity: 0.14;
+  --shadow-card: 0 1px 2px rgb(10 10 10 / 5%), 0 18px 44px rgb(10 10 10 / 9%);
+  --shadow-dialog: 0 2px 6px rgb(10 10 10 / 6%), 0 24px 60px rgb(10 10 10 / 14%);
+  --shadow-sticky: 0 1px 2px rgb(10 10 10 / 14%), 0 8px 18px rgb(10 10 10 / 12%);
+
+  /*
+    Motion. The app's own durations, and Emil's stronger curves for the page
+    itself: the built-in easings and the app's --glide are tuned for chrome a
+    writer sees a hundred times a day, where a marketing page is seen once and
+    can afford the punchier curve.
+  */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --press: 160ms;
+  --quick: 120ms;
+  --settle: 190ms;
+  --unfold: 280ms;
+
+  --measure: 40rem;
+  --wide: 76rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #121212;
+    --below: #171717;
+    --card: #1a1a1a;
+    --ink: #f4f4f4;
+    --muted: rgb(255 255 255 / 60%);
+    --faint: rgb(255 255 255 / 40%);
+    --hairline: rgb(255 255 255 / 12%);
+    --line: rgb(255 255 255 / 20%);
+    --raise: rgb(255 255 255 / 7%);
+    /* Cobalt reaches only 3.4:1 on the dark card, so dark runs the brand hue
+       mixed a third of the way to white. */
+    --accent: #6c97ff;
+    --accent-ink: #08122b;
+    --accent-wash: rgb(108 151 255 / 16%);
+    /* Re-stepped rather than flipped: the card is the quiet end here, so the
+       loud end climbs away from it. */
+    --heat-0: #232326;
+    --heat-1: #2c364c;
+    --heat-2: #3e517f;
+    --heat-3: #6787d8;
+    --heat-4: #6c97ff;
+    --heat-text-3: #171719;
+    --heat-text-4: #171719;
+    --grain-blend: overlay;
+    --grain-opacity: 0.26;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 18px 44px rgb(0 0 0 / 45%);
+    --shadow-dialog: 0 2px 6px rgb(0 0 0 / 45%), 0 24px 60px rgb(0 0 0 / 55%);
+    --shadow-sticky: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 18px rgb(0 0 0 / 35%);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #121212;
+  --below: #171717;
+  --card: #1a1a1a;
+  --ink: #f4f4f4;
+  --muted: rgb(255 255 255 / 60%);
+  --faint: rgb(255 255 255 / 40%);
+  --hairline: rgb(255 255 255 / 12%);
+  --line: rgb(255 255 255 / 20%);
+  --raise: rgb(255 255 255 / 7%);
+  --accent: #6c97ff;
+  --accent-ink: #08122b;
+  --accent-wash: rgb(108 151 255 / 16%);
+  --heat-0: #232326;
+  --heat-1: #2c364c;
+  --heat-2: #3e517f;
+  --heat-3: #6787d8;
+  --heat-4: #6c97ff;
+  --heat-text-3: #171719;
+  --heat-text-4: #171719;
+  --grain-blend: overlay;
+  --grain-opacity: 0.26;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 18px 44px rgb(0 0 0 / 45%);
+  --shadow-dialog: 0 2px 6px rgb(0 0 0 / 45%), 0 24px 60px rgb(0 0 0 / 55%);
+  --shadow-sticky: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 18px rgb(0 0 0 / 35%);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--prose);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+  overflow-x: hidden;
+}
+
+/*
+  The grain. One static tile, multiplied over the surface in light and overlaid
+  in dark where multiply has nothing to bite on. It sits *over* everything
+  rather than behind it, which is the only way one layer runs unbroken: behind,
+  anything painting its own background — the nav, the window, a card — covers
+  the grain and comes out a cleaner white than the paper beside it.
+*/
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.page { position: relative; z-index: 0; }
+
+/* ── Type ───────────────────────────────────────────────────────────────────
+   One family, two registers. Chrome is small, tracked out and grey; prose is
+   larger, tracked in and near-black. That separation carries further than two
+   unrelated typefaces would.                                                  */
+
+h1, h2, h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  margin: 0;
+  line-height: 1.05;
+}
+
+h1 { font-size: clamp(2.5rem, 7.2vw, 4.5rem); letter-spacing: -0.045em; }
+h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); line-height: 1.1; }
+h3 { font-size: 1.0625rem; font-weight: 500; letter-spacing: -0.018em; line-height: 1.35; }
+
+p { margin: 0; }
+.lede { font-size: 1.125rem; color: var(--muted); line-height: 1.65; max-width: 34rem; }
+.body-text { color: var(--muted); max-width: 34rem; }
+strong { font-weight: 500; color: var(--ink); }
+
+/* ── Shell ─────────────────────────────────────────────────────────────────*/
+
+.shell {
+  width: 100%;
+  max-width: var(--wide);
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 5vw, 3rem);
+}
+
+section { padding-block: clamp(4.5rem, 11vw, 8.5rem); }
+
+.section-head { display: flex; flex-direction: column; gap: 1rem; max-width: 38rem; }
+
+/* ── Nav ───────────────────────────────────────────────────────────────────*/
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--settle) var(--ease-out);
+}
+.nav.is-stuck { border-bottom-color: var(--hairline); }
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 3.5rem;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────
+   Press feedback at scale(0.97) over 160ms: instant confirmation that the
+   interface heard the click.                                                  */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-family: var(--prose);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--press) var(--ease-out),
+    background-color var(--quick) ease,
+    border-color var(--quick) ease,
+    color var(--quick) ease;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-quiet { color: var(--ink); border-color: var(--line); background: transparent; }
+.btn-small { padding: 0.4375rem 0.8125rem; font-size: 0.875rem; }
+
+/* Touch devices fire hover on tap, so every hover state is gated. */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--ink)); }
+  .btn-quiet:hover { background: var(--raise); }
+}
+
+:where(a, button, .btn):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────────*/
+
+.hero { padding-block: clamp(3.5rem, 9vw, 6.5rem) clamp(2rem, 4vw, 3rem); }
+.hero-inner { display: flex; flex-direction: column; gap: 1.75rem; align-items: flex-start; }
+
+/*
+  The headline types itself, and the caret slides between positions rather than
+  jumping — which is the app's own caret (src/editor/caret.ts), the one detail
+  most worth showing before anything else. Explanatory motion, seen once, so it
+  is allowed to take longer than a UI animation would.
+*/
+.type-line { position: relative; white-space: pre-wrap; }
+.type-line .caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 1em;
+  background: var(--accent);
+  border-radius: 1px;
+  opacity: 0;
+  /* A transition rather than keyframes: each character retargets it mid-flight,
+     and a keyframe would restart from zero every time. */
+  transition: translate 90ms var(--ease-out), opacity var(--quick) linear;
+  will-change: translate;
+}
+.type-line .caret.is-on { opacity: 1; }
+.type-line .caret.is-resting { animation: blink 1.1s steps(1, end) infinite; }
+@keyframes blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+/* ── The waterline ─────────────────────────────────────────────────────────
+   The mark is a page, a palm and a waterline, and the waterline is the part
+   that crosses the page's outline and breaks it — so the page is drawn as the
+   part above the horizon and the part below. The window does the same: half of
+   it sits on paper, half of it sits under the water.                          */
+
+.waterline-band {
+  position: relative;
+  padding-block: 0;
+  background: linear-gradient(to bottom, var(--paper) 0 50%, var(--below) 50%, var(--paper) 100%);
+}
+.waterline-band::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent) 12%, var(--violet) 88%, transparent);
+  opacity: 0.7;
+}
+.band-inner { padding-block: clamp(4rem, 9vw, 7rem); display: flex; flex-direction: column; gap: 2.5rem; }
+
+.band-captions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.5rem 2.5rem;
+  padding-top: clamp(3rem, 6vw, 4.5rem);
+}
+.caption-item { display: flex; flex-direction: column; gap: 0.375rem; }
+.caption-item p { font-size: 0.9375rem; color: var(--muted); }
+
+/* ══ The window ════════════════════════════════════════════════════════════
+   Modelled against the running app, captured at 1500×950 — the same topbar,
+   the same 15rem rail, the same 40rem measure floating in the middle of the
+   canvas, the same 2rem status bar.                                          */
+
+.window {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  user-select: none;
+}
+
+/* Topbar: the mark, Import, the sidebar toggle, the tabs, and the five things
+   the window can do to the page as a whole. */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 2.75rem;
+  padding-inline: 0.75rem;
+}
+.topbar-mark { color: var(--ink); display: grid; place-items: center; flex: none; }
+.topbar-import { font-size: 0.75rem; color: var(--muted); margin-left: 0.75rem; }
+.icon-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  flex: none;
+  transition: background-color var(--quick) ease, color var(--quick) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover { background: var(--raise); color: var(--ink); }
+}
+
+.tabs { display: flex; align-items: center; gap: 0.375rem; flex: 1; min-width: 0; overflow: hidden; }
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.5rem 0.3125rem 0.5625rem;
+  border-radius: 7px;
+  font-size: 0.78125rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tab.is-active {
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+}
+.tab-close { color: var(--faint); margin-left: 0.125rem; }
+.topbar-tools { display: flex; align-items: center; gap: 0.125rem; flex: none; }
+
+/* Page bar: back, forward, the trail, and the formatting toolbar sharing the
+   row so the writing surface loses no height to it. */
+.pagebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding-inline: 0.875rem;
+}
+.navbtns { display: flex; gap: 0.125rem; flex: none; }
+.crumbs {
+  font-size: 0.78125rem;
+  color: var(--muted);
+  margin-left: 0.375rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toolbar { margin-left: auto; display: flex; align-items: center; gap: 0.0625rem; flex: none; }
+.tool {
+  min-width: 1.625rem;
+  height: 1.625rem;
+  padding-inline: 0.25rem;
+  /* Flex, not grid: `H` and its `<sub>` are two children, and a grid would
+     make them two rows — the numeral drops under the letter. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  transition: background-color var(--quick) ease, color var(--quick) ease;
+}
+.tool.is-on { background: var(--ink); color: var(--card); }
+@media (hover: hover) and (pointer: fine) {
+  .tool:hover { background: var(--raise); color: var(--ink); }
+  .tool.is-on:hover { background: var(--ink); color: var(--card); }
+}
+.tool-rule { width: 1px; height: 1.125rem; background: var(--hairline); margin-inline: 0.375rem; }
+.tool sub { font-size: 0.625em; vertical-align: baseline; }
+
+.window-body { display: flex; min-height: 26rem; }
+
+/* The sidebar is part of the window rather than a panel in it. */
+.sidebar {
+  width: 15rem;
+  flex: none;
+  padding: 0 0.5rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+}
+.side-label {
+  font-size: 0.6875rem;
+  color: var(--faint);
+  padding: 0.125rem 0.5rem 0.375rem;
+}
+.tree { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  transition: background-color var(--quick) ease, color var(--quick) ease;
+}
+.row.is-active { background: var(--raise); color: var(--ink); font-weight: 500; }
+@media (hover: hover) and (pointer: fine) {
+  .row:hover { background: var(--raise); color: var(--ink); }
+}
+.row-count { margin-left: auto; font-size: 0.6875rem; color: var(--faint); }
+.row-tools { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; color: var(--faint); }
+.row-tools .row-count { margin-left: 0.125rem; }
+
+.add-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  height: 2.375rem;
+  margin: 0.5rem 0.125rem 0.375rem;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background-color var(--quick) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .add-page:hover { background: var(--raise); }
+}
+.archive-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.5rem 0;
+  border-top: 1px solid var(--hairline);
+  margin: 0 0.125rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.archive-row span:last-child { color: var(--faint); }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+
+/* The prose sits at the measure in the middle of the canvas, with the window's
+   own tone around it — one surface, not a card floating on another. */
+/* Right padding reserves the rail, so a sticky never crowds the sentence it
+   was written beside. */
+.canvas { flex: 1; padding: 1.5rem 13.5rem 0 1.25rem; display: flex; justify-content: center; }
+.doc { width: 100%; max-width: 26rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.add-cover { display: flex; align-items: center; gap: 0.375rem; color: var(--faint); font-size: 0.75rem; }
+.doc-title {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 0.125rem;
+}
+.doc p { font-size: 0.84375rem; line-height: 1.7; color: var(--ink); }
+.doc .mark-y { background: color-mix(in srgb, var(--lime) 62%, transparent); border-radius: 2px; padding: 0 1px; }
+.pagelink {
+  color: var(--accent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.tasks { display: flex; flex-direction: column; gap: 0.4375rem; margin-top: 0.125rem; }
+.task { display: flex; align-items: center; gap: 0.5625rem; font-size: 0.84375rem; }
+.box { width: 0.8125rem; height: 0.8125rem; border-radius: 3px; border: 1.5px solid var(--line); flex: none; }
+
+/* The block gutter — a handle and a plus in the margin, on hover. Blocks are
+   objects here, and this is the only sign of it until you reach. */
+.gutter-demo { position: relative; }
+.gutter {
+  position: absolute;
+  left: -2.5rem;
+  top: 0.1875rem;
+  display: flex;
+  gap: 0.0625rem;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity var(--quick) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .doc:hover .gutter { opacity: 1; }
+}
+.gutter span { width: 1rem; height: 1.125rem; display: grid; place-items: center; border-radius: 4px; font-size: 0.75rem; }
+
+/* The sticky rail: a fixed column down the right, outside the thing that
+   scrolls, so notes hold still while the prose moves under them. */
+.rail {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 11.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.sticky {
+  position: relative;
+  padding: 0.6875rem 0.75rem 1rem;
+  font-size: 0.78125rem;
+  line-height: 1.45;
+  color: #0a0a0a;
+  box-shadow: var(--shadow-sticky);
+}
+/* The peeled corner is what makes a square of colour read as a sticky note
+   rather than a swatch: the window showing through where the paper lifted,
+   and the shadow that fold casts on itself. */
+.sticky::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  background: linear-gradient(315deg, var(--card) 0 48%, rgb(10 10 10 / 20%) 48% 52%, var(--sticky-paper) 52%);
+}
+.sticky.is-lime { --sticky-paper: var(--lime); background: var(--lime); rotate: -1deg; }
+.sticky.is-orange { --sticky-paper: var(--orange); background: var(--orange); rotate: 0.8deg; }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  height: 2rem;
+  padding-inline: 0.875rem;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+.statusbar em { font-style: normal; color: var(--faint); }
+
+kbd {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  padding: 0.0625rem 0.3125rem;
+  border: 1px solid var(--hairline);
+  border-bottom-width: 1.5px;
+  border-radius: 4px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ══ The writing chart ═════════════════════════════════════════════════════
+   The panel as the app draws it: the two cards, the month, the reserved detail
+   line, the legend, and the sentence at the foot that describes rather than
+   scores.                                                                    */
+
+.dialog {
+  max-width: 47rem;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.dialog-head { display: flex; align-items: flex-start; gap: 1rem; }
+.dialog-title { display: flex; gap: 0.625rem; align-items: flex-start; }
+.dialog-title h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.025em; }
+.dialog-title p { font-size: 0.8125rem; color: var(--muted); margin-top: 0.0625rem; }
+.month-picker {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.4375rem 0.625rem;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  flex: none;
+  transition: transform var(--press) var(--ease-out), background-color var(--quick) ease;
+}
+.month-picker:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .month-picker:hover { background: var(--raise); }
+}
+
+.stat-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.stat-card {
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 0.875rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.stat-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+.stat-num {
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label { font-size: 0.8125rem; color: var(--muted); margin-top: 0.25rem; }
+
+/* The calendar is a centred block rather than a stretched one: across the
+   dialog's full width a square grows to a hundred pixels and the month reads
+   as a chart of blocks instead of a month. */
+.month { display: flex; flex-direction: column; gap: 0.375rem; width: 100%; max-width: 25rem; margin-inline: auto; }
+.weekdays, .month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.weekdays span { text-align: center; font-size: 0.6875rem; color: var(--faint); padding-bottom: 0.125rem; }
+.day {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  /* Only transform and opacity move; the ring is a box-shadow that swaps
+     rather than animating layout. */
+  transition: box-shadow var(--quick) ease, transform var(--press) var(--ease-out);
+}
+.day.h0 { background: var(--heat-0); }
+.day.h1 { background: var(--heat-1); color: var(--ink); }
+.day.h2 { background: var(--heat-2); color: var(--ink); }
+.day.h3 { background: var(--heat-3); color: var(--heat-text-3); }
+.day.h4 { background: var(--heat-4); color: var(--heat-text-4); }
+/* A day later this month is an outline, not an empty square. A Friday that has
+   not arrived is not a Friday that was missed. */
+.day.is-future { box-shadow: inset 0 0 0 1px var(--hairline); color: var(--faint); }
+/* Inset, always: an outward ring reaches into the 5px gap from both sides and
+   would overlap the square beside it. */
+.day.is-today { box-shadow: inset 0 0 0 2px var(--ink); font-weight: 500; color: var(--ink); }
+.day.is-blank { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) {
+  .day:not(.is-blank):hover { box-shadow: inset 0 0 0 2px var(--accent); }
+}
+
+.month-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.legend { margin-left: auto; display: flex; align-items: center; gap: 0.4375rem; font-size: 0.75rem; color: var(--faint); }
+.legend-swatches { display: flex; gap: 3px; }
+.legend-swatches i { width: 0.875rem; height: 0.875rem; border-radius: 4px; display: block; }
+.learn { display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.75rem; color: var(--muted); }
+
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.dialog-close {
+  margin-left: auto;
+  padding: 0.4375rem 0.9375rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: transform var(--press) var(--ease-out), background-color var(--quick) ease;
+}
+.dialog-close:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .dialog-close:hover { background: var(--raise); }
+}
+
+.chart-wrap { margin-top: 3rem; display: flex; }
+
+.facts { margin-top: 3.5rem; display: grid; gap: 2.25rem 3.5rem; }
+@media (min-width: 48rem) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 52rem; }
+}
+.fact { display: flex; flex-direction: column; gap: 0.5rem; }
+.fact-key { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.fact p { font-size: 0.9375rem; color: var(--muted); }
+.fact code {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--raise);
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* ══ The writing flow ══════════════════════════════════════════════════════
+   Two fragments of the window rather than two more whole ones: the `/` menu
+   standing under a caret, and the bar that comes to a held sentence. Both
+   drawn against the app's own capture.                                      */
+
+.demos { margin-top: 3rem; display: grid; gap: 1.75rem; }
+@media (min-width: 56rem) { .demos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* The card is titled from above rather than captioned from below: a heading is
+   what the reader is looking for, and it sets the card rather than trailing it. */
+.demo-item { display: flex; flex-direction: column; gap: 0.875rem; }
+.demo-item > h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.025em; }
+.demo-item > .demo { flex: 1; }
+
+.demo {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem 1.5rem 1.25rem;
+  min-height: 21rem;
+  user-select: none;
+  /* A column with the caption pushed to the foot: absolute positioning let the
+     menu grow down into it, and the two cards' captions sat at different
+     heights whenever their content did. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.demo-prose { font-size: 0.875rem; line-height: 1.7; color: var(--ink); }
+
+/* The slash, and the caret sitting after it. */
+.demo-trigger { display: inline-flex; align-items: center; }
+.demo-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  background: var(--accent);
+  border-radius: 1px;
+  margin-left: 1px;
+  translate: 0 2px;
+  animation: blink 1.1s steps(1, end) infinite;
+}
+
+.slash-menu {
+  position: relative;
+  margin-top: 0.5rem;
+  width: 17.5rem;
+  max-width: 100%;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+  padding: 0.3125rem;
+  overflow: hidden;
+}
+.slash-group {
+  font-size: 0.6875rem;
+  color: var(--faint);
+  padding: 0.375rem 0.5rem 0.25rem;
+}
+.slash-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  transition: background-color var(--quick) ease;
+}
+.slash-item.is-on { background: var(--raise); }
+@media (hover: hover) and (pointer: fine) { .slash-item:hover { background: var(--raise); } }
+/* Flex, not grid: `H` and its `<sub>` are two children and a grid stacks them. */
+.slash-glyph { width: 1.125rem; display: flex; align-items: center; justify-content: center; color: var(--muted); flex: none; font-size: 0.75rem; }
+.slash-glyph sub { font-size: 0.7em; vertical-align: baseline; }
+.slash-glyph img { width: 1.125rem; height: 1.125rem; display: block; }
+.slash-hint { margin-left: auto; font-size: 0.6875rem; color: var(--faint); font-family: var(--mono); }
+/* The list runs past the fold, the way it does in the app — the menu scrolls
+   rather than showing everything at once. */
+.slash-fade {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  height: 2.75rem;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(to bottom, transparent, var(--card));
+  pointer-events: none;
+}
+
+/* The selection, and the bar that came to it. */
+.sel-mark { background: var(--accent); color: var(--accent-ink); border-radius: 2px; padding: 0.0625rem 0; }
+.selbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.3125rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: var(--card);
+  box-shadow: var(--shadow-dialog);
+}
+.selbar .tool { min-width: 1.5rem; height: 1.5rem; font-size: 0.78125rem; }
+.selbar .tool-rule { margin-inline: 0.25rem; }
+.sel-kind { display: inline-flex; align-items: center; gap: 0.25rem; padding-inline: 0.375rem; font-size: 0.78125rem; color: var(--ink); }
+.tool-pen { position: relative; }
+.tool-pen::after {
+  content: '';
+  position: absolute;
+  left: 0.28125rem;
+  right: 0.28125rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--lime);
+}
+
+/* ── Download ──────────────────────────────────────────────────────────────*/
+
+.get { display: flex; flex-direction: column; gap: 1.75rem; align-items: flex-start; }
+.keys { margin-top: 3.5rem; display: grid; gap: 0 3.5rem; }
+@media (min-width: 48rem) { .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.key-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 0.875rem;
+}
+.key-row kbd { flex: none; }
+.key-row span { color: var(--muted); }
+
+.foot {
+  border-top: 1px solid var(--hairline);
+  padding-block: 2.25rem 3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+
+/* ── Entrance ──────────────────────────────────────────────────────────────
+   Anything that appears out of nothing rises four pixels while it fades, so it
+   reads as having come from somewhere. Transitions, not keyframes, so a fast
+   scroll retargets them instead of restarting.                                */
+.rise {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--unfold) var(--ease-out), transform var(--unfold) var(--ease-out);
+}
+.rise.is-in { opacity: 1; transform: none; }
+
+/* The month reveals square by square when it scrolls in — the one place a
+   stagger earns itself, because it is what makes the grid read as a run of
+   days rather than a block of colour. 18ms apart: 31 squares at 40 would take
+   most of a second and the panel would feel slow to arrive. */
+.day {
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 200ms var(--ease-out) var(--d, 0ms),
+    transform 200ms var(--ease-out) var(--d, 0ms),
+    box-shadow var(--quick) ease;
+}
+.month-grid.is-in .day { opacity: 1; transform: none; }
+
+@media (max-width: 62rem) {
+  .rail { display: none; }
+  .sidebar { display: none; }
+  .doc { max-width: 34rem; }
+  .canvas { padding-right: 1.25rem; }
+}
+@media (max-width: 40rem) {
+  .window { font-size: 0.75rem; }
+  .canvas { padding: 1.125rem 1rem 0; }
+  .crumbs, .topbar-import { display: none; }
+  .dialog { padding: 1.125rem; }
+  .stat-cards { grid-template-columns: 1fr; }
+}
+
+/*
+  Reduced motion keeps what aids comprehension and drops what moves. The fades
+  stay — they are how something reads as having arrived — and every transform,
+  translate and stagger goes.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .rise, .day { transform: none !important; }
+  .rise { transition: opacity 200ms ease !important; }
+  .day { transition: opacity 200ms ease !important; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="palma-brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d5fff" />
+      <stop offset="1" stop-color="#7c5cff" />
+    </linearGradient>
+    <!-- The mark: a page with a folded corner, a palm standing on it, and a
+         waterline running through the page and out the other side. Three paths
+         rather than one, because the waterline crosses the document's outline
+         and breaks it. Lifted verbatim from assets/logo.svg. -->
+    <symbol id="palma-art" viewBox="0 0 1139.19 1183.17">
+      <path d="m583.78,489.18c3.31,14.4,6.42,26.86,9.03,39.42,10.85,52.33,9.6,104.92.7,157.19-5.93,34.85-15.1,69.13-21.99,103.84-2.28,11.47-3.01,23.49-2.62,35.2,1,30.59,19.36,52.05,50.89,59.36,37.06,8.58,71.13-1.34,104.4-18.3-2.58-6.95-5.37-13.22-7.26-19.76-9.77-33.8-5.59-65.58,14.7-94.71,7.56-10.85,17.51-18.97,29.82-24.14,33.72-14.17,65.62,4.99,68.23,41.51,1.81,25.28-7.18,47.74-21.39,67.91-9.02,12.8-19.97,24.25-30.41,36.73,12.14,8.12,26.34,12.03,41.4,13.29,37.93,3.17,74.06-5.35,108.88-18.95,35.19-13.75,71.1-20.54,108.87-19.34,27.05.86,54.15.15,81.23.2,13.13.03,20.92,7.1,20.92,18.8,0,11.07-7.89,18.41-20.45,18.47-28.52.13-57.06.71-85.56-.1-32.24-.92-62.77,5.67-92.92,16.49-39.29,14.1-79.58,23.43-121.84,20-25.19-2.04-48.81-8.65-68.66-25.07-4.28-3.54-7.17-1.65-10.74.3-29.04,15.85-59.86,25.45-93.17,25.42-34.38-.03-65.26-10.31-91.18-33.36-4.53-4.03-7.17-2.52-11.04-.01-32.89,21.31-68.47,34.1-108.13,33.3-30.08-.61-57.25-9.11-79.72-30.16-1.63-1.53-5.38-2.58-7.28-1.79-48.77,20.4-98.88,19.22-149.53,9.61-51.72-9.81-103.79-7.95-155.9-4.73-7.47.46-14.92,1.39-22.39,1.83-10.85.63-18.76-5.58-20.41-15.71-1.66-10.21,4.43-19.69,15.01-21.83,6.71-1.36,13.72-1.46,20.6-1.72,48.93-1.81,97.9-4.26,146.68,2.25,19.97,2.66,39.72,6.98,59.71,9.34,26.83,3.16,53.51,1.49,79.54-6.46,3.48-1.06,6.86-2.46,7.89-2.84-2.76-19.83-7.05-38.15-7.44-56.56-.53-25.02,8.84-47.4,26.18-65.83,13.29-14.12,29.72-22.07,49.37-20.45,29.09,2.39,47.94,28.48,44.08,60.21-4.3,35.37-22.5,62.9-48.98,85.63-2.56,2.2-5.29,4.2-8.01,6.34,28.49,27.48,101.32,20.76,143.35-12.39-3.26-12.35-7.44-24.35-9.47-36.69-4.09-24.83,2.03-48.55,9.75-71.99,13.33-40.46,26.58-80.93,32.54-123.37,6.22-44.32,5.75-88.4-3.13-132.31-.22-1.1-.7-2.14-1.55-4.68-55.36,27.47-99.89,65.51-129.07,120.53-10.56-21.81-2.51-65.23,17.73-92.1,20.54-27.25,49.43-41.09,82.05-48.69-61.43-16.73-120.54-10.09-177.99,17.51,8.22-29.73,42.9-62.59,83.28-70.67,39.26-7.86,74.48,3.16,108.14,22.97-30.68-48.25-70.76-85.56-125.38-109.37,36.91-9.68,69.67-6.18,100.04,14.09,30.22,20.17,43.6,50.95,54.36,84.76,1.53-4.67,3.04-9.36,4.6-14.02,11.73-35.04,32.07-63.01,66.16-79.24,26.54-12.63,54.03-14.21,83.67-5.57-52.78,24.94-93.33,61.91-125.08,109.51,4.01-2.18,7.99-4.39,12.02-6.53,27.93-14.87,57.36-23.15,89.05-17.04,40.15,7.74,67.18,31.98,84.56,71.55-57.07-28.81-114.41-34.08-173.94-17.77,40.89,9.71,74.57,28.92,92.58,68.83,10.3,22.82,11.4,46.54,5.57,72.62-27.94-55.31-71.73-91.58-124.97-120.77Zm-219.64,354.58c7.86-7.89,16.05-15.03,22.94-23.27,11.79-14.09,20.45-29.9,21.13-48.88.26-7.16-1.38-14-8.2-17.81-6.89-3.85-13.36-.98-19.49,2.55-1.73,1-3.34,2.24-4.86,3.55-20.64,17.82-26.74,58.72-11.51,83.86Zm389.78,2.31c21.06-18.93,38.3-39.19,41.52-67.97.85-7.63.22-15.65-7.43-19.73-7.99-4.26-15.15-.02-21.27,5.04-21.09,17.42-27.66,57.63-12.83,82.66Z" />
+      <path d="m186.34,827.03c-14.32-1.45-27.39-2.77-41.05-4.15,0-3.37,0-6.22,0-9.07-.02-222.97-.06-445.95-.04-668.92,0-79.08,63.75-144.31,142.99-144.59,156.42-.55,312.85-.19,469.28-.1,27.57.02,51.42,10.1,70.66,29.58,53.24,53.89,105.65,108.63,159.25,162.15,28.02,27.98,40.77,60.59,40.65,100-.51,168.24-.25,336.47-.28,504.71,0,5.96,0,11.92,0,18.09-14.05.62-26.87,1.19-40.62,1.81,0-3.94,0-7.62,0-11.29-.03-170.54-.03-341.09-.12-511.63-.02-38.73-21.27-59.6-60.12-59.56-25.93.03-51.85.16-77.78.05-38.22-.16-60.21-22.16-60.27-60.15-.05-29.96.03-59.92-.09-89.88-.1-27.19-15.22-42.64-42.16-42.66-151.53-.12-303.06-.28-454.59-.09-56.12.07-105.53,50.44-105.57,107.14-.14,199.92-.12,399.85-.15,599.77,0,25.88,0,51.76,0,78.78Z" />
+      <path d="m1026.43,919.62c.71,2.08,1.23,2.87,1.22,3.66-.11,43.19.57,86.41-.6,129.58-1.66,61.23-54.47,125.85-133.81,129.26-42.26,1.82-84.66.72-126.99.74-158.13.04-316.26-.02-474.38,0-34.22,0-65.55-8.92-92.53-30.48-34.9-27.89-53.53-64.18-54.01-109.1-.37-35.14-.06-70.28-.06-105.42,0-3.11,0-6.23,0-10.79,14,1.44,27,2.78,41.11,4.23,0,4.18,0,7.55,0,10.91,0,30.24,1.07,60.53-.24,90.72-2.42,56.02,46.4,109.6,108.68,109.38,151.21-.53,302.43-.18,453.65-.19,42.63,0,85.26-.03,127.88.02,64.05.07,110.71-46.52,110.75-110.66.02-32.55.39-65.1-.18-97.64-.15-8.61,2.6-11.87,10.76-12.21,9.66-.4,19.31-1.34,28.74-2.02Z" />
+    </symbol>
+
+    <!-- Chrome glyphs, drawn to match the Phosphor set the app uses. -->
+    <symbol id="i-page" viewBox="0 0 16 16"><path d="M9.5 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5l-3.5-3.5Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.5 1.5V5H13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5.5 8h5M5.5 10.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-sidebar" viewBox="0 0 16 16"><rect x="1.8" y="3" width="12.4" height="10" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.2 3v10" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-history" viewBox="0 0 16 16"><path d="M2.6 8a5.4 5.4 0 1 0 1.6-3.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2.2 2.6v3.2h3.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 5.4V8l1.9 1.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 16 16"><rect x="2.2" y="2.8" width="11.6" height="10.4" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M2.2 6.2h11.6M6.4 6.2v7" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12.9 9.8a1.1 1.1 0 0 0 .22 1.21l.04.04a1.33 1.33 0 1 1-1.88 1.88l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1v.11a1.33 1.33 0 1 1-2.66 0v-.06a1.1 1.1 0 0 0-.72-1 1.1 1.1 0 0 0-1.21.22l-.04.04a1.33 1.33 0 1 1-1.88-1.88l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1-.67h-.11a1.33 1.33 0 1 1 0-2.66h.06a1.1 1.1 0 0 0 1-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.33 1.33 0 1 1 1.88-1.88l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1v-.11a1.33 1.33 0 1 1 2.66 0v.06a1.1 1.1 0 0 0 .67 1 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.33 1.33 0 1 1 1.88 1.88l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1 .67h.11a1.33 1.33 0 1 1 0 2.66h-.06a1.1 1.1 0 0 0-1 .67Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 16 16"><path d="M8 10.4V2.4M5.2 5.2 8 2.4l2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 9.6v3a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 2.4a5.6 5.6 0 0 1 0 11.2Z" fill="currentColor"/></symbol>
+    <symbol id="i-chev-l" viewBox="0 0 16 16"><path d="M9.8 3.6 5.4 8l4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-r" viewBox="0 0 16 16"><path d="M6.2 3.6 10.6 8l-4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-d" viewBox="0 0 16 16"><path d="M3.8 6.2 8 10.4l4.2-4.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 16 16"><path d="M10.6 2.4 13.6 5.4 6 13H3v-3l7.6-7.6Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 16 16"><rect x="2.2" y="3.2" width="11.6" height="10.6" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.2 6.4h11.6M5.4 1.8v2.6M10.6 1.8v2.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 16 16"><path d="M2 11.4 6 7l2.6 2.6L14 4.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.2 4.2H14v3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-question" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.3 6.2a1.75 1.75 0 1 1 1.9 2v1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="11.2" r="0.65" fill="currentColor"/></symbol>
+    <symbol id="i-image" viewBox="0 0 16 16"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="5.8" cy="6.4" r="1" fill="currentColor"/><path d="M2.6 11 6 8.2l3 2.4 2.2-1.6 2.4 2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus-page" viewBox="0 0 16 16"><path d="M9.4 1.8H4.2a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.6a1 1 0 0 0 1-1V5.2L9.4 1.8Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 7.4v3.4M6.3 9.1h3.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 16 16"><path d="M8 2.2l1.8 3.7 4 .6-2.9 2.8.7 4L8 11.4l-3.6 1.9.7-4L2.2 6.5l4-.6L8 2.2Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-highlighter" viewBox="0 0 16 16"><path d="M11.2 2.6 13.4 4.8 7.6 10.6 5.4 8.4l5.8-5.8Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.4 8.4 3.6 11.4l1.4 1.4 3-1.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.4 14.2h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-bullets" viewBox="0 0 16 16"><path d="M6 4.2h8M6 8h8M6 11.8h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="2.9" cy="4.2" r="1.05" fill="currentColor"/><circle cx="2.9" cy="8" r="1.05" fill="currentColor"/><circle cx="2.9" cy="11.8" r="1.05" fill="currentColor"/></symbol>
+    <symbol id="i-ordered" viewBox="0 0 16 16"><path d="M6.4 4.2h7.8M6.4 8h7.8M6.4 11.8h7.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><text x="1.2" y="5.6" font-size="5" font-family="monospace" fill="currentColor">1</text><text x="1.2" y="9.5" font-size="5" font-family="monospace" fill="currentColor">2</text><text x="1.2" y="13.4" font-size="5" font-family="monospace" fill="currentColor">3</text></symbol>
+    <symbol id="i-tasks" viewBox="0 0 16 16"><path d="M7.4 4.2h6.8M7.4 8h6.8M7.4 11.8h6.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M1.4 4.2 2.6 5.4 5 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.4 8l1.2 1.2L5 6.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.4 11.8 2.6 13 5 10.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 16 16"><circle cx="3.4" cy="8" r="1.05" fill="currentColor"/><circle cx="8" cy="8" r="1.05" fill="currentColor"/><circle cx="12.6" cy="8" r="1.05" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+  <nav class="nav" id="nav">
+    <div class="shell nav-inner">
+      <a class="wordmark" href="#top">
+        <!-- The identity badge: white artwork on the Cobalt→Violet tile, the
+             same tile and inset the app icon is rasterised from. -->
+        <svg width="22" height="22" viewBox="0 0 1183.17 1183.17" aria-hidden="true" focusable="false">
+          <rect width="1183.17" height="1183.17" rx="248.47" fill="url(#palma-brand)" />
+          <use href="#palma-art" x="118" y="103" width="947" height="984" fill="#ffffff" stroke="#ffffff" stroke-width="10" stroke-linejoin="round" />
+        </svg>
+        PalmaNote
+      </a>
+      <a class="btn btn-primary btn-small" href="#get">Download</a>
+    </div>
+  </nav>
+
+  <header class="hero shell" id="top">
+    <div class="hero-inner">
+      <h1 class="type-line" id="typeline"><span id="typed"></span><span id="typemark"></span><span class="caret" id="caret"></span></h1>
+
+      <p class="lede">
+        A small, local place to keep pages, notes and lists. One file on your
+        own disk. No account, no cloud, no AI.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#get">Download for Windows</a>
+        <a class="btn btn-quiet" href="#window">Look inside</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- The window straddles the waterline: half on paper, half under it. -->
+  <section class="waterline-band" id="window">
+    <div class="shell band-inner">
+
+      <div class="window rise" id="win">
+        <div class="topbar">
+          <span class="topbar-mark">
+            <svg width="19" height="19" viewBox="0 0 1139.19 1183.17" fill="currentColor" stroke="currentColor" stroke-width="10" stroke-linejoin="round" aria-hidden="true"><use href="#palma-art" /></svg>
+          </span>
+          <span class="topbar-import">Import</span>
+          <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-sidebar" /></svg></span>
+
+          <div class="tabs">
+            <span class="tab is-active">
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>
+              Chapter One
+              <svg class="tab-close" width="12" height="12" aria-hidden="true"><use href="#i-x" /></svg>
+            </span>
+            <span class="tab">
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>
+              Groceries
+            </span>
+          </div>
+
+          <div class="topbar-tools">
+            <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-history" /></svg></span>
+            <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-grid" /></svg></span>
+            <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-gear" /></svg></span>
+            <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-share" /></svg></span>
+            <span class="icon-btn"><svg width="16" height="16" aria-hidden="true"><use href="#i-theme" /></svg></span>
+          </div>
+        </div>
+
+        <div class="pagebar">
+          <span class="navbtns">
+            <span class="icon-btn"><svg width="15" height="15" aria-hidden="true"><use href="#i-chev-l" /></svg></span>
+            <span class="icon-btn"><svg width="15" height="15" aria-hidden="true"><use href="#i-chev-r" /></svg></span>
+          </span>
+          <span class="crumbs">Chapter One</span>
+
+          <div class="toolbar">
+            <span class="tool" style="font-weight:600">B</span>
+            <span class="tool" style="font-style:italic;font-family:Georgia,serif">I</span>
+            <span class="tool" style="text-decoration:line-through">S</span>
+            <span class="tool"><svg width="15" height="15" aria-hidden="true"><use href="#i-highlighter" /></svg></span>
+            <span class="tool-rule"></span>
+            <span class="tool">H<sub>1</sub></span>
+            <span class="tool">H<sub>2</sub></span>
+            <span class="tool">H<sub>3</sub></span>
+            <span class="tool-rule"></span>
+            <span class="tool"><svg width="15" height="15" aria-hidden="true"><use href="#i-bullets" /></svg></span>
+            <span class="tool"><svg width="15" height="15" aria-hidden="true"><use href="#i-ordered" /></svg></span>
+            <span class="tool is-on"><svg width="15" height="15" aria-hidden="true"><use href="#i-tasks" /></svg></span>
+          </div>
+        </div>
+
+        <div class="window-body">
+          <aside class="sidebar">
+            <div class="side-label">Pages</div>
+            <div class="tree">
+              <div class="row is-active">
+                <svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>
+                Chapter One
+                <span class="row-tools">
+                  <svg width="13" height="13" aria-hidden="true"><use href="#i-star" /></svg>
+                  <svg width="13" height="13" aria-hidden="true"><use href="#i-plus-page" /></svg>
+                  <svg width="13" height="13" aria-hidden="true"><use href="#i-dots" /></svg>
+                  <span class="row-count">1,284</span>
+                </span>
+              </div>
+              <div class="row"><svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>Reading list</div>
+              <div class="row"><svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>Kitchen rebuild</div>
+              <div class="row"><svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>Allotment</div>
+              <div class="row"><svg width="14" height="14" aria-hidden="true"><use href="#i-page" /></svg>Groceries</div>
+            </div>
+            <div class="add-page">
+              <svg width="15" height="15" aria-hidden="true"><use href="#i-plus-page" /></svg>
+              Add page
+            </div>
+            <div class="archive-row"><span>Archive</span><span>1,284 words</span></div>
+          </aside>
+
+          <div class="main">
+            <div class="canvas">
+              <div class="doc">
+                <div class="add-cover">
+                  <svg width="14" height="14" aria-hidden="true"><use href="#i-image" /></svg>
+                  Add cover
+                </div>
+                <div class="doc-title">Chapter One</div>
+                <div class="gutter-demo">
+                  <span class="gutter"><span>⠿</span><span>+</span></span>
+                  <p>
+                    The tide went out further than anyone could remember, and the
+                    boats leaned over in the mud like animals asleep.
+                    <span class="mark-y">Check the tide tables for October</span> —
+                    it matters more than it sounds, because everything after this
+                    depends on how long the flats stayed dry.
+                  </p>
+                </div>
+                <p>
+                  Ada had walked out there twice before, once as a child with her
+                  father and once alone. Both times are written down in
+                  <span class="pagelink">The harbour</span>, which is where the
+                  names of the boats are kept.
+                </p>
+                <div class="tasks">
+                  <div class="task"><span class="box"></span><span>Name the second boat</span></div>
+                  <div class="task"><span class="box"></span><span>Decide whether the father is alive in chapter four</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rail">
+              <div class="sticky is-lime">Is "flats" the right word here, or is that only an estuary thing?</div>
+              <div class="sticky is-orange">Ada's mother hasn't been mentioned once. Deliberate?</div>
+            </div>
+
+            <div class="statusbar">
+              <span>1,284 words</span><em>·</em><span>7,041 chars</span><em>·</em><span>+312 this session</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="shell" style="padding-top:0">
+    <div class="band-captions">
+      <div class="caption-item rise">
+        <h3>Pages nest, and link to each other</h3>
+        <p>Type <kbd>@</kbd> to mention another page. Rename it later and every mention follows.</p>
+      </div>
+      <div class="caption-item rise">
+        <h3>Every block is an object</h3>
+        <p>Reach into the margin for a handle and a <kbd>+</kbd>, or move a block with <kbd>Alt Shift ↑</kbd>.</p>
+      </div>
+      <div class="caption-item rise">
+        <h3>Stickies live beside the page, not in it</h3>
+        <p><kbd>Ctrl Space</kbd> parks a note in the rail. It never exports and never counts toward your words.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="shell">
+    <div class="section-head rise">
+      <h2>It notices that you wrote. It doesn't score you.</h2>
+      <p class="body-text">
+        A square is a day, and it counts words <strong>touched</strong> — so
+        cutting forty words still counts as work. No streaks, no personal bests,
+        nothing that breaks if you take a Sunday off.
+      </p>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="dialog rise">
+        <div class="dialog-head">
+          <div class="dialog-title">
+            <svg width="19" height="19" style="margin-top:2px" aria-hidden="true"><use href="#i-trend" /></svg>
+            <div>
+              <h3>Your writing</h3>
+              <p>A quick look at your writing activity.</p>
+            </div>
+          </div>
+          <span class="month-picker">
+            <svg width="15" height="15" aria-hidden="true"><use href="#i-calendar" /></svg>
+            August 2026
+            <svg width="13" height="13" style="color:var(--faint)" aria-hidden="true"><use href="#i-chev-d" /></svg>
+          </span>
+        </div>
+
+        <div class="stat-cards">
+          <div class="stat-card">
+            <span class="stat-icon"><svg width="16" height="16" aria-hidden="true"><use href="#i-pen" /></svg></span>
+            <div>
+              <div class="stat-num">18,940</div>
+              <div class="stat-label">Words this month</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon"><svg width="16" height="16" aria-hidden="true"><use href="#i-calendar" /></svg></span>
+            <div>
+              <div class="stat-num">11</div>
+              <div class="stat-label">Writing days</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="month">
+          <div class="weekdays">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+
+        <div class="month-foot">
+            <span>Saturday, August 15 · 1,284 words · 41 minutes</span>
+            <span class="legend">
+              Less writing
+              <span class="legend-swatches">
+                <i style="background:var(--heat-0)"></i>
+                <i style="background:var(--heat-1)"></i>
+                <i style="background:var(--heat-2)"></i>
+                <i style="background:var(--heat-3)"></i>
+                <i style="background:var(--heat-4)"></i>
+              </span>
+              More writing
+              <span class="learn">Learn more about stats <svg width="13" height="13" aria-hidden="true"><use href="#i-question" /></svg></span>
+            </span>
+        </div>
+
+        <div class="dialog-foot">
+          <span>Eleven days so far in August.</span>
+          <span class="dialog-close">Close</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="shell">
+    <div class="section-head rise">
+      <h2>Everything is one key away.</h2>
+      <p class="body-text">
+        <strong>/</strong> opens every block, plus images and nine stickers.
+        <strong>@</strong> finds a page — or makes one that doesn't exist yet,
+        without moving your caret. Hold a selection and the bar comes to the
+        words.
+      </p>
+    </div>
+
+    <div class="demos">
+      <div class="demo-item rise">
+        <h3>The insert menu</h3>
+        <div class="demo">
+        <p class="demo-prose">It was interesting, how different our lives were.</p>
+        <p class="demo-prose demo-trigger">/<span class="demo-caret"></span></p>
+        <div class="slash-menu">
+          <div class="slash-group">Blocks</div>
+          <div class="slash-item is-on"><span class="slash-glyph">Aa</span>Text<span class="slash-hint">Ctrl+Alt+0</span></div>
+          <div class="slash-item"><span class="slash-glyph">H<sub>1</sub></span>Heading<span class="slash-hint">Ctrl+Alt+1</span></div>
+          <div class="slash-item"><span class="slash-glyph"><svg width="14" height="14" aria-hidden="true"><use href="#i-bullets" /></svg></span>Bulleted list<span class="slash-hint">-</span></div>
+          <div class="slash-item"><span class="slash-glyph"><svg width="14" height="14" aria-hidden="true"><use href="#i-tasks" /></svg></span>To-do list<span class="slash-hint">[]</span></div>
+          <div class="slash-item"><span class="slash-glyph"><svg width="14" height="14" aria-hidden="true"><use href="#i-image" /></svg></span>Image</div>
+          <div class="slash-group">Stickers</div>
+          <div class="slash-item"><span class="slash-glyph"><img src="data:image/png;base64,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" alt="" /></span>Heart</div>
+          <div class="slash-item"><span class="slash-glyph"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAYAAAAehFoBAAAK70lEQVR4AeyYC3BU1RnHv3vvvjfZZ7J5EBISQpAUpmCcVBEqURRRTFEaGMuogw+odajaEa3TTqGV0TLiKNjBgoVYK6QS21DRQURJJEBBAogJNBBCyJLsZt+v+37s7Xcj40jtLoXgOE7Z+c49d++595zf+Z/v++7ZJeE79rkK/E0v2FWFryr8Hwr8f7vEihUryF1bd9k3b94+rqamxr5161Zq/fr1lqVLlxpRqCsizhXpBGGGrba2Vp+Q+BfMknNvdXX1vYpiKDbrnGv7+32LKisrc4Zv+spBm+DWra05q1atyp0xY4YOmwgsWW1EwNqArY2tphdffNOK59qAoDNQZwod1+S5HaNmqBw5q8xWd8/NN975gNvtLvgqCd5P3j7t9nyDDG/m6Is3nzzZOxXbKSxZbUTAqGiOkmdtLHHm729pbrll9uzZ8tjKqv00lyDslsJRvYP/av+sb//v46nIsy6Xy6uRoIvoUU0HTdPmXp//EY91ylwXee2cBQ331jU0NOi1e7KVEQHTNKmLRdUSnrc6LTabNo7KcwIH2CtJUNTevR2hvYeEl5Y/99QnO3bsEHbu3Gl1m8etXjD78aO7d+++2ZPn+OhE7wlvMNl/6tjRIwdCoZCkdZKtYNfZmrO3NTTMijvM1Jy8MuXaSZMm7D58+DDFCanxJJhUho9Fy8qcfHPzfIUgCFXraXAwYUmE4QdBL2EgSZKP0aFDglGYKJqpGpWSP25ra5O1+7KVEQEjSPrW+dcl7rqrLrxhwwbpzMEzRn9//Mc8J6mSmjh224zbShvX/2XunDkNo9Bnc4qcJTMJ2Tqeyo2GAoHA8fnz5yuPPVZHL1s2i1n+s+WmlStXjq6vr89F4IzBd9nAra2tuqam1jHvf7Bv0Zo1jT9ZvHjZWE5nctlN5TeKKZKwm4preMb6lsc6dWO+o+CJypKa9VzIsSaZTLEHPt/5h3PnzoUQ7Evj9IYlYx2z2iJD9EIAMGH5r3bZwBHaWMlTef/4vM/zcoqcuq50wtwdrCy+Raq2fG/guJBvqJ3mD54NBumzB66vuWmmECq8q8/XddJPdyz26Kxv44TVlpYWx9q1m/K3t3xQywT1TweCQzaS0g0haUbXuCxgHMzk9UVWmiwF4/uDqn0okWuXybHjKgrqpnsjIQKcvl6VtVnCsQArQP8yiSm2hdn+0Iftf/1tjD3z4d133q0kAun7ID5mq4ucsJ0L5L8tsRarN3awBXTUvisOfNYvjkmT5VMpymh0O3MhllLAbTAAy+mAMRURpG7ieKBUUBSZtRkKppv0LkeKC56y2NTBxYsX6ym3ezww+c/HgmJtNCgaomEu1Rfd03TkUMfz7e07ogg8HKRYf80uS2GL0XhfvjvfkVYIKPGYwGikoC8qQ1dMgZRIERahRC/bgKiqqJlmVMpXhxOnaYNZ7L6v4ecLB3uFX9Ap6VWRNthajzb+uag68StPBX/84JFdH5qdhB8JlY6ODj0GqQHPv8b3tQt4U1bbvn275ZQ3vkCnMxhkBcBiIGFcqRFkioC4oADHK8CIKjitBaBPX1/uYzul0762h12OYmNfl/lR/wnnU5F+e3VA6Djm953+Ex81LVCClXMnf2/aIzRN2xobG03xiPAjm9W9cMqUKYUIc0HGuGRgb0D6oTFnoofh0pQkq8DyMjisJFCkAqpKgNWqBynPAkxUAMZqhLRtqq1s/DVPHOvd11h+ne9mc8Vns02juu5IJBIL5t7+Sx9hlLek4FSL19+zacyYMaxV5yqJ9thetgoTVzltnlsQmMLypV0S8P79+82sYFvjzLVbRVRRgxXENCRTApQXGcCeSwFFYf96HaQpEnhUG0gb5Sy+ddaooglPh4boOnO65Ek7NWlTVen0Trc9309yxe8ZSNfsGybVP3OmZ+DOT4+1J6O8ryXC9b0XioZOICmuIx7PG3m+vmiFPkUe7/beJpElJYpKkHJaBYaVQURgDTye5MGsl0EQZTCja9A6PahmA+h0FNhy86mxxbfeY5Wnv5QIFc2LxJSyYDgZCYSjXeFIopNOyTGJN1fyguDesmUL7TqYeFLUex/u7DxyBMEuCMCMwHjjBVZdvZyIsM5FDrvboKQJzAAqCJICrCAPn7OcDAmEBlWAkDYRhwlwTgCKCsaECEzSRnrpoBIQd2xu/3TjFE8p/9OSCqI7wOzf+MnBphtSel9prt3Q6PP5uPn4OkeB0ghwASx+17YpWpW9qOicpaWnrQC2mek0UCKCyui/CsJwqCaPKkt4rsEn0D1knQQKpEFzF4ZPQzCpgq7ADAWVVZSiL/y+rLLl8SC8YmSq7hntnLxs265Nlc8+uzCJewkeSVQsGY3M2PKVBtwn6A53djQIabcRQQkeIRVVHVYWsHtJRjhBBklKA8tLEEtwwLIMSIoEZgsFpkIjgJ5EsXWkPW/y2ILRpfUKFTtz/HgfMxTpO6vTQQSH0xTFKruR2ZsBI18lrNbvm8NJ14NWSy6lKSqhujQtDi95GsG1PjQ1eVFBaAU4hNd8OplkIJqggcXrSUaCWFICRrCazfZr6nZ9/M7v8qqG6v3h7sWpVM1p7EPFclG7KHBzc7NeJSPzSMPoWiUNhOarmpISfpHQNbBCpdMAuIMUMOC0yQB+eDyPxFjwDiagtz8MQ+EUDAZpCMU5Mpy02E6e6XI9vHTevvVvrO0BuPi2ErsctosCDw3lmHoG4SGTxa3TXhQKRpKWFVTMuSK6gohgX0Cr2mqguiLwggQkAZBGh6dZHvzBOPQPhCAYDsC5oQGZUIMxRVF8wwSXeMgKjJFKWtyFTpOlbLKWU5EV1VRBg2Y4CYNKAUmDlmQclgAZA0+DTNE84OYIBobCMOAPgm8oAAOD/Yq3vzNh4vYdOXXsg+e6u7tRWXzsEi0rcFnZTYZiT/oOTqCsw2Doi6Kkop+mgcPgStICQssgomtwvIiTSeN1GdtRYexZlgSVYaOCGU4nJpX0dBVS7U+n6a761o/+9g5yahkBq0sz7DbjAwQPfGHbp8llClgRTAGalYbV1QBl9AMJfSQSZ4DlBATFwvF4jtlBFlRZ4SW9fDhamdP2Wlnu8bruo+9P+3tz4+tNTU0BHBGdHo+XYRmBccekMxscN+baxpQBEJiuFNACKcXww9ASZgoRXUFG6HA0iaksiROi1VR8UM4lPo8VUzubqvIG5hFy+JmNG/94FHMsDQD/UybA+zJaRuD29k5rIBJexAi4rUE9JPTVFCOCgG5Bs8LwsmsBxwsiSGIcDGoPm0fu3jNzUs+vo33vTvP3dzz0+oZ1ezDLiBlHv4yGjMCuokpPNGmuFvFlwLBfjCkjdDTBQJJmIY75NZUMgl71MuWu7nbOt21emIvO6TWoL+/Z89FJVFSG87+WL4Mr4yMZgWkm5pHAY0xhwqcROJHkQPNZnuchGfdKLmOXv7ai+9107P15TMBfX11V8nFb8zq6ecUKbXa4JhnHHFFDRmCD2dJjoc72cRyjDoXiqGhUjUX7pBJbd/9o8z9foMSeGRH/wAMVo3J2b9v2SgJf3xf9E2REpOcfzgicTvVGiz05Cys8Q5uKc08eclAHXivK6XxQSHTdwZqZVRMqbKffeOOV+HnQEQfTeZ6LVhmBlyxZIj36YF1PZVHocZeua45T3//M5vW/aWre/OqJ7Rs2sPhS+caWPRt1RmDtIe2fnfvvv59ZvXp1cN26dVpaUrTr32bJCvxtgmUa+ypwJmWu1PXvnML/BgAA///7AGREAAAABklEQVQDADoh0KRA+P2SAAAAAElFTkSuQmCC" alt="" /></span>Party</div>
+          <div class="slash-item"><span class="slash-glyph"><img src="data:image/png;base64,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" alt="" /></span>Idea</div>
+          <span class="slash-fade"></span>
+        </div>
+        </div>
+      </div>
+
+      <div class="demo-item rise">
+        <h3>The selection bar</h3>
+        <div class="demo">
+        <span class="selbar">
+          <span class="sel-kind">Text <svg width="11" height="11" style="color:var(--faint)" aria-hidden="true"><use href="#i-chev-d" /></svg></span>
+          <span class="tool-rule"></span>
+          <span class="tool" style="font-weight:600">B</span>
+          <span class="tool" style="font-style:italic;font-family:Georgia,serif">I</span>
+          <span class="tool" style="text-decoration:line-through">S</span>
+          <span class="tool" style="font-family:var(--mono);font-size:0.6875rem">&lt;/&gt;</span>
+          <span class="tool-rule"></span>
+          <span class="tool"><svg width="14" height="14" aria-hidden="true"><use href="#i-bullets" /></svg></span>
+          <span class="tool"><svg width="14" height="14" aria-hidden="true"><use href="#i-ordered" /></svg></span>
+          <span class="tool"><svg width="14" height="14" aria-hidden="true"><use href="#i-tasks" /></svg></span>
+          <span class="tool-rule"></span>
+          <span class="tool tool-pen"><svg width="14" height="14" aria-hidden="true"><use href="#i-highlighter" /></svg></span>
+        </span>
+        <p class="demo-prose">
+          It had been seven years since I saw my eldest brother last.
+          <span class="sel-mark">So when we finally got to see each other again,
+          it was prime time to do some long overdue bonding</span>, as now I too
+          was an adult. A big boy.
+        </p>
+        <p class="demo-prose" style="margin-top:0.75rem">
+          He looked at me bewildered and was like &ldquo;What am I looking for
+          outside.&rdquo; And immediately memories of me shouting at raves by 2am
+          flashed behind my eyes.
+        </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="waterline-band" id="get">
+    <div class="shell band-inner">
+      <div class="get rise">
+        <h2>Get it and write something down.</h2>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#" id="download">Download for Windows</a>
+          <a class="btn btn-quiet" href="#top">Back to the top</a>
+        </div>
+      </div>
+
+      <div class="keys rise">
+        <div class="key-row"><kbd>Ctrl K</kbd><span>Go to any page</span></div>
+        <div class="key-row"><kbd>Ctrl Space</kbd><span>A sticky note in the rail</span></div>
+        <div class="key-row"><kbd>Ctrl T</kbd><span>New page in a new tab</span></div>
+        <div class="key-row"><kbd>Ctrl Shift Y</kbd><span>Your writing</span></div>
+        <div class="key-row"><kbd>/</kbd><span>Insert anything</span></div>
+        <div class="key-row"><kbd>@</kbd><span>Mention another page</span></div>
+        <div class="key-row"><kbd>Alt Shift ↑</kbd><span>Move this block up</span></div>
+        <div class="key-row"><kbd>Esc</kbd><span>Back to the writing, from anywhere</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="shell">
+    <footer class="foot">
+      <span>PalmaNote — a writing app for one person.</span>
+      <span>This page loads no fonts, no scripts from anywhere, and no trackers. Same as the app.</span>
+    </footer>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- the month, built rather than typed out 31 times ------------------- */
+  // August 2026 starts on a Saturday; the grid runs Monday-first, so the month
+  // opens with five blanks. The heat is a plausible month of writing, and the
+  // days after the 15th have not happened yet.
+  var HEAT = { 1:2, 2:1, 3:3, 4:4, 5:0, 6:2, 7:3, 8:0, 9:1, 10:4, 11:2, 12:3, 13:0, 14:4, 15:3 };
+  var grid = document.getElementById('month-grid');
+  var frag = document.createDocumentFragment();
+  for (var b = 0; b < 5; b++) {
+    var blank = document.createElement('span');
+    blank.className = 'day is-blank';
+    frag.appendChild(blank);
+  }
+  for (var d = 1; d <= 31; d++) {
+    var cell = document.createElement('span');
+    var level = HEAT[d];
+    cell.className = 'day ' + (d > 15 ? 'is-future' : 'h' + level) + (d === 15 ? ' is-today' : '');
+    cell.textContent = d;
+    // Stagger comes from the cell's own index, set once, so nothing recalculates
+    // a variable on the parent mid-animation.
+    cell.style.setProperty('--d', Math.min(d + 5, 36) * 14 + 'ms');
+    frag.appendChild(cell);
+  }
+  grid.appendChild(frag);
+
+  /* ---- the hero caret ---------------------------------------------------- */
+  var TEXT = 'Write it down.\nThat’s the entire app.';
+  var typed = document.getElementById('typed');
+  var mark = document.getElementById('typemark');
+  var caret = document.getElementById('caret');
+  var line = document.getElementById('typeline');
+
+  function placeCaret() {
+    var a = mark.getBoundingClientRect();
+    var b = line.getBoundingClientRect();
+    caret.style.translate = (a.left - b.left) + 'px ' + (a.top - b.top) + 'px';
+  }
+
+  if (reduced) {
+    typed.textContent = TEXT;
+    caret.classList.add('is-on', 'is-resting');
+    placeCaret();
+  } else {
+    var i = 0;
+    caret.classList.add('is-on');
+    placeCaret();
+    (function step() {
+      if (i >= TEXT.length) {
+        caret.classList.add('is-resting');
+        return;
+      }
+      typed.textContent = TEXT.slice(0, ++i);
+      placeCaret();
+      // A beat at the full stop, and a longer one at the line break, so the
+      // caret's glide down to the second line is legible rather than incidental.
+      var ch = TEXT.charAt(i - 1);
+      var wait = ch === '\n' ? 420 : ch === '.' ? 260 : 34 + Math.random() * 34;
+      setTimeout(step, wait);
+    })();
+  }
+  window.addEventListener('resize', placeCaret);
+
+  /* ---- entrances --------------------------------------------------------- */
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('is-in');
+      io.unobserve(e.target);
+    });
+  }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+
+  document.querySelectorAll('.rise').forEach(function (el, n) {
+    el.style.transitionDelay = Math.min(n % 4, 3) * 45 + 'ms';
+    io.observe(el);
+  });
+
+  [['#month-grid', 0.15]].forEach(function (pair) {
+    var el = document.querySelector(pair[0]);
+    if (!el) return;
+    new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        el.classList.add('is-in');
+        obs.unobserve(e.target);
+      });
+    }, { threshold: pair[1] }).observe(el);
+  });
+
+  var nav = document.getElementById('nav');
+  var onScroll = function () { nav.classList.toggle('is-stuck', window.scrollY > 8); };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</html>

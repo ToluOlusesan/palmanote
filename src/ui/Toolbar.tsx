@@ -85,13 +85,13 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
 
       <span className="tool-sep" />
 
-      {button('Heading 1', 'Ctrl+Alt+1', editor.isActive('heading', { level: 1 }), TextHOne, () =>
+      {button('Heading', 'Ctrl+Alt+1', editor.isActive('heading', { level: 1 }), TextHOne, () =>
         editor.chain().focus().toggleHeading({ level: 1 }).run(),
       )}
-      {button('Heading 2', 'Ctrl+Alt+2', editor.isActive('heading', { level: 2 }), TextHTwo, () =>
+      {button('Subheading', 'Ctrl+Alt+2', editor.isActive('heading', { level: 2 }), TextHTwo, () =>
         editor.chain().focus().toggleHeading({ level: 2 }).run(),
       )}
-      {button('Heading 3', 'Ctrl+Alt+3', editor.isActive('heading', { level: 3 }), TextHThree, () =>
+      {button('Small heading', 'Ctrl+Alt+3', editor.isActive('heading', { level: 3 }), TextHThree, () =>
         editor.chain().focus().toggleHeading({ level: 3 }).run(),
       )}
 

@@ -17,12 +17,29 @@ use base64::Engine as _;
 
 use crate::frac_index::key_between;
 use crate::types::{
-    AssetMeta, AssetRecord, Backlink, CreateDocumentInput, DocumentMeta, DocumentRecord,
-    MoveDocumentInput, PutAssetInput, RevisionRecord, SaveContentInput,
+    ActivityDay, AssetMeta, StickyNote, AssetRecord, Backlink, CreateDocumentInput, DocumentMeta,
+    DocumentRecord, MoveDocumentInput, PutAssetInput, RecordActivityInput, RevisionRecord,
+    SaveContentInput,
 };
 
 const REVISION_COALESCE_MS: i64 = 2 * 60 * 1000;
 const SNAPSHOT_KEEP: usize = 30;
+
+/// How long a pause can be and still be writing.
+///
+/// The third copy of this rule, and the only one that cannot import the other
+/// two — `ACTIVE_GAP_MS` and `accrueSeconds` in `src/core/activity.ts` are the
+/// definition, and the reasoning for three minutes is written there. If that
+/// number moves, this one moves with it.
+const ACTIVE_GAP_MS: i64 = 3 * 60 * 1000;
+
+fn accrue_seconds(last_at: i64, at: i64) -> i64 {
+    let gap = at - last_at;
+    if gap <= 0 || gap > ACTIVE_GAP_MS {
+        return 0;
+    }
+    (gap as f64 / 1000.0).round() as i64
+}
 
 const SCHEMA: &str = "
 PRAGMA journal_mode = WAL;
@@ -65,6 +82,23 @@ CREATE TABLE IF NOT EXISTS assets (
   height     INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS activity (
+  day      TEXT PRIMARY KEY,
+  words    INTEGER NOT NULL DEFAULT 0,
+  seconds  INTEGER NOT NULL DEFAULT 0,
+  last_at  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sticky_notes (
+  id          TEXT PRIMARY KEY,
+  document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  text        TEXT    NOT NULL DEFAULT '',
+  colour      TEXT    NOT NULL,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sticky_notes_document ON sticky_notes (document_id);
 ";
 
 const META_COLUMNS: &str = "id, parent_id, position, title, kind, favorite, icon, cover, cover_offset, word_count, created_at, updated_at, archived_at";
@@ -269,6 +303,112 @@ impl Store {
                 },
             )
             .optional()
+        })
+    }
+
+    /// Adds one edit to a day's tally and returns the day as it now stands.
+    ///
+    /// Read then write, both inside one `with` — the mutex is held across the
+    /// pair, so two saves landing together cannot each read the same total and
+    /// each write it back. The gap rule is `accrue_seconds` above rather than
+    /// SQL, so the arithmetic matches the other two shells exactly.
+    pub fn record_activity(&self, input: RecordActivityInput) -> Result<ActivityDay> {
+        self.with(|db| {
+            let existing = db
+                .query_row(
+                    "SELECT words, seconds, last_at FROM activity WHERE day = ?1",
+                    params![input.day],
+                    |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?)),
+                )
+                .optional()?;
+
+            let next = match existing {
+                Some((words, seconds, last_at)) => ActivityDay {
+                    day: input.day.clone(),
+                    words: words + input.words,
+                    seconds: seconds + accrue_seconds(last_at, input.at),
+                    last_at: input.at,
+                },
+                None => ActivityDay {
+                    day: input.day.clone(),
+                    words: input.words,
+                    seconds: 0,
+                    last_at: input.at,
+                },
+            };
+
+            db.execute(
+                "INSERT INTO activity (day, words, seconds, last_at) VALUES (?1, ?2, ?3, ?4)
+                 ON CONFLICT(day) DO UPDATE SET
+                   words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at",
+                params![next.day, next.words, next.seconds, next.last_at],
+            )?;
+            Ok(next)
+        })
+    }
+
+    pub fn list_stickies(&self, document_id: &str) -> Result<Vec<StickyNote>> {
+        self.with(|db| {
+            let mut statement = db.prepare(
+                "SELECT id, document_id, text, colour, created_at, updated_at
+                 FROM sticky_notes WHERE document_id = ?1 ORDER BY created_at",
+            )?;
+            let rows = statement.query_map(params![document_id], |row| {
+                Ok(StickyNote {
+                    id: row.get("id")?,
+                    document_id: row.get("document_id")?,
+                    text: row.get("text")?,
+                    colour: row.get("colour")?,
+                    created_at: row.get("created_at")?,
+                    updated_at: row.get("updated_at")?,
+                })
+            })?;
+            rows.collect()
+        })
+    }
+
+    pub fn put_sticky(&self, note: StickyNote) -> Result<StickyNote> {
+        self.with(|db| {
+            db.execute(
+                "INSERT INTO sticky_notes (id, document_id, text, colour, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                 ON CONFLICT(id) DO UPDATE SET
+                   text = excluded.text, colour = excluded.colour,
+                   updated_at = excluded.updated_at",
+                params![
+                    note.id,
+                    note.document_id,
+                    note.text,
+                    note.colour,
+                    note.created_at,
+                    note.updated_at
+                ],
+            )?;
+            Ok(note)
+        })
+    }
+
+    pub fn delete_sticky(&self, id: &str) -> Result<()> {
+        self.with(|db| {
+            db.execute("DELETE FROM sticky_notes WHERE id = ?1", params![id])?;
+            Ok(())
+        })
+    }
+
+    pub fn list_activity(&self, since_day: &str) -> Result<Vec<ActivityDay>> {
+        self.with(|db| {
+            let mut statement = db.prepare(
+                "SELECT day, words, seconds, last_at FROM activity WHERE day >= ?1 ORDER BY day",
+            )?;
+            let rows = statement.query_map(params![since_day], |row| {
+                Ok(ActivityDay {
+                    day: row.get("day")?,
+                    words: row.get("words")?,
+                    seconds: row.get("seconds")?,
+                    last_at: row.get("last_at")?,
+                })
+            })?;
+            rows.collect()
         })
     }
 

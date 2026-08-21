@@ -63,14 +63,37 @@ export const Shortcuts = Extension.create({
       'Alt-Shift-ArrowDown': block(moveBlock(1)),
       'Alt-Shift-d': block(duplicateBlock),
 
+      /*
+        Tab means three different things, and this is the only place that knows
+        the order to ask in.
+
+        This extension sits at priority 1000, above both the list extensions'
+        uncapped `sinkListItem` and the table's `goToNextCell`, so whatever it
+        declines falls through to them in that order. Declining is therefore a
+        decision rather than a default, which is why the table case is written
+        out here instead of being left to fall through: a list *inside* a table
+        cell is still a list, and Tab in it has to nest rather than jump to the
+        next cell.
+      */
       Tab: () => {
         const { itemType, depth } = listContext(this.editor.state);
-        // Outside a list, Tab keeps its usual job of moving focus onward.
-        if (!itemType) return false;
-        // At the limit, swallow the key rather than letting the list
-        // extensions' own uncapped Tab handler sink another level.
-        if (depth >= MAX_LIST_DEPTH) return true;
-        return this.editor.commands.sinkListItem(itemType);
+        if (itemType) {
+          // At the limit, swallow the key rather than letting the list
+          // extensions' own uncapped Tab handler sink another level.
+          if (depth >= MAX_LIST_DEPTH) return true;
+          return this.editor.commands.sinkListItem(itemType);
+        }
+        if (this.editor.isActive('table')) {
+          // A new row off the end of the last cell, which is what every table
+          // in every editor does and what makes one fillable without reaching
+          // for the mouse. Tab is how you type a table, not how you leave one.
+          return (
+            this.editor.commands.goToNextCell() ||
+            this.editor.chain().addRowAfter().goToNextCell().run()
+          );
+        }
+        // Outside both, Tab keeps its usual job of moving focus onward.
+        return false;
       },
     };
   },

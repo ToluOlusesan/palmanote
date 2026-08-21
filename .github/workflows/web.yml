@@ -1,0 +1,66 @@
+# The browser build, published to GitHub Pages.
+#
+# The desktop app ships as an installer from a release, the way Palma Canvas
+# does. This is the other half: the same source, built for a browser, served
+# from a stable URL that the marketing site links to and never has to touch
+# again.
+#
+# Nothing here is specific to Pages except the last two steps — `dist/` is an
+# ordinary folder of static files with no server behind it, so if this ever
+# moves hosts, the move is a copy.
+
+name: web
+
+on:
+  push:
+    branches: [main]
+  # So a broken deploy can be re-run without an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and a queued one supersedes an unstarted one. Never
+# cancel a running deploy: a half-published site is worse than an old one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `--ignore-scripts` because the only runtime dependency is
+      # better-sqlite3, which belongs to the Electron shell and is never
+      # imported by anything the browser build reaches. Compiling a native
+      # module to publish a static page would be a failure waiting to happen
+      # for no benefit.
+      - run: npm ci --ignore-scripts
+
+      # The gate. A build that typechecks but drops a round trip is worse than
+      # no deploy, because the old one was working.
+      - run: npm test
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

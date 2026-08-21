@@ -1,6 +1,7 @@
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import { TableKit } from '@tiptap/extension-table';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
 import StarterKit from '@tiptap/starter-kit';
@@ -23,7 +24,7 @@ import { SmartTypography } from './typography.ts';
  * document model, which is what makes paste-stripping free: ProseMirror
  * cannot parse a node type that does not exist.
  *
- * Deliberately not here: underline, tables, text colour, alignment.
+ * Deliberately not here: underline, text colour, alignment.
  * Highlighting is here but is four fixed colours rather than a colour picker —
  * see Highlight.ts.
  *
@@ -31,6 +32,21 @@ import { SmartTypography } from './typography.ts';
  * it. They were the right omissions for a manuscript and the wrong ones for
  * the workspace this became: a snippet, a shell command and a pasted URL are
  * the three things that turn up in notes that prose has nowhere to put.
+ *
+ * **Tables joined them, and the distinction is worth keeping straight.** What
+ * is here is a grid of cells you type prose into — the thing Word and every
+ * text editor has. What is still ruled out is a *database*: rows as records,
+ * typed columns, filters, sorts, saved views. Those are a different product
+ * living inside this one, and the decision against them stands. A table here
+ * holds paragraphs and lists, exactly like every other cell of the document,
+ * and knows nothing about what is in it.
+ *
+ * Adding one has a cost this file used to be able to claim it did not pay.
+ * "Paste-stripping is free because ProseMirror cannot parse a node type that
+ * does not exist" was true of tables until now, and every table on every web
+ * page is suddenly something the document *can* hold — including the ones that
+ * are page furniture rather than data. See `transformPastedHTML` in
+ * useDocumentEditor.ts, which is where the layout-table case is answered.
  *
  * Stickers and images are both here and are both atoms holding an id: a
  * sticker names art that ships with the app, an image names bytes in the
@@ -116,6 +132,33 @@ export const extensions = [
   Sticker,
   Image,
   Gallery,
+  /*
+    A grid of prose, and nothing beyond that.
+
+    `resizable` is off, and it is the one option here worth arguing about.
+    Dragging a column border is the single most-asked-for thing about a table
+    and it is also how a writing surface turns into a layout surface — the same
+    argument that keeps images at one width (see Image.ts). Turning it on also
+    means a `colwidth` array on every cell, which is a document attribute, which
+    means it is copied into a revision snapshot every couple of minutes for as
+    long as the page lives. Automatic layout sizes a column to what is in it,
+    which is what a reader wants from a table of six words and a sentence.
+
+    `allowTableNodeSelection` is on because the block gutter needs it: the drag
+    handle works by putting a `NodeSelection` on the block it is beside, and
+    without this a table is the one block in the document that cannot be picked
+    up. See blocks.ts.
+  */
+  TableKit.configure({
+    table: {
+      resizable: false,
+      allowTableNodeSelection: true,
+      // A wrapper element, so a table wider than the measure scrolls inside
+      // its own box. Without one the overflow belongs to the page, and a wide
+      // table drags the whole column of prose sideways under the reader.
+      renderWrapper: true,
+    },
+  }),
   Slash,
   Caret.configure(writingSettings()),
   SmartTypography,

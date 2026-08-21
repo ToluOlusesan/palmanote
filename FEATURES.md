@@ -44,9 +44,9 @@ resolved once at load. Nothing above that file knows which shell it is in.
 
 ### Motion
 
-One vocabulary, at the end of [styles.css](src/app/styles.css#L3074) — three
-easings (`--ease`, `--glide`, `--spring`) and three durations (`--quick` 120ms,
-`--settle` 190ms, `--unfold` 280ms), and almost nothing outside them. Gathered
+One vocabulary, at the end of [styles.css](src/app/styles.css) — two ease-out
+curves (`--ease`, `--glide`) and three durations (`--quick` 120ms, `--settle`
+190ms, `--unfold` 280ms), and almost nothing outside them. Gathered
 in one block rather than spread through the file, because the difference between
 an interface that feels considered and one that feels assembled is not how much
 it animates but whether everything animates the same.
@@ -58,10 +58,87 @@ and comes back faster than it went. The selection bar is the one thing that goes
 further — its controls arrive in sequence rather than together, which is what
 makes it read as a thing that came to you.
 
+**Ease-out only, no spring.** There was a `--spring` here that overshot by a
+hair and came back, on menus, the selection bar and the dialog. The Palmaboard
+motion spec rules it out across the family and the family wins — a bounce in one
+app of three reads as a bug in the other two. What did the work in those cases
+was the four-pixel rise, and that stays.
+
 Nothing loops, nothing runs longer than 280ms, and one media query at the foot
 of the file turns all of it off under `prefers-reduced-motion` — durations
 rather than `animation: none`, so anything animating *into* its resting state
 still ends up there.
+
+### Brand
+
+Two layers, and they do not bleed into each other.
+
+**Interior** — the app someone actually works in — is paper, ink, grey and one
+accent. **Cobalt `#1D5FFF`** is `--accent`: buttons, links, selection, the
+caret, focus rings, active state, a starred page, and the hue the writing
+chart's four steps are mixed from. Dark runs `#6C97FF`, the same hue a third of
+the way to white, because cobalt itself only reaches 3.4:1 on the dark card and
+anything carrying a word needs 4.5.
+
+**Identity** — the app icon, the installer, marketing — is the one place the
+brand is allowed to be loud: a **Cobalt → Violet `#7C5CFF`** diagonal with the
+artwork knocked out in white and no second colour inside the mark. It lives in
+[make-icon.mjs](scripts/make-icon.mjs) and nowhere else. In the window the mark
+is flat `currentColor` — ink on paper, near-white on the dark card.
+
+There was an Amber in here for a day: the streak figure, the star, the ring on
+today. It is gone, and the reason is the rule rather than the colour. A second
+decorative hue is invisible one element at a time and reads as unplanned once
+there are three of them, and it spends the only thing a single accent has —
+meaning something *because* it is the only colour on the screen. If an interior
+element needs emphasis it takes the accent; if it is a system state it takes
+that role's colour; there is no third option.
+
+The old two-stop Cobalt→Amber gradient also had a mechanical problem worth
+recording, because it is why Violet is the right second stop: those two sit near
+enough to opposite that every path between them is grey through the middle, in
+OKLab as much as in sRGB. Cobalt and Violet are neighbours, so the run stays
+saturated end to end and neither stop has to be held back.
+
+### Paper
+
+The surface is a material, not a colour. The same near-white tones and the same
+static fractal-noise tile the rest of the Palmaboard family uses — one 200px
+SVG, multiplied over the surface in light, `overlay` in dark where multiply has
+nothing to bite on. Static on purpose: grain that re-positions as something
+scrolls forces a repaint every frame and, at these opacities, is
+indistinguishable from grain that stays put.
+
+**One surface, not two.** There was a white card here, bordered and shadowed,
+floating on the window's grey, with its own fainter grain — so the paper under
+the prose and the paper around it were two materials meeting at a seam. The
+writing area should not be discernible from its background, so the card is
+gone: the editor is transparent, the sticky page bar and status bar take the
+window's own tone, and one grain layer runs under the whole thing unbroken at
+0.18 (0.32 in dark) — felt at the edges of the window, gone under a sentence.
+
+That also settles the "no grain under active text entry" rule the honest way. A
+flat panel behind the sentence would itself have been a discernible patch; one
+continuous surface at an opacity that vanishes under reading is what the rule is
+protecting, and this is under it everywhere rather than switched off in one
+place. Dialogs, menus and the palette still get none — they are *above* the
+paper rather than made of it, and grain on every white rectangle is how a
+material turns into a texture effect.
+
+### Type
+
+The platform stack, and nothing shipped. Inter and DM Serif Display were
+vendored out of `@fontsource` for a day and taken back out: Inter at 400 sets
+noticeably heavier than the platform UI face at the sizes this app uses, so the
+prose came out thick, and the serif on the greeting was a voice the app did not
+want. Whatever the machine already has is lighter, better hinted at small sizes,
+and costs nothing to load — which also keeps the promise that the app fetches
+nothing.
+
+Chrome runs regular and medium and stops there; the 600s that had crept into
+dialog titles, section labels and the guide are now 500. The only weights above
+that are in the document's own typography — the page title and prose headings —
+where they are the writer's, not the interface's.
 
 ---
 
@@ -132,10 +209,17 @@ free.
 
 **In the schema:** paragraphs, headings 1–3, blockquote, bullet / ordered / task
 lists, hard breaks, bold, italic, strikethrough, a four-colour highlight, a typed
-scene break, page links, stickers, images, galleries.
+scene break, page links, web links, inline code, code blocks, tables, stickers,
+images, galleries.
 
-**Deliberately not in it:** code and code blocks, hyperlinks, underline, tables,
-text colour, font sizes, alignment.
+**Deliberately not in it:** underline, text colour, font sizes, alignment.
+
+That first list has grown three times and the second has only ever shrunk,
+which is worth watching rather than being pleased about — every addition costs
+the claim above it. Paste-stripping is free *because* the schema is small, so
+each new node is one more thing a web page can now put in a document. Tables
+are the first one where that mattered enough to need an answer of its own — see
+**Tables**, below.
 
 - **Input rules:** `**bold**`, `*italic*`, `~~struck~~`, `## ` headings, `- `,
   `1. `, `[] `, `> `, `---` / `***` for a scene break.
@@ -159,6 +243,47 @@ text colour, font sizes, alignment.
   cannot outrank it. Doing that at `.body p` instead is what used to leave two
   paragraphs, a quote after a sentence and a list after its lead-in all running
   flush together while headings alone kept their air.
+
+### Tables
+
+A grid of cells you type prose into. `/table` makes a 3×3 with a header row;
+`Tab` moves to the next cell and makes a new row off the end of the last one,
+which is what makes a table fillable without reaching for the mouse. Cells hold
+paragraphs and lists like anywhere else in the document, and a table is a block
+like any other — the gutter handle picks the whole thing up, `Alt+Shift+↑/↓`
+moves it among its siblings.
+
+**A table is not a database, and the distinction is the whole reason this was
+allowed in.** What is here is the thing Word has: rows, columns, words. What
+stays ruled out is rows-as-records — typed columns, filters, sorts, saved
+views. That is a different product living inside this one.
+
+Nothing about it is decorative. No cell colour, no alignment controls, no
+column types, no totals row. **No column resizing either**, which is the one
+worth arguing about: it is the most-asked-for thing about a table and it is
+also how a writing surface becomes a layout surface — the same argument that
+keeps images at one width. It would also mean a `colwidth` array on every cell,
+and a cell attribute is copied into a revision snapshot every two minutes for
+as long as the page lives. Automatic layout sizes a column to what is in it. A
+table wider than the measure scrolls inside its own box rather than dragging
+the column of prose sideways under the reader.
+
+**Paste is where tables cost something.** The claim in
+[extensions.ts](src/editor/extensions.ts) — that stripping a paste is free
+because ProseMirror cannot parse a node type that does not exist — was true of
+tables until they existed. `<table>` is two different things wearing one tag: a
+grid of data, and a box drawn around a page, which is what a decade of HTML
+email uses it for. [pastedHtml.ts](src/editor/pastedHtml.ts) answers the second
+with the one signal that separates them reliably — **a table with one cell is
+not a table** — and unwraps those, repeatedly, because layout tables nest. Two
+cells and up are left alone, because past one the guess stops being safe.
+
+Out through markdown a table is a GFM pipe table, which costs it two things
+markdown cannot say: a cell holds one line, and every table gets a header row
+because GFM has no table without one (a table that never had one is written
+under an empty header and read back off). Out through docx it is a real
+`<w:tbl>` with declared borders and a `tblHeader` row Word repeats across page
+breaks — not tab stops, and not a picture of a table.
 
 ### The animated caret
 
@@ -633,7 +758,10 @@ A greeting with four starting points that open **templates**, not blank pages:
 | Plan a project | a folder with *What it is*, *What are you trying to achieve*, *Next*, and a *Notes* page |
 | Jot down thoughts | a page dated today, and nothing else |
 
-Typing a name first uses it for whatever is created. Every template is a small
+The screen is the brand mark over a single question — *What do you want to do
+today?* — and nothing else. It was a greeting and a question on two lines, then
+one line with a name in it; both were the longer way to ask. Typing a name first
+uses it for whatever is created. Every template is a small
 tree rather than a single page, and each stays under a screenful. Every route out
 ends with a caret in a page; it never asks a second question; `Esc` skips it
 entirely; it can be switched off in Settings.
@@ -707,7 +835,63 @@ creates one blank page rather than showing an empty room.
 | `.md`, `.markdown`, `.txt` | own parser, front matter honoured (`title`, `kind`, `icon`) |
 | `.docx` | `mammoth` → HTML → the same schema filter a paste goes through |
 | `palmanote-export.json` | our own bundle format, parent relationships rebuilt |
+| `.png` `.jpg` `.gif` `.webp` | not pages — assets, for the markdown that points at them |
 | a whole folder | nested directories become nested pages |
+
+### What the markdown reader understands
+
+Two jobs, and they pull in different directions exactly once.
+
+The first is that **the round trip is the specification**: anything
+[export/markdown.ts](src/export/markdown.ts) can write,
+[import/markdown.ts](src/import/markdown.ts) has to read back as the document
+it started as, which means the two have to agree about escaping character for
+character. They had drifted, each correct alone and wrong about the other, and
+five documents came back changed:
+
+- A literal `~~` or `==` in a sentence came back struck through or highlighted.
+  The reader had always unescaped `\~` and `\=`; nothing ever wrote them. Only
+  the *pairs* are escaped now — `a = b` and `~5kg` stay clean.
+- Every hard break came back with two spaces welded to the end of the text,
+  because the rule matched the newline but not the whitespace in front of it.
+- A numbered list starting at 5 came back starting at 1.
+- A sticker was written as `:party:` and read back as the literal text.
+- A picture was written as `![alt](path)` and read back as a stray `!` in front
+  of a hyperlink, because the link rule was asked first.
+
+The second job is **markdown written somewhere else**, where the reader was
+narrower than it looked:
+
+- A paragraph wrapped at eighty columns became a column of short lines. There
+  are two kinds of line ending and they are told apart by trailing whitespace;
+  every newline was being treated as the second kind.
+- `some_variable_name` came out italic. `_` may no longer open or close against
+  a word character, which is CommonMark's rule and matters in an app that holds
+  shell commands. `*` keeps no such restriction.
+- A heading underlined with `===` or `---` became a paragraph followed by a
+  scene break, because `---` is both and the divider was asked about first.
+- Reference-style links (`[text][ref]`) and `<https://autolinks>` were text.
+  Definitions are lifted out of the prose, and not from inside code blocks.
+- Tab-indented sub-lists nested by luck at one level and wrongly below it.
+- `####` and deeper are clamped to the third heading rather than quietly
+  becoming paragraphs.
+
+**Bare URLs are deliberately still not linked**, and that is where the two jobs
+disagree. `<https://…>` is markdown asking for a link. `https://…` in a
+sentence is not, and linking it would mean a writer who deliberately unlinked a
+URL found it linked again every time the page went out to a file and came back.
+The editor autolinks what is *typed*, which is where that belongs.
+
+Pictures are the one thing the reader cannot finish on its own: it is a pure
+function from a string to JSON, with no filesystem and no store, so it records
+the path and stops. [import/index.ts](src/import/index.ts) resolves that path
+against the chosen files three ways — relative to the markdown file, relative
+to the root of what was chosen, then by filename if exactly one file has it —
+and stores the bytes through the same `storeImage` a paste uses, at commit
+time rather than at preview time, because storing is writing. A picture that
+cannot be found is left as a *missing* image rather than dropped. Anything with
+a scheme in front of it is skipped without being looked for: the app fetches
+nothing.
 
 - **Nothing is written until you have looked at it.** The dialog previews the
   full planned tree — titles, nesting, word counts — before committing. An import
@@ -751,6 +935,15 @@ the browser's own otherwise. No PDF library.
 **Markdown** as one file in tree order, or as a folder mirroring the tree — one
 numbered file per page (`01 …`, so the directory reads in tree order rather than
 alphabetically) with title, kind, word count, timestamp and id in front matter.
+Tables go out as GFM pipe tables.
+
+A picture is linked with however many `../` it takes to climb from the page
+back to the `assets/` folder at the root. Every page used to link `assets/x.png`
+as though it were a sibling of that folder, which is correct for the pages at
+the top and resolves to nothing from the second level down — an export that
+looked right and had holes in it everywhere below the first tier. The README
+inside it promises these are "ordinary relative links"; this is what makes that
+true rather than nearly true.
 
 **Everything** — the escape hatch, sitting with the rest rather than hidden in a
 menu. Nested markdown, an `assets/` folder of every image named by its own hash
@@ -790,13 +983,10 @@ button in the top bar. Three states rather than two, because following the
 machine is a real preference. It also sets `color-scheme`, so the engine draws
 the right scrollbars and form controls.
 
-**Settings** ([SettingsDialog.tsx](src/ui/SettingsDialog.tsx)), `Ctrl+,` — one
-question and two switches, on purpose, because anything that needs a switch
-usually needed a decision instead:
+**Settings** ([SettingsDialog.tsx](src/ui/SettingsDialog.tsx)), `Ctrl+,` — two
+switches, on purpose, because anything that needs a switch usually needed a
+decision instead:
 
-- *What should it call you* — the name the greeting uses, and the only setting
-  the app cannot work out for itself. It sits first because it is the only one
-  about you rather than about the app.
 - *Animated cursor* — the drawn caret described above. A system-level
   reduced-motion preference overrides it either way, and the dialog says so.
 - *Greeting on launch* — read once per session, so turning it off does not close
@@ -805,32 +995,21 @@ usually needed a decision instead:
 
 Plus a link to the guide.
 
-### What it calls you
+### What it used to call you
 
-The greeting had a name compiled into it — `const OWNER = 'Sesan'` — which was
-correct while exactly one person used this and became wrong the moment the
-source was published and somebody else built a copy that greeted them by its
-author's name.
+There was a name here. The greeting had one compiled into it — `const OWNER =
+'Sesan'` — which was correct while exactly one person used this and wrong the
+moment somebody else built a copy and got greeted by its author's name. So it
+became a setting, with `whatToCallYou` turning an empty one into **"you"** so a
+fresh build opened on *"Hey you,"* rather than *"Hey ,"*.
 
-Empty is the default and is a real answer rather than a missing one:
-[`whatToCallYou`](src/state/writingSettings.ts) turns it into **"you"**, so a
-fresh build opens on *"Hey you,"*. That matters more than it looks — the name is
-in the middle of a one-line greeting, so nothing is not an option; it has to
-become a word. "Hey you," is what a person says when they do not know your name
-yet, and reads as a greeting rather than as a bug. Whitespace is trimmed on the
-way through for the same reason: typing three spaces and getting *"Hey ,"* back
-would look like the greeting was broken rather than like an answer to what was
-typed.
-
-The settings note shows the greeting it is about to make as you type it, and
-says so differently when the greeting is switched off — a field whose only
-effect is invisible should say that rather than appear to do nothing.
-
-**The guide** ([guide.ts](src/ui/guide.ts),
-[GuideDialog.tsx](src/ui/GuideDialog.tsx)) is every key, gesture and menu in one
-searchable place — held as data rather than markup, so adding a shortcut is
-adding a line. It lives in the app rather than in a README because the question
-"what was the key for a scene break" arrives mid-sentence.
+All of it is gone, and the order it went in is the point. The greeting became
+one line — *"Hey you, what do you want to do today?"* — and then lost the
+greeting half of that, leaving just the question. At which point the name had no
+reader at all, and a setting whose only effect is invisible is worse than no
+setting: it is a control that appears to do nothing. The field, the stored
+value, the helper and its tests all came out together rather than leaving a
+switch behind to explain.
 
 ---
 
@@ -886,7 +1065,7 @@ IPC contract.
 - **CSP** allows `self` plus `data:`/`blob:`/`asset:` images and the asset
   protocol for frames; the asset scope starts empty and is widened one PDF at a
   time.
-- Installer: NSIS, per-user, ~1.8 MB.
+- Installer: NSIS, per-user, 2.7 MB — `src-tauri/target/release/bundle/nsis/`.
 
 ---
 
@@ -912,6 +1091,8 @@ reachable from here.
 | `Ctrl+Shift+E` | export |
 | `Ctrl+Shift+I` | import |
 | `Ctrl+Shift+H` | history of this page |
+| `Ctrl+Space` | a sticky note in the rail |
+| `Ctrl+Shift+Y` | your writing — opens and closes the chart |
 | `Ctrl+,` | settings |
 | `Ctrl+N` / `Ctrl+Shift+N` | new page after / inside the selected one |
 
@@ -920,13 +1101,22 @@ reachable from here.
 | | |
 |---|---|
 | `Ctrl+B` / `Ctrl+I` / `Ctrl+Shift+X` | bold, italic, strikethrough |
-| `Ctrl+Alt+1/2/3`, `Ctrl+Alt+0` | headings, paragraph |
+| `Ctrl+Alt+1/2/3`, `Ctrl+Alt+0` | Heading, Subheading, Small heading, Text |
 | `Ctrl+Z` / `Ctrl+Y` | undo, redo |
 | `Tab` / `Shift+Tab` in a list | nest, outdent (three levels) |
+| `Tab` / `Shift+Tab` in a table | next cell, previous cell — a new row off the last |
 | `Enter` twice | leave a list |
 | `/` , `@` | insert menu, page mention |
 | `Alt+Shift+↑` / `Alt+Shift+↓` | move this block up / down |
 | `Alt+Shift+D` | duplicate this block |
+
+`Tab` now means three things, and [keymap.ts](src/editor/keymap.ts) is the only
+place that knows the order to ask in: nest, if the caret is in a list; next
+cell, if it is in a table; otherwise move focus onward, which is what a
+keyboard user needs it to keep doing. The order matters where the two overlap —
+a list *inside* a table cell is still a list, so `Tab` in one nests rather than
+jumping to the next cell. Declining is a decision there rather than a default,
+because this extension sits above both the list and table bindings.
 
 `Alt+Shift` rather than `Alt` alone, which the tree already uses to reorder rows
 and which would otherwise mean two different things depending on where the focus
@@ -935,6 +1125,10 @@ deliberately not `Ctrl+D`, the obvious one, because that already favourites the
 open page at the window level — a chord that means one thing in the sidebar and
 another in the writing is worse than a less obvious chord that always means the
 same.
+
+The chart is `Ctrl+Shift+Y` for the same reason and not `Ctrl+Shift+W`, which
+fits "writing" far better: the tab-close above it does not test `Shift`, so that
+chord already closes a tab and would go on doing so first.
 
 **Tree**, when the sidebar has focus — [TreePane.tsx](src/ui/TreePane.tsx)
 
@@ -954,15 +1148,30 @@ same.
 ## 21. What it deliberately does not have
 
 Worth reading as a feature list of its own, since most of these were decided
-rather than deferred: no underline, no tables, no text colour, no font sizes, no
+rather than deferred: no underline, no text colour, no font sizes, no
 alignment controls, no colour picker for highlights, no syntax highlighting in
 code blocks, no full-text search of bodies, no global undo stack, no annotation
 on PDFs, no auto-collapsing sidebar, no multi-block selection, and no third
 switch.
 
+**And no databases.** Rows as records, typed columns, filters, sorts, saved
+views — the thing Notion is actually for. That is settled rather than pending,
+and it is not the same question as tables, which are here: a table is a grid of
+prose, and a database is a store with a query language and several faces. This
+app already has a store, and it is the one under the whole library.
+
+**Tables were on this list** until the same argument that took code blocks off
+it. The omissions that were right for a manuscript were wrong for a workspace,
+and a table is what notes use for the shape prose has nowhere to put — two
+things compared, a set of rates, who is doing what. What made it a decision
+rather than a default is that it is the first node that cost something to add:
+see the note on paste under [Tables](#tables). The rule the old entry was
+standing in for is intact and is about the *interface* having opinions — no
+cell colour, no alignment, no column types, no widths.
+
 That last one used to read "no third setting", and the name field is the reason
 it does not. It is a question rather than a switch — the app cannot work out
-what to call you, where it can and does work out everything a third switch would
+where it can and does work out everything a third switch would
 have asked about. The rule the count was standing in for is intact: still two
 things to turn on and off.
 
@@ -982,7 +1191,133 @@ workspace.
 
 ---
 
-## 22. Gaps and things to check
+## 22. Sticky notes
+
+[StickyNotes.tsx](src/ui/StickyNotes.tsx), [stickies.ts](src/state/stickies.ts),
+and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
+
+- **`Ctrl+Space` puts one in the rail**, wherever the caret is, with the caret
+  in it. Bound at the window rather than in the editor's keymap, so it works
+  from the sidebar and the title field too.
+- **Not part of the document.** A sticky is the aside you write *while* writing
+  something else — a name to check, an argument with yourself. So it does not
+  export, does not count towards the page's words, is not in a revision, and
+  deleting it takes nothing with it. Keeping them as nodes in the ProseMirror
+  doc would have made every one of those false, which is why they are a table.
+- **A fixed rail down the right**, outside the element that scrolls, so notes
+  hold still while the prose moves under them. They have no position of their
+  own and stack in the order they were written. They were draggable for a
+  version and it was wrong twice over: a thought parked over the third
+  paragraph is lost the moment the page is edited above it, and a note that can
+  be anywhere is a note you have to go looking for.
+- The rail is inert between the notes — `pointer-events` come back only on the
+  notes themselves — so the gaps are still window, and a click there goes to
+  whatever is behind it.
+- Four papers — lime, orange, blue, pink — pale enough that six of them on a
+  page is still a page of writing. **This is the one place colour is allowed
+  outside the accent**, and the distinction is content against chrome: a sticky
+  is an object the writer made, the way a highlight is. The rule against a
+  second hue is about the interface having opinions.
+- The **peeled corner** is what makes a square of colour read as a sticky note
+  rather than a swatch: two triangles from one element — the window showing
+  through where the paper has lifted, and the shadow the fold casts on itself.
+  The tilt is set from the note's own id, so it keeps its lean when the one
+  above it is thrown away.
+- The controls fade in on hover or focus, so a page of stickies reads as notes
+  rather than as six little toolbars. `Escape` returns to the prose;
+  `Backspace` in an empty one throws it away.
+- Text writes settle 400ms after typing stops, per note, and anything owed is
+  flushed when the page changes or the window closes. A new note is written
+  immediately rather than debounced — one that vanished because the app closed
+  in the four hundred milliseconds after it appeared would be unreproducible.
+
+---
+
+## 23. The writing chart
+
+[WritingChart.tsx](src/ui/WritingChart.tsx),
+[ActivityDialog.tsx](src/ui/ActivityDialog.tsx), the arithmetic in
+[activity.ts](src/core/activity.ts), and the `activity` table in
+[schema.sql](src/data/schema.sql).
+
+- **A square is a day, and it counts words *touched*, not words gained.** An
+  edit contributes the size of its change, so cutting forty words is forty words
+  of work. Net growth would draw a morning spent tightening a chapter as an
+  empty square, which is exactly the morning worth encouraging.
+- **Time is the guard, not the score.** Seconds accrue from the gaps between
+  edits and only while a gap stays under three minutes, so a window left open
+  overnight earns nothing. It appears in the detail line as context; the heat
+  never depends on it.
+- **Two sizes, neither of them a year.** A year of days is 365 squares, which is
+  a wall to read rather than a thing to glance at. The welcome screen gets **the
+  week you are in** — seven squares under their weekday initials, with the
+  streak beneath. The panel gets **one month at a time**, laid out as a calendar
+  with the date on each square, and a dropdown back through every month since
+  the first word — empty ones included, because a gap is a fact worth being able
+  to look at.
+- **The scale is the writer's own history, never the days on screen.** Full
+  strength is the 75th percentile of the days they actually wrote on, floored at
+  500 words so a first week does not set the bar at itself and come out all
+  black. Computed over everything, so August and March mean the same thing.
+- **Recorded from the editor's save and nowhere else.** Import, templates and a
+  restored version all go through `saveContent` too, and none of them is a
+  morning's writing — putting the tally in the store would have counted all
+  three. The call is not awaited: a square on a chart never stands between the
+  words and the disk, and it swallows its own failure.
+- **Its own tiny table**, one row per day of four small values, never pruned.
+  Derived from `revisions` it would have been wrong twice over — those are
+  pruned, and they carry a copy of the prose, so counting a year out of them
+  means reading a year of documents.
+- The day key is the **local** calendar day. Someone writing at eleven at night
+  in Lagos is having Tuesday, and a UTC key would file half their evening under
+  Wednesday and break a streak they can see with their own eyes.
+- Colour is Cobalt in four steps, light to dark, **re-stepped rather than
+  flipped** for dark — the ramp climbs away from the card instead of down onto
+  the page, so the date's ink has to change tier a step earlier. Empty is a
+  neutral rather than a fifth step of the blue: nothing is the absence of the
+  scale, not the bottom of it. **Today wears an ink ring and a medium numeral**;
+  hover and focus wear the accent, the same ring every other focusable thing in
+  the app draws. Both are **inset**: an outward ring is 3.5px of shadow reaching
+  into a 5px gap from both sides, so today's square and the one hovered beside
+  it overlapped. Inset, a ring cannot reach a neighbour at any gap or any cell
+  size.
+- A day **later this week or later this month is drawn as an outline**, not as
+  an empty square. A Friday that has not arrived is not a Friday that was
+  missed.
+- **Two stat cards, and neither ranks you.** There were four: words, days, best
+  day, day streak. Best day is a personal record to beat and a streak is a
+  chain not to break — both are competitive framing borrowed from habit-loop
+  apps, and "keep it going" is a phrase built on loss aversion. The streak is
+  gone as a *concept* rather than hidden until it is flattering: `summarise`
+  still computes it, cheaply and under test, and nothing reads it. The launch
+  strip lost it too, because hiding a mechanic in one place and keeping it in
+  another is the incoherent half of that decision.
+- The cards carry **no subtext**. A number under a number is a comparison
+  asking to be made; one line at the foot does the talking for the whole panel,
+  and it *describes* rather than scores — which week the writing landed in,
+  never a target or a gap to close, and never a figure the cards already show.
+- The method is behind **"Learn more about stats"**, collapsed, and floats over
+  the calendar rather than pushing it down — it is worth being able to read and
+  not worth reading twice.
+- The month is chosen from a **listbox of ours, not a `<select>`**
+  ([MonthPicker.tsx](src/ui/MonthPicker.tsx)). A native select draws its popup
+  with the operating system, so the app's dark surface got a white list with a
+  Windows-blue highlight on it — the one part of the interface the stylesheet
+  cannot reach. Everything the native control gives away free is put back by
+  hand: roles, arrow keys, Home and End, Enter and Escape, focus returned to
+  the button, click-outside to dismiss, and the open list scrolled to the
+  current month. That last one uses `scrollTop` rather than `scrollIntoView`,
+  which scrolls *every* scrollable ancestor and dragged the whole panel up by
+  its own header.
+- Arrow keys walk the month and only the square under the cursor is tabbable, so
+  a month costs one Tab stop rather than thirty-one. The hovered or focused
+  day's detail goes in a **reserved line under the grid** rather than a floating
+  tooltip: one row of squares has the stat row directly above it in the panel
+  and the four starts above it on the welcome screen, and a bubble covered both.
+
+---
+
+## 24. Gaps and things to check
 
 Honest state, not a wish list.
 
@@ -1009,19 +1344,33 @@ Honest state, not a wish list.
   right for an arrow key; the drag can put a block anywhere the schema allows.
   Whether the keyboard should be able to do the same, and with what chord, is
   undecided rather than answered.
+- **Two of the new pieces have no unit test, for the same reason.**
+  [import/index.ts](src/import/index.ts) cannot be loaded by `node --test` at
+  all — something it imports uses a TypeScript parameter property, which
+  Node's strip-only mode refuses — so the path that resolves `![alt](path)` to
+  an asset id is covered only at its two ends: the reader's tests prove the
+  path comes out on the node, and `storeImage` is the same function a paste has
+  always used. The join between them is untested.
+  [pastedHtml.ts](src/editor/pastedHtml.ts) needs a `DOMParser` and so is in
+  the same position. Both are reachable from `npm run smoke`, which drives real
+  Chrome, and neither is asserted there yet.
+- **The docx table has not been opened in Word.** It is asserted structurally —
+  `w:tbl`, two rows, four cells, `tblHeader`, declared borders — which is the
+  same standard as the rest of the file and carries the same caveat as the
+  entry above: nobody has watched Word repeat the header across a page break.
 - **`npm run dist` (Electron) fails on this drive** with `EPERM … rename` — the
   volume rejects the directory rename electron-builder does at the end. Building
   to another output path works. Not a config problem.
 
 ---
 
-## 23. Proving it
+## 25. Proving it
 
 | | |
 |---|---|
-| `npm test` | storage, fractional ordering, markdown import and export, docx structure, the gallery grouping rule, and what a block is and where it goes (`node --test`) |
+| `npm test` | storage, fractional ordering, markdown in and out — every round trip that used to lose something, and every construct another editor writes — tables both ways, docx structure including a real `w:tbl`, the gallery grouping rule, what a block is and where it goes, and the writing chart's arithmetic (`node --test`) |
 | `npm run test:rust` | the Rust store, ordering keys, the clipboard payloads, and a library from before covers existed (`cargo test`) |
-| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, and dragging a block with real mouse events, which is the one gesture no unit test stands in for |
+| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, dragging a block with real mouse events, reordering a gallery to prove a moved picture is not a copied one, and filling a table by keyboard: `Tab` across the cells, off the end into a new row, and inside a list in a cell where it has to nest instead |
 | `npm run desktop:smoke` | drives the packaged desktop build over CDP, and asserts the console is empty |
 | `npm run scale` | writes 122,400 words across 63 documents, times what a writer would feel, and verifies its own cleanup |
 | `npm run capture` | draws the running interface into an SVG with named, nested layers — artwork to animate from, not a feature of the app |

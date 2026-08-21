@@ -98,12 +98,10 @@ const dismissWelcome = async (target = page) => {
 section('launch');
 await page.goto(URL, { waitUntil: 'networkidle' });
 await page.waitForSelector('.welcome', { timeout: 8000 });
-// A fresh profile has no name set, so this is what a copy somebody else built
-// greets them with — the case the hard-coded name used to get wrong.
 check(
-  'launch greets you, having not been told your name',
+  'launch asks what you want to do',
   (await page.locator('.welcome-greeting').innerText()).trim(),
-  'Hey you,',
+  'What do you want to do today?',
 );
 check(
   'and offers somewhere to start',
@@ -112,11 +110,19 @@ check(
 );
 await page.keyboard.press('Escape');
 await page.waitForSelector('.body', { timeout: 8000 });
-check(
-  'escape leaves it with the caret in the page',
-  await page.evaluate(() => document.activeElement?.className?.includes('body')),
-  true,
-);
+// Waited for rather than asserted on the next tick. The caret is placed by a
+// requestAnimationFrame loop that retries until the editor has mounted, so
+// `.body` existing and `.body` holding the focus are two different moments —
+// a handful of frames apart, and further apart on a cold start now that there
+// are webfonts to settle. Asserting instantly happened to pass and was timing,
+// not behaviour. If focus never lands this still fails, one second later.
+const caretLanded = await page
+  .waitForFunction(() => document.activeElement?.className?.includes('body'), null, {
+    timeout: 1000,
+  })
+  .then(() => true)
+  .catch(() => false);
+check('escape leaves it with the caret in the page', caretLanded, true);
 
 // ---------------------------------------------------------------- basics
 section('the page');
@@ -301,7 +307,7 @@ await freshPage('Slash');
 await page.keyboard.type('/');
 await page.waitForSelector('.slash', { timeout: 4000 });
 check('"/" opens the insert menu', await page.locator('.slash').count(), 1);
-check('it offers only what the schema holds', await page.locator('.slash-item').count(), 21);
+check('it offers only what the schema holds', await page.locator('.slash-item').count(), 22);
 check(
   'the first entry starts selected',
   await page.locator('.slash-item.is-active .slash-label').innerText(),
@@ -325,7 +331,7 @@ await page.waitForTimeout(150);
 check(
   'the arrows move the selection',
   await page.locator('.slash-item.is-active .slash-label').innerText(),
-  'Heading 2',
+  'Subheading',
 );
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
@@ -342,6 +348,48 @@ check('a "/" inside a word is not a command', await page.locator('.slash').count
 await page.keyboard.type('/zzzz');
 await page.waitForTimeout(250);
 check('nor is one that matches nothing', await page.locator('.slash').count(), 0);
+
+// ------------------------------------------------------------------ tables
+section('tables');
+await freshPage('Tables');
+await page.keyboard.type('/table');
+await page.waitForSelector('.slash');
+await page.keyboard.press('Enter');
+await page.waitForSelector('.body table', { timeout: 4000 });
+check('"/table" inserts a table', await page.locator('.body table').count(), 1);
+check('three by three, with a header row', await page.locator('.body th').count(), 3);
+check('and six ordinary cells under it', await page.locator('.body td').count(), 6);
+check(
+  'a wide one scrolls inside its own box rather than the page',
+  await page.locator('.body .tableWrapper').count(),
+  1,
+);
+
+await page.keyboard.type('Name');
+await page.keyboard.press('Tab');
+await page.keyboard.type('Role');
+await page.waitForTimeout(250);
+check('tab moves to the next cell', await page.locator('.body th').nth(1).innerText(), 'Role');
+check('and leaves the one before it alone', await page.locator('.body th').nth(0).innerText(), 'Name');
+
+// Seven more lands in the last cell; the eighth has nowhere to go.
+for (let index = 0; index < 8; index++) await page.keyboard.press('Tab');
+await page.waitForTimeout(300);
+check('tab off the last cell makes a new row', await page.locator('.body tr').count(), 4);
+check('and the new row is a row of cells', await page.locator('.body td').count(), 9);
+
+/* A list inside a cell is still a list, so Tab there nests rather than
+   jumping — the one place the two meanings of the key overlap. */
+await page.keyboard.type('- one\nTwo');
+await page.waitForTimeout(200);
+await page.keyboard.press('Tab');
+await page.waitForTimeout(250);
+check(
+  'tab in a list inside a cell nests, rather than leaving the cell',
+  await page.locator('.body td ul ul').count(),
+  1,
+);
+check('and the table still has the rows it had', await page.locator('.body tr').count(), 4);
 
 // --------------------------------------------------------------- selection
 section('selection');
@@ -572,7 +620,7 @@ check(
 );
 
 // A picture is a selection like any other as far as ProseMirror is concerned,
-// which is how it ended up being offered Bold and Heading 1.
+// which is how it ended up being offered Bold and Heading.
 await page.locator('.body img.image').first().click();
 await page.waitForTimeout(400);
 check('clicking a picture selects it', await page.locator('.body img.image.ProseMirror-selectednode').count(), 1);
@@ -783,50 +831,6 @@ await freshPage('Not a mention');
 await page.keyboard.type('write to sesan@gmail');
 await page.waitForTimeout(300);
 check('an "@" inside a word is not a mention', await page.locator('.slash').count(), 0);
-
-// ------------------------------------------------------------- what it calls you
-section('what it calls you');
-await page.keyboard.press('Control+Comma');
-await page.waitForSelector('.dialog.is-narrow', { timeout: 4000 });
-const nameField = page.locator('.text-field input').first();
-check('settings asks what to call you', await nameField.getAttribute('placeholder'), 'you');
-check('and starts out not knowing', await nameField.inputValue(), '');
-
-await nameField.fill('  Ada  ');
-await page.waitForTimeout(250);
-check(
-  'the note shows the greeting it will make, trimmed',
-  (await page.locator('#name-note').innerText()).includes('“Hey Ada,”'),
-  true,
-);
-await page.locator('.dialog.is-narrow .btn', { hasText: 'Done' }).click();
-await page.waitForTimeout(200);
-
-await page.reload({ waitUntil: 'networkidle' });
-await page.waitForSelector('.welcome', { timeout: 8000 });
-check(
-  'and the greeting uses it after a restart',
-  (await page.locator('.welcome-greeting').innerText()).trim(),
-  'Hey Ada,',
-);
-
-// Emptying it has to go back to "you" rather than to "Hey ,".
-await page.keyboard.press('Escape');
-await page.waitForSelector('.body', { timeout: 8000 });
-await page.keyboard.press('Control+Comma');
-await page.waitForSelector('.dialog.is-narrow', { timeout: 4000 });
-await page.locator('.text-field input').first().fill('');
-await page.waitForTimeout(200);
-await page.locator('.dialog.is-narrow .btn', { hasText: 'Done' }).click();
-await page.reload({ waitUntil: 'networkidle' });
-await page.waitForSelector('.welcome', { timeout: 8000 });
-check(
-  'clearing it goes back to “you”, not to a gap',
-  (await page.locator('.welcome-greeting').innerText()).trim(),
-  'Hey you,',
-);
-await page.keyboard.press('Escape');
-await page.waitForSelector('.body', { timeout: 8000 });
 
 // ------------------------------------------------------------------ guide
 section('guide');
@@ -1117,7 +1121,26 @@ await page.waitForTimeout(400);
 check('restore brings it back', (await shapeOf()).includes('Lists'), true);
 await setArchiveOpen(false);
 
-const dark = await ctx.newPage();
+// ------------------------------------------------------------- second tab
+// Two tabs on one library would overwrite each other, so the second one is
+// refused rather than allowed to race. Checked before the theme run below,
+// which is why that run needs a context of its own.
+section('a second tab');
+const second = await ctx.newPage();
+await second.goto(URL, { waitUntil: 'networkidle' });
+await second.waitForSelector('.standing', { timeout: 5000 });
+check(
+  'a second tab is told rather than allowed to race',
+  (await second.locator('.standing-title').innerText()).includes('another tab'),
+  true,
+);
+check('and it never opens the library', await second.locator('.workspace').count(), 0);
+await second.close();
+
+// The theme run gets its own context — a second tab of the same profile is now
+// declined, which is the point of the section above.
+const darkCtx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+const dark = await darkCtx.newPage();
 await dark.emulateMedia({ colorScheme: 'dark' });
 await dark.goto(URL, { waitUntil: 'networkidle' });
 await dismissWelcome(dark);
@@ -1131,6 +1154,7 @@ await dark.reload({ waitUntil: 'networkidle' });
 await dismissWelcome(dark);
 await dark.waitForSelector('.editor-host');
 check('and the choice survives a relaunch', await dark.locator('html').getAttribute('data-theme'), 'light');
+await darkCtx.close();
 
 // ------------------------------------------------------------------ delete
 section('delete');
@@ -1335,6 +1359,57 @@ await page.locator('.gallery-button', { hasText: '2' }).click();
 await page.waitForTimeout(200);
 check('and the column control changes it', await page.locator('.gallery').getAttribute('data-columns'), '2');
 
+// Reordering inside the grid must not leave a copy behind.
+//
+// Chromium puts the dragged picture on the drag's own `dataTransfer` as a
+// file, so moving a cell onto its neighbour arrives at `handleDrop` looking
+// exactly like a picture dropped in from the desktop — and the editor stored
+// it as a new node while swallowing the event, so ProseMirror never completed
+// the move. Two pictures, one drag. The guard is `view.dragging`.
+//
+// Driven by hand rather than with real mouse moves: a synthetic Chromium drag
+// does not attach the file, which is the whole ingredient. This runs
+// ProseMirror's own `dragstart` so the guard sees the state it keys on, then
+// drops with a file the way a real drag does.
+await withPicture(() => page.locator('.gallery-button', { hasText: 'Add' }).click());
+const beforeReorder = await page.locator('.gallery .image').count();
+await page.evaluate(async () => {
+  const body = document.querySelector('.body');
+  const images = [...document.querySelectorAll('.gallery img.image')];
+  if (images.length < 2) return;
+  images[0].click();
+  await new Promise((done) => setTimeout(done, 150));
+  body.dispatchEvent(
+    new DragEvent('dragstart', { dataTransfer: new DataTransfer(), bubbles: true, cancelable: true }),
+  );
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 40;
+  canvas.getContext('2d').fillRect(0, 0, 40, 40);
+  const blob = await new Promise((done) => canvas.toBlob(done, 'image/png'));
+  const dropped = new DataTransfer();
+  dropped.items.add(new File([blob], 'moved.png', { type: 'image/png' }));
+  const box = images[1].getBoundingClientRect();
+  images[1].dispatchEvent(
+    new DragEvent('drop', {
+      dataTransfer: dropped,
+      bubbles: true,
+      cancelable: true,
+      clientX: box.x + box.width / 2,
+      clientY: box.y + box.height / 2,
+    }),
+  );
+});
+await page.waitForTimeout(900);
+check(
+  'reordering the grid moves a picture rather than copying it',
+  await page.locator('.gallery .image').count(),
+  beforeReorder,
+);
+// Put the grid back to one picture, which is what the checks below expect.
+await page.locator('.gallery img.image').nth(1).click();
+await page.keyboard.press('Backspace');
+await page.waitForTimeout(400);
+
 // The browser build has no shell to write files, so this is the markup copy —
 // which is the half every build has.
 await page.locator('.gallery-button', { hasText: 'Copy all' }).click();
@@ -1518,7 +1593,7 @@ check('duplicating lands the copy directly beneath', await blockBody(), [
 await hoverBlock('charlie');
 await page.locator('.block-handle').click();
 await page.waitForSelector('.block-menu');
-await page.locator('.block-item', { hasText: 'Heading 2' }).first().click();
+await page.locator('.block-item', { hasText: 'Subheading' }).first().click();
 await page.waitForTimeout(350);
 check('turning a block into a heading turns the whole block', await page.locator('.body h2').count(), 1);
 

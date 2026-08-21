@@ -9,7 +9,9 @@ import { store } from '../data/index.ts';
 import { openLink } from '../data/links.ts';
 import { ACCEPTED, preloadAssets, storeImage } from './assets.ts';
 import { idFromPageUri } from './pageLinkClipboard.ts';
+import { cleanPastedHTML } from './pastedHtml.ts';
 import { useLibrary } from '../state/library.tsx';
+import { noteWriting } from '../state/activity.ts';
 import { clearPending, stashPending } from '../state/pending.ts';
 import { useWritingSettings } from '../state/writingSettings.ts';
 import { extensions } from './extensions.ts';
@@ -160,7 +162,15 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
   const [characters, setCharacters] = useState(0);
 
   const sessions = useRef(new Map<string, Session>());
-  const current = useRef<{ docId: string | null; dirty: boolean }>({ docId: null, dirty: false });
+  // `words` is the count this page had at the last save or when it was opened.
+  // It rides here rather than in a state variable because it is what the next
+  // save measures its movement against, and it has to be right on the same
+  // tick the save reads it — a render behind would misattribute a whole edit.
+  const current = useRef<{ docId: string | null; dirty: boolean; words: number }>({
+    docId: null,
+    dirty: false,
+    words: 0,
+  });
   const timer = useRef<number | null>(null);
   const applyMetaRef = useRef(applyMeta);
   applyMetaRef.current = applyMeta;
@@ -190,9 +200,10 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     // into a schema that has no rule for them. This strips the attributes that
     // do survive — inline styles and classes riding on paragraphs.
     editorProps: {
-      transformPastedHTML(html) {
-        return html.replace(/\s(style|class|id|lang|dir)="[^"]*"/gi, '');
-      },
+      // The schema is still most of the filter. What it can no longer do on
+      // its own is tell a table of data from a table drawn round a page — see
+      // pastedHtml.ts, which exists entirely because tables were added.
+      transformPastedHTML: cleanPastedHTML,
       attributes: { class: 'body', spellcheck: 'true', 'aria-label': 'Document body' },
       // Pasted and dropped pictures are the two routes nobody thinks of as a
       // feature until they are missing. Both go through the same place: real
@@ -205,6 +216,20 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
         );
       },
       handleDrop(view, event) {
+        /*
+          A picture already in this page being moved is ProseMirror's job, not
+          this one's.
+
+          `view.dragging` is set only for a drag that started inside this
+          editor, and it is the whole fix for a bug that looked like the
+          gallery duplicating on reorder: Chromium puts the dragged image on
+          the drag's own `dataTransfer` as a file, so dropping a gallery cell
+          on its neighbour looked exactly like dropping a picture in from the
+          desktop. The image below stored it as a new node — and because this
+          handler then returned true, ProseMirror never got to complete the
+          move, so the original stayed where it was. Two pictures, one drag.
+        */
+        if (view.dragging) return false;
         const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
         return takeImages(view, [...(event.dataTransfer?.items ?? [])], at?.pos ?? null);
       },
@@ -241,12 +266,20 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     const content = instance.getJSON() as PMDoc;
     const text = textOf(content);
     setCharacters(charactersIn(text));
-    const meta = await store.saveContent({
-      id,
-      content,
-      wordCount: countWords(text),
-      snapshot,
-    });
+    const words = countWords(text);
+
+    // Words *touched*, which is why it is the size of the change rather than
+    // the change: cutting forty words is forty words of work, and a chart that
+    // counted only growth would show an afternoon of tightening as an empty
+    // square. Measured against the count this document had when it was opened
+    // or last saved, so it is this page's own movement and not the library's.
+    const moved = Math.abs(words - current.current.words);
+    current.current.words = words;
+    // Not awaited: a square on a chart never stands between the words and the
+    // disk.
+    void noteWriting(moved);
+
+    const meta = await store.saveContent({ id, content, wordCount: words, snapshot });
     applyMetaRef.current(meta);
     clearPending();
   }, []);
@@ -287,6 +320,10 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
       );
       editor.commands.setContent(content);
       current.current.dirty = true;
+      // Putting an old version back is not a morning's writing, however far
+      // the count moves. Moving the baseline to where the restore lands leaves
+      // the save below with nothing to record.
+      current.current.words = countWords(textOf(content));
       await save(editor, true);
     },
     [editor, save],
@@ -310,19 +347,25 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
       if (cancelled) return;
 
       if (!docId) {
-        current.current = { docId: null, dirty: false };
+        current.current = { docId: null, dirty: false, words: 0 };
         setLoading(false);
         return;
       }
 
-      const measure = (content: PMDoc | null) => setCharacters(charactersIn(textOf(content)));
+      // Characters for the footer and words for the chart's baseline, both out
+      // of one walk of the document rather than two.
+      const measure = (content: PMDoc | null) => {
+        const text = textOf(content);
+        setCharacters(charactersIn(text));
+        return countWords(text);
+      };
 
       const stashed = sessions.current.get(docId);
       if (stashed) {
-        current.current = { docId, dirty: false };
+        current.current = { docId, dirty: false, words: 0 };
         editor.view.updateState(stashed.state);
         nudge(editor);
-        measure(editor.getJSON() as PMDoc);
+        current.current.words = measure(editor.getJSON() as PMDoc);
         setLoading(false);
         requestAnimationFrame(() => {
           const host = scrollHost();
@@ -338,7 +381,7 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
       // of them is one flash of layout rather than five.
       await preloadAssets(assetIdsIn(record?.content ?? null));
       if (cancelled) return;
-      current.current = { docId, dirty: false };
+      current.current = { docId, dirty: false, words: 0 };
       // A fresh EditorState rather than setContent, so the document opens with
       // an empty undo stack instead of one step that erases it.
       editor.view.updateState(
@@ -349,7 +392,7 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
         }),
       );
       nudge(editor);
-      measure(record?.content ?? null);
+      current.current.words = measure(record?.content ?? null);
       setLoading(false);
       requestAnimationFrame(() => {
         const host = scrollHost();

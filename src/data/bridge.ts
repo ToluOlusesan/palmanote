@@ -13,6 +13,8 @@
  */
 
 import type {
+  ActivityDay,
+  StickyNote,
   AssetMeta,
   AssetRecord,
   Backlink,
@@ -22,7 +24,12 @@ import type {
   PMDoc,
   RevisionRecord,
 } from '../core/types.ts';
-import type { CreateDocumentInput, MoveDocumentInput, SaveContentInput } from './store.ts';
+import type {
+  CreateDocumentInput,
+  MoveDocumentInput,
+  RecordActivityInput,
+  SaveContentInput,
+} from './store.ts';
 import { createTauriBridge, isTauri } from './tauriBridge.ts';
 
 export interface WriteExportRequest {
@@ -67,6 +74,11 @@ export interface PalmaNoteBridge {
   deleteDocument(id: string): Promise<string[]>;
   listRevisions(documentId: string): Promise<RevisionRecord[]>;
   pruneRevisions(): Promise<number>;
+  recordActivity(input: RecordActivityInput): Promise<ActivityDay>;
+  listActivity(sinceDay: string): Promise<ActivityDay[]>;
+  listStickies(documentId: string): Promise<StickyNote[]>;
+  putSticky(note: StickyNote): Promise<StickyNote>;
+  deleteSticky(id: string): Promise<void>;
   backlinks(id: string): Promise<Backlink[]>;
   putAsset(asset: Omit<AssetRecord, 'createdAt'>): Promise<AssetMeta>;
   getAsset(id: string): Promise<AssetRecord | null>;

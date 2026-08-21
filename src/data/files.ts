@@ -5,13 +5,15 @@
  *   1. Electron — a real native save dialog and real `fs` writes.
  *   2. File System Access API — Chromium's directory picker, which is a
  *      genuine folder on disk, not a download.
- *   3. Downloads — one file at a time, the last resort in a plain browser.
+ *   3. Downloads — the last resort in a plain browser, and one file rather
+ *      than many: anything that would have been a folder is zipped first.
  *
  * Nothing above this file knows which one ran.
  */
 
 import type { ExportResult } from '../export/index.ts';
 import { bridge } from './bridge.ts';
+import { zip } from './zip.ts';
 
 export interface WriteOutcome {
   written: number;
@@ -51,8 +53,24 @@ export async function writeExport(result: ExportResult): Promise<WriteOutcome> {
     return { written: result.files.length, location: `${root.name}/${result.folder ?? ''}`, cancelled: false };
   }
 
-  for (const file of result.files) download(file.path, file.data);
-  return { written: result.files.length, location: 'your downloads', cancelled: false };
+  // One file, so one download: a .docx or a lone .md goes as itself, and
+  // anything with a shape — a tree of markdown, an assets folder, the whole
+  // escape hatch — goes as a zip of that shape. Firefox and Safari have no
+  // directory picker, and forty separate download prompts is not an export.
+  const [first] = result.files;
+  if (!first) return { written: 0, location: null, cancelled: false };
+
+  if (result.files.length === 1) {
+    download(first.path, first.data);
+    return { written: 1, location: 'your downloads', cancelled: false };
+  }
+
+  const name = result.folder ?? first.path.replace(/\.[^./]+$/, '');
+  download(`${name}.zip`, await zip(result.files));
+  // Named in the outcome rather than counted as one file: the export really
+  // did write forty pages, and the writer should be told where the other
+  // thirty-nine went.
+  return { written: result.files.length, location: 'your downloads, as one .zip', cancelled: false };
 }
 
 async function writeInto(
@@ -85,5 +103,6 @@ function guessType(path: string): string {
     return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   }
   if (path.endsWith('.json')) return 'application/json';
+  if (path.endsWith('.zip')) return 'application/zip';
   return 'text/plain;charset=utf-8';
 }

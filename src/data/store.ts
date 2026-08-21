@@ -10,6 +10,8 @@
  */
 
 import type {
+  ActivityDay,
+  StickyNote,
   AssetMeta,
   AssetRecord,
   Backlink,
@@ -33,6 +35,15 @@ export interface MoveDocumentInput {
   parentId: string | null;
   /** Place after this sibling. null = first child, omitted = last child. */
   afterId?: string | null;
+}
+
+export interface RecordActivityInput {
+  /** Local calendar day, `YYYY-MM-DD`. From `dayKey` in core/activity.ts. */
+  day: string;
+  /** Words touched by this edit — always positive, however the count moved. */
+  words: number;
+  /** When the edit landed, epoch ms. */
+  at: number;
 }
 
 export interface SaveContentInput {
@@ -78,6 +89,29 @@ export interface PalmaNoteStore {
   listRevisions(documentId: string): Promise<RevisionRecord[]>;
   /** Coarse retention pass. Runs at startup, off the critical path. */
   pruneRevisions(): Promise<number>;
+
+  /**
+   * Adds one edit to today's tally and hands back the day as it now stands.
+   *
+   * The caller says which day it is rather than the storage layer working it
+   * out, because "today" is a question about the person's clock and there are
+   * three storage layers — one definition in `core/activity.ts` beats three
+   * that agree until one of them doesn't.
+   *
+   * Time is accrued here rather than passed in: the row already knows when the
+   * last edit landed, so the gap is a subtraction the store can do and the
+   * caller cannot. Anything longer than `ACTIVE_GAP_MS` is a break, not
+   * writing, and earns nothing.
+   */
+  recordActivity(input: RecordActivityInput): Promise<ActivityDay>;
+  /** Every day from `sinceDay` onward, oldest first. Silent days are absent. */
+  listActivity(sinceDay: string): Promise<ActivityDay[]>;
+
+  /** The notes stuck to one page, oldest first. */
+  listStickies(documentId: string): Promise<StickyNote[]>;
+  /** Writes one, new or changed. The caller owns the id. */
+  putSticky(note: StickyNote): Promise<StickyNote>;
+  deleteSticky(id: string): Promise<void>;
 
   /**
    * Every page whose prose links to this one, unordered and unfiltered.

@@ -4,7 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <link rel="icon" href="data:," />
+    <meta
+      name="description"
+      content="A small, local place to keep pages, notes and lists. Everything is saved on your own machine — no account, no cloud, no AI."
+    />
+    <!--
+      `%BASE_URL%` rather than a leading slash. The desktop shell loads this
+      file over file://, where `/` is the drive root, and the browser build is
+      served from a subdirectory, where it is the domain root. Neither is here.
+    -->
+    <link rel="icon" href="%BASE_URL%icons/icon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="%BASE_URL%icons/icon-192.png" sizes="192x192" type="image/png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/icon-192.png" />
+    <!-- Installable, which is worth more than it looks: a browser grants
+         persistent storage to an app someone has installed, and persistent
+         storage is the difference between a library that survives a quiet
+         fortnight and one the browser is entitled to evict. -->
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <title>PalmaNote</title>
   </head>
   <body>

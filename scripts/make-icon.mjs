@@ -3,8 +3,9 @@
  *
  *   npm run icon
  *
- * Writes build/icon.ico (16–256px) and build/icon.png, and the same into
- * src-tauri/icons/ where the bundler looks for them.
+ * Writes build/icon.ico (16–256px) and build/icon.png, the same into
+ * src-tauri/icons/ where the bundler looks for them, and public/icons/ for the
+ * browser build's tab and its web app manifest.
  *
  * The rasteriser is the browser already on this machine, driven headless. It
  * is a build-time dependency, not a shipped one, and the outputs are kept in
@@ -25,8 +26,31 @@ const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Applic
  */
 const SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
 
-const PAPER = '#faf9f7';
-const INK = '#17171a';
+/**
+ * The browser build's own sizes, kept out of `SIZES` because they are not for
+ * the .ico: an icon directory entry's size field is one byte wide, so 256 is
+ * already written as zero and anything above it cannot be expressed at all.
+ *
+ * 192 and 512 are what a web app manifest is asked for — a browser will not
+ * offer to install an app that cannot supply both — and 32 is the tab.
+ */
+const WEB_SIZES = [32, 192, 512];
+
+/**
+ * The identity layer, and the only place the brand is allowed to be loud.
+ *
+ * Cobalt to Violet, corner to corner, two stops, with the artwork knocked out
+ * of it in white and no second colour inside the mark. This is the icon, the
+ * installer and the marketing artwork; the app's own chrome does not get it —
+ * in there the mark is a single ink and cobalt is the only hue on screen. See
+ * the note on `PalmaMark` in src/ui/PalmaMark.tsx.
+ *
+ * Cobalt and Violet are neighbours on the wheel, so the run stays saturated
+ * the whole way across and neither end has to be held back.
+ */
+const COBALT = '#1d5fff';
+const VIOLET = '#7c5cff';
+const INK = '#ffffff';
 /** Corner radius, as a fraction of the tile. */
 const RADIUS = 0.21;
 
@@ -61,7 +85,8 @@ function tile(size, scale = 1) {
   const weight = bolden(size);
   return `<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;padding:0;background:transparent}
-    .tile{width:${box}px;height:${box}px;background:${PAPER};
+    .tile{width:${box}px;height:${box}px;
+      background:linear-gradient(135deg, ${COBALT}, ${VIOLET});
       border-radius:${Math.round(box * RADIUS)}px;
       display:grid;place-items:center;overflow:hidden}
     .tile svg{width:${box - pad * 2}px;height:${box - pad * 2}px;display:block}
@@ -104,6 +129,22 @@ for (const size of SIZES) {
   await view.close();
 }
 
+const webImages = [];
+for (const size of WEB_SIZES) {
+  // 32 is already in `images`, and rendering it twice would be two chances to
+  // differ. Everything larger is drawn here.
+  const made = images.find((image) => image.size === size);
+  if (made) {
+    webImages.push(made);
+    continue;
+  }
+  const view = await context.newPage();
+  await view.setViewportSize({ width: size, height: size });
+  await view.setContent(tile(size));
+  webImages.push({ size, png: await view.screenshot({ omitBackground: true, type: 'png' }) });
+  await view.close();
+}
+
 // A proof sheet: the taskbar sizes, magnified, on the colour a taskbar
 // actually is. Judging an icon at its true size is guesswork; this is not.
 const proof = await context.newPage();
@@ -133,6 +174,7 @@ await browser.close();
 
 mkdirSync('build', { recursive: true });
 mkdirSync('src-tauri/icons', { recursive: true });
+mkdirSync('public/icons', { recursive: true });
 
 const ico = encodeIco(images);
 const at = (size) => images.find((image) => image.size === size).png;
@@ -147,7 +189,12 @@ writeFileSync('src-tauri/icons/32x32.png', at(32));
 writeFileSync('src-tauri/icons/128x128.png', at(128));
 writeFileSync('src-tauri/icons/128x128@2x.png', at(256));
 
+// Served as ordinary files rather than inlined: the manifest has to point at a
+// URL, and a tab icon the browser can cache is one fewer thing in the HTML.
+for (const { size, png } of webImages) writeFileSync(`public/icons/icon-${size}.png`, png);
+
 console.log(`icon.ico   ${SIZES.join(', ')}px  (${(ico.length / 1024).toFixed(1)} KB)`);
 console.log('icon.png   256px');
-console.log('written to build/ and src-tauri/icons/');
+console.log(`web        ${WEB_SIZES.join(', ')}px`);
+console.log('written to build/, src-tauri/icons/ and public/icons/');
 console.log('proof sheet: build/icon-proof.png');

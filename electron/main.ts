@@ -150,6 +150,13 @@ function registerHandlers(): void {
   call('db:deleteDocument', (id: string) => store.deleteDocument(id));
   call('db:listRevisions', (id: string) => store.listRevisions(id));
   call('db:pruneRevisions', () => store.pruneRevisions());
+  call('db:recordActivity', (input: Parameters<SqliteStore['recordActivity']>[0]) =>
+    store.recordActivity(input),
+  );
+  call('db:listActivity', (sinceDay: string) => store.listActivity(sinceDay));
+  call('db:listStickies', (id: string) => store.listStickies(id));
+  call('db:putSticky', (note: Parameters<SqliteStore['putSticky']>[0]) => store.putSticky(note));
+  call('db:deleteSticky', (id: string) => store.deleteSticky(id));
   call('db:backlinks', (id: string) => store.backlinks(id));
   call('db:putAsset', (asset: Parameters<typeof store.putAsset>[0]) => store.putAsset(asset));
   call('db:getAsset', (id: string) => store.getAsset(id));

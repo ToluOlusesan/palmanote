@@ -8,6 +8,8 @@ import party from '../assets/stickers/party.png';
 import person from '../assets/stickers/person.png';
 import search from '../assets/stickers/search.png';
 
+import type { StickerId } from './stickerIds.ts';
+
 /**
  * The sticker set, hand-written rather than globbed off the folder.
  *
@@ -22,8 +24,14 @@ import search from '../assets/stickers/search.png';
  * between them; those are the source, these are what ships.
  */
 export interface Sticker {
-  /** Stored in the document. Permanent. */
-  id: string;
+  /**
+   * Stored in the document. Permanent.
+   *
+   * Typed as the union in `stickerIds.ts` rather than as a string, so the list
+   * the markdown reader matches `:check:` against cannot fall behind this one:
+   * a sticker added here without its id added there does not compile.
+   */
+  id: StickerId;
   label: string;
   /** Extra words the slash menu should match on, beyond the label. */
   keywords: string;
@@ -42,7 +50,11 @@ export const STICKERS: Sticker[] = [
   { id: 'person', label: 'Person', keywords: 'profile character who someone avatar', src: person },
 ];
 
-const BY_ID = new Map(STICKERS.map((sticker) => [sticker.id, sticker]));
+// Keyed by plain string rather than by `StickerId`, because the lookup below
+// is asked about whatever a document happens to hold — including the id of a
+// sticker that has since left the set, which is exactly the case it answers
+// `undefined` for.
+const BY_ID = new Map<string, Sticker>(STICKERS.map((sticker) => [sticker.id, sticker]));
 
 /** Undefined for a sticker whose art has since left the set — see Sticker.ts. */
 export function stickerById(id: string): Sticker | undefined {

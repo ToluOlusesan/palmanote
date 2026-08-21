@@ -3,6 +3,7 @@ import {
   ClockCounterClockwise,
   Export,
   Gear,
+  GridFour,
   Moon,
   Sidebar,
   Sun,
@@ -10,8 +11,11 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { isDesktop } from '../data/bridge.ts';
+import { ActivityDialog } from '../ui/ActivityDialog.tsx';
 import { LibraryProvider, useLibrary } from '../state/library.tsx';
+import { useTabClaim } from '../state/soleTab.ts';
 import { TabsProvider, useTabs } from '../state/tabs.tsx';
+import { useStickies } from '../state/stickies.ts';
 import { useTheme } from '../state/theme.ts';
 import { writingSettings } from '../state/writingSettings.ts';
 import { EditorPane } from '../ui/EditorPane.tsx';
@@ -20,13 +24,32 @@ import { GuideDialog } from '../ui/GuideDialog.tsx';
 import { ImportDialog } from '../ui/ImportDialog.tsx';
 import { PdfReader, type OpenPdf } from '../ui/PdfReader.tsx';
 import { SettingsDialog } from '../ui/SettingsDialog.tsx';
+import { StickyNotes } from '../ui/StickyNotes.tsx';
 import { TabStrip } from '../ui/TabStrip.tsx';
 import { TreePane } from '../ui/TreePane.tsx';
 import { Palette } from '../ui/Palette.tsx';
 import { Welcome } from '../ui/Welcome.tsx';
 import { WindowControls } from '../ui/WindowControls.tsx';
+import { DuplicateTab, NarrowScreen, StorageNote, useNarrowScreen } from '../ui/WebShell.tsx';
 
+/**
+ * Two questions the browser build has to answer before anything reads the
+ * library: is this the only tab, and is there room to work.
+ *
+ * Both are settled above the providers on purpose. A tab that is not going to
+ * be allowed to write should never have loaded a library in the first place —
+ * and on the desktop both resolve synchronously to yes, so the shipped app
+ * mounts exactly as it always did.
+ */
 export function App() {
+  const claim = useTabClaim();
+  const narrow = useNarrowScreen();
+  const [anyway, setAnyway] = useState(false);
+
+  if (claim === 'claiming') return null;
+  if (claim !== 'sole') return <DuplicateTab claim={claim} />;
+  if (narrow && !anyway) return <NarrowScreen onContinue={() => setAnyway(true)} />;
+
   return (
     <LibraryProvider>
       <TabsProvider>
@@ -55,8 +78,13 @@ function Workspace() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [pdf, setPdf] = useState<OpenPdf | null>(null);
   const theme = useTheme();
+  // Owned here rather than in the editor pane: the rail is a fixed column
+  // beside the paper, not something inside it, so it has to live outside the
+  // element that scrolls.
+  const stickies = useStickies(library.selectedId);
 
   useEffect(() => {
     if (ready && sessionBaseline === null) setSessionBaseline(totalWords);
@@ -182,6 +210,23 @@ function Workspace() {
         if (canBrowseHistory) setHistoryOpen(true);
         return;
       }
+      // A note, in the rail. Not routed through the editor's keymap: a sticky
+      // is not something the document can hold, and this has to work while the
+      // sidebar or the title field has the focus too.
+      if (ctrl && !event.shiftKey && key === ' ') {
+        event.preventDefault();
+        stickies.add();
+        return;
+      }
+      // Not Ctrl+Shift+W, however well it fits "writing": the tab-close above
+      // does not check Shift, so that chord already means something and would
+      // mean it first. Toggles, like the palette — the chord that summons it
+      // dismisses it.
+      if (ctrl && event.shiftKey && key.toLowerCase() === 'y') {
+        event.preventDefault();
+        setActivityOpen((open) => !open);
+        return;
+      }
       if (ctrl && (key === '\\' || key === '/')) {
         event.preventDefault();
         setTreeVisible(!treeVisible);
@@ -217,6 +262,7 @@ function Workspace() {
     library,
     paletteOpen,
     setTreeVisible,
+    stickies,
     tabs,
     treeVisible,
   ]);
@@ -270,6 +316,15 @@ function Workspace() {
           <button
             type="button"
             className="chrome-btn"
+            aria-label="Your writing"
+            title="Your writing — Ctrl+Shift+Y"
+            onClick={() => setActivityOpen(true)}
+          >
+            <GridFour size={18} />
+          </button>
+          <button
+            type="button"
+            className="chrome-btn"
             aria-label="Settings"
             title="Settings — Ctrl+,"
             onClick={() => setSettingsOpen(true)}
@@ -303,10 +358,14 @@ function Workspace() {
 
           <WindowControls />
         </div>
+        {/* Beside the paper rather than on it, and outside the element that
+            scrolls, so the notes hold still while the prose moves. */}
+        {ready && !greeting && !pdf && <StickyNotes stickies={stickies} />}
+
         <div className="editor-host" ref={hostRef}>
           {pdf && <PdfReader file={pdf} onClose={() => setPdf(null)} />}
           {ready && greeting && !pdf && (
-            <Welcome onLeave={openedSomething} />
+            <Welcome onLeave={openedSomething} onOpenActivity={() => setActivityOpen(true)} />
           )}
           {ready && !greeting && !pdf && (
             <EditorPane
@@ -326,6 +385,7 @@ function Workspace() {
         />
       )}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
+      {activityOpen && <ActivityDialog onClose={() => setActivityOpen(false)} />}
       {paletteOpen && (
         <Palette
           onClose={() => {
@@ -336,6 +396,10 @@ function Workspace() {
           }}
         />
       )}
+      {/* Where the work is kept — said once, in the build where the answer is
+          not "a file you could point at". */}
+      {!isDesktop && ready && <StorageNote onExport={() => setExporting(true)} />}
+
       {importing && (
         <ImportDialog
           onClose={() => setImporting(false)}

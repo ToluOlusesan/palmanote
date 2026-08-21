@@ -119,6 +119,31 @@ fn prune_revisions(app: Db<'_>) -> Result<usize, String> {
 }
 
 #[tauri::command]
+fn record_activity(app: Db<'_>, input: RecordActivityInput) -> Result<ActivityDay, String> {
+    app.store.record_activity(input)
+}
+
+#[tauri::command]
+fn list_activity(app: Db<'_>, since_day: String) -> Result<Vec<ActivityDay>, String> {
+    app.store.list_activity(&since_day)
+}
+
+#[tauri::command]
+fn list_stickies(app: Db<'_>, document_id: String) -> Result<Vec<StickyNote>, String> {
+    app.store.list_stickies(&document_id)
+}
+
+#[tauri::command]
+fn put_sticky(app: Db<'_>, note: StickyNote) -> Result<StickyNote, String> {
+    app.store.put_sticky(note)
+}
+
+#[tauri::command]
+fn delete_sticky(app: Db<'_>, id: String) -> Result<(), String> {
+    app.store.delete_sticky(&id)
+}
+
+#[tauri::command]
 fn backlinks(app: Db<'_>, id: String) -> Result<Vec<Backlink>, String> {
     app.store.backlinks(&id)
 }
@@ -301,7 +326,14 @@ fn read_incoming(root: &PathBuf, path: &PathBuf) -> Option<IncomingFile> {
         .to_string_lossy()
         .replace(std::path::MAIN_SEPARATOR, "/");
 
-    if name.ends_with(".docx") {
+    // Pictures come through as bytes beside the pages that link them, which is
+    // what lets `![shot](assets/shot.png)` in an imported folder arrive as a
+    // picture rather than as a hole. They never become pages of their own —
+    // `planImport` sets them aside before it plans anything. Mirrors `ACCEPTED`
+    // in src/editor/assets.ts.
+    const PICTURES: [&str; 5] = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+
+    if name.ends_with(".docx") || PICTURES.iter().any(|ext| name.ends_with(ext)) {
         return fs::read(path).ok().map(|bytes| IncomingFile {
             path: relative,
             text: None,
@@ -350,7 +382,12 @@ async fn pick_import(window: WebviewWindow, folder: bool) -> Result<Vec<Incoming
             .file()
             .set_title("Choose files to import")
             .set_directory(&documents)
-            .add_filter("Documents", &["md", "markdown", "txt", "docx", "json"])
+            .add_filter(
+                "Documents",
+                &[
+                    "md", "markdown", "txt", "docx", "json", "png", "jpg", "jpeg", "gif", "webp",
+                ],
+            )
             .blocking_pick_files();
         let Some(paths) = chosen else { return Ok(out) };
         for handle in paths {
@@ -558,6 +595,11 @@ fn main() {
             delete_document,
             list_revisions,
             prune_revisions,
+            record_activity,
+            list_activity,
+            list_stickies,
+            put_sticky,
+            delete_sticky,
             backlinks,
             open_external,
             put_asset,

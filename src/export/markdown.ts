@@ -9,15 +9,41 @@ import { assetPath } from './walk.ts';
 
 const ESCAPE = /([\\`*_[\]#])/g;
 
-export function markdownFromDoc(doc: PMDoc | null): string {
+/**
+ * The two delimiters that only mean anything in pairs.
+ *
+ * `~` and `=` are ordinary characters on their own — `~5kg`, `a = b` — and
+ * escaping every one of them would litter perfectly plain prose with
+ * backslashes to no purpose. It is `~~` and `==` that the reader opposite
+ * takes for strikethrough and highlight, so those are what get escaped, and
+ * only the first character of the run needs it to break the pair.
+ *
+ * Without this the two files disagreed: the reader's `unescape` has always
+ * accepted `\~` and `\=`, and nothing here ever wrote them — so a sentence
+ * with a literal `~~` in it went out unescaped and came back struck through.
+ */
+const PAIRED = /(~(?=~)|=(?==))/g;
+
+/**
+ * `assets` sits at the root of an export, and a page can sit well below it.
+ *
+ * `assetPrefix` is however many `../` it takes to climb from the file being
+ * written back up to that root — see `markdownTree` in ./index.ts. Without it
+ * every nested page linked `assets/…` as though it were a sibling of the
+ * folder, which resolved to nothing from the second level down: correct for
+ * the pages at the top and quietly broken for every chapter inside a book. The
+ * README in the export promises these are "ordinary relative links", and this
+ * is what makes that true rather than nearly true.
+ */
+export function markdownFromDoc(doc: PMDoc | null, assetPrefix = ''): string {
   if (!doc?.content) return '';
   return doc.content
-    .map((node) => block(node, 0))
+    .map((node) => block(node, 0, assetPrefix))
     .filter((text) => text.length > 0)
     .join('\n\n');
 }
 
-function block(node: PMNode, indent: number): string {
+function block(node: PMNode, indent: number, prefix: string): string {
   const pad = '  '.repeat(indent);
   switch (node.type) {
     case 'heading': {
@@ -26,21 +52,23 @@ function block(node: PMNode, indent: number): string {
     }
     case 'blockquote':
       return (node.content ?? [])
-        .map((child) => block(child, indent))
+        .map((child) => block(child, indent, prefix))
         .join('\n\n')
         .split('\n')
         .map((line) => `> ${line}`.trimEnd())
         .join('\n');
     case 'bulletList':
-      return listItems(node, indent, () => '- ');
+      return listItems(node, indent, prefix, () => '- ');
     case 'orderedList': {
       const start = Number(node.attrs?.start ?? 1);
-      return listItems(node, indent, (index) => `${start + index}. `);
+      return listItems(node, indent, prefix, (index) => `${start + index}. `);
     }
     case 'taskList':
-      return listItems(node, indent, (_index, item) =>
+      return listItems(node, indent, prefix, (_index, item) =>
         item.attrs?.checked ? '- [x] ' : '- [ ] ',
       );
+    case 'table':
+      return pipeTable(node, pad, prefix);
     case 'sceneBreak':
       return `${pad}***`;
     // A fenced block, and nothing inside it is escaped — the whole point of
@@ -61,17 +89,74 @@ function block(node: PMNode, indent: number): string {
     // difference between an export you can read somewhere else and an export
     // with holes in it.
     case 'image':
-      return `${pad}![${String(node.attrs?.alt ?? '').replace(/[[\]]/g, '')}](${assetPath(node)})`;
+      return `${pad}![${String(node.attrs?.alt ?? '').replace(/[[\]]/g, '')}](${prefix}${assetPath(node)})`;
     case 'paragraph':
       return pad + inline(node);
     default:
-      return node.content ? node.content.map((child) => block(child, indent)).join('\n\n') : '';
+      return node.content
+        ? node.content.map((child) => block(child, indent, prefix)).join('\n\n')
+        : '';
   }
+}
+
+/**
+ * A GFM pipe table — the one every markdown tool that has tables agrees on.
+ *
+ * Two things are given up on the way out, and both are markdown's limits
+ * rather than choices:
+ *
+ * - **A cell holds one line.** The pipe format has no way to say "a new
+ *   paragraph, still in this cell", so a cell with two blocks in it comes out
+ *   as one line with a space between them. Nothing is dropped, but a list in a
+ *   cell arrives somewhere else as a run of bullets on one line.
+ * - **Every table gets a header row**, because GFM has no table without one. A
+ *   table whose first row is ordinary cells is written under an empty header
+ *   rather than losing that row to the format.
+ *
+ * Ragged rows are squared off to the widest, which is what the reader opposite
+ * expects and what ProseMirror requires of a table it is asked to load.
+ */
+function pipeTable(node: PMNode, pad: string, prefix: string): string {
+  const rows = (node.content ?? []).map((row) => row.content ?? []);
+  if (rows.length === 0) return '';
+
+  const width = Math.max(...rows.map((row) => row.length));
+  const squared = rows.map((row) =>
+    Array.from({ length: width }, (_, at) => (row[at] ? cellText(row[at]!, prefix) : '')),
+  );
+
+  const headed = (rows[0] ?? []).every((cell) => cell.type === 'tableHeader');
+  const header = headed ? squared[0]! : Array.from({ length: width }, () => '');
+  const body = headed ? squared.slice(1) : squared;
+  const line = (cells: string[]) => `${pad}| ${cells.join(' | ')} |`;
+
+  return [line(header), line(Array.from({ length: width }, () => '---')), ...body.map(line)].join(
+    '\n',
+  );
+}
+
+/**
+ * One cell, flattened to a line.
+ *
+ * The pipe is escaped last and by hand rather than being added to `ESCAPE`,
+ * because `|` is an ordinary character everywhere else in a document and
+ * escaping it in every paragraph would be backslashes for nothing. The reader
+ * undoes this while it splits a row, for the same reason — it is a rule about
+ * tables, not about prose.
+ */
+function cellText(cell: PMNode, prefix: string): string {
+  return (cell.content ?? [])
+    .map((child) => block(child, 0, prefix))
+    .join(' ')
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\|/g, '\\|')
+    .trim();
 }
 
 function listItems(
   list: PMNode,
   indent: number,
+  prefix: string,
   marker: (index: number, item: PMNode) => string,
 ): string {
   const pad = '  '.repeat(indent);
@@ -80,8 +165,8 @@ function listItems(
       const bullet = marker(index, item);
       const parts = (item.content ?? []).map((child) =>
         child.type === 'bulletList' || child.type === 'orderedList' || child.type === 'taskList'
-          ? block(child, indent + 1)
-          : block(child, 0),
+          ? block(child, indent + 1, prefix)
+          : block(child, 0, prefix),
       );
       const [first = '', ...rest] = parts;
       const continued = rest
@@ -124,7 +209,7 @@ function text(node: PMNode): string {
     return `${fence}${pad}${raw}${pad}${fence}`;
   }
 
-  let out = (node.text ?? '').replace(ESCAPE, '\\$1');
+  let out = (node.text ?? '').replace(ESCAPE, '\\$1').replace(PAIRED, '\\$1');
   // Link last, whatever order the marks arrived in, so the whole formatted run
   // becomes the link text — `[**bold**](url)` rather than `**[bold](url)**`.
   // ProseMirror does not promise mark order, and the two nest differently.

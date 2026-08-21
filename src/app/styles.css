@@ -13,24 +13,104 @@
 */
 
 :root {
+  /*
+    The system stack, and nothing shipped.
+
+    Inter and DM Serif Display were vendored here for a day. Inter at 400 sets
+    noticeably heavier than the platform UI face at the sizes this app uses, so
+    the prose came out thick; the serif on the greeting was a voice the app did
+    not want. Whatever the machine already has is lighter, better hinted at
+    small sizes, and costs nothing to load.
+  */
   --prose: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', 'Inter',
     system-ui, sans-serif;
   --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui,
     sans-serif;
 
-  --canvas: #f0efec;
+  /*
+    Paper: white, and the same white everywhere.
+
+    There were two near-whites here for a while — a panel tone for the window
+    and pure white for the card floating on it. Then the card went, because the
+    writing area should not be discernible from its background, and a panel
+    tone with nothing to sit under it is just a slightly grubby white. So both
+    are #ffffff and the layers are separated by the hairlines and shadows that
+    were already doing it.
+
+    The greys are alpha over the ink rather than mixed values, so a border on a
+    dialog and the same border on the window are one rule rather than two
+    colours that have to be kept in step.
+  */
+  --canvas: #ffffff;
   --page: #ffffff;
-  --ink: #17171a;
-  --muted: #6b6b70;
-  --faint: #9b9b9f;
-  --hairline: #e4e2dd;
-  --line: #dedcd6;
-  --raise: #e6e4df;
-  --accent: #2f4b8f;
+  --ink: #0a0a0a;
+  --muted: rgb(10 10 10 / 58%);
+  --faint: rgb(10 10 10 / 40%);
+  --hairline: rgb(10 10 10 / 12%);
+  --line: rgb(10 10 10 / 20%);
+  --raise: rgb(10 10 10 / 6%);
+  /*
+    One accent, and it is the only hue in the interior.
+
+    Cobalt is buttons, links, selection, the caret, focus rings, active state,
+    and the hue the writing chart's four steps are mixed from. Everything else
+    in here is paper, ink or grey.
+
+    There was an Amber in this block for a day — the streak figure, the star,
+    the ring on today. It is gone, and the reason is worth keeping: a second
+    decorative hue is invisible one element at a time and reads as unplanned
+    once there are three of them, and it costs the accent the only thing a
+    single accent has, which is meaning something *because* it is the only
+    colour on the screen. Amber and Violet live on the identity layer — the
+    app icon and marketing — and do not come inside.
+
+    If something in here needs emphasis it takes the accent. If it is a system
+    state it takes that role's colour. There is no third option.
+  */
+  --accent: #1d5fff;
   /* A block held as an object. Accent at a tenth, so it reads as chosen
      without competing with a highlight, which is the other coloured wash a
      line of prose can be wearing. */
-  --held: rgb(47 75 143 / 10%);
+  --held: rgb(29 95 255 / 10%);
+
+  /*
+    The writing chart's four shades.
+
+    One hue, four steps, light to dark — the only colour rule that means
+    anything for magnitude, and the reason a square can be read without the
+    legend. They are the accent mixed toward the page at 22, 44, 70 and 100
+    per cent, so the scale is the app's own blue getting stronger rather than
+    a second palette to keep in step with this one.
+
+    --heat-0 is a day that happened and was not written on, and it is a
+    *neutral* rather than a fifth step of the blue: nothing is the absence of
+    the scale, not the bottom of it, and the eye should sort the coloured
+    squares from the empty ones before it sorts light from dark.
+  */
+  --heat-0: #e8e6e1;
+  --heat-1: #cddcff;
+  --heat-2: #9cb9ff;
+  --heat-3: #618fff;
+  --heat-4: #1d5fff;
+
+  /*
+    The date written on the square, which has to stay legible as the square
+    goes from nearly-page to nearly-ink underneath it. One token per step
+    rather than one rule with a threshold, because where the text has to flip
+    is not the same step in both themes — see the dark block below.
+
+    Ink holds to 4.7:1 against --heat-3 and only gives out on --heat-4.
+  */
+  --heat-text-0: var(--muted);
+  --heat-text-1: var(--ink);
+  --heat-text-2: var(--ink);
+  --heat-text-3: var(--ink);
+  --heat-text-4: #ffffff;
+
+  /* Today, on the chart. Amber rather than a grey ring, because the ring a
+     hover draws is grey and two rings that mean different things must not be
+     told apart by their weight alone. It is also the one warm mark in a blue
+     grid, which is what makes it findable. */
 
   --mono: 'Cascadia Mono', 'Consolas', 'SF Mono', 'Menlo', ui-monospace, monospace;
 
@@ -48,10 +128,16 @@
     --ease is the one this app already had: a long tail that decelerates almost
     to a stop, which is what makes a panel look like it settled rather than
     arrived. --glide is the same idea with less bite, for the small things a
-    pointer touches. --spring overshoots by a hair and comes back, and is kept
-    for things that appear out of nothing — a bar over a selection, a menu —
-    where the overshoot is what separates "this opened" from "this was always
-    there and you just noticed".
+    pointer touches.
+
+    **Ease-out only. No spring.** There was a --spring here that overshot by a
+    hair and came back, used on menus, the selection bar and the dialog, and
+    the argument for it was that the overshoot separates "this opened" from
+    "this was always there and you just noticed". The Palmaboard motion spec
+    rules it out across the family, and the family winning that argument is the
+    point of having a spec — a bounce that appears in one app of three is a
+    bounce that reads as a bug in the other two. What did the work in those
+    cases was the four-pixel rise, and that stays.
 
     Three durations, and almost nothing outside them. --quick is a hover: fast
     enough that the pointer never waits on it. --settle is something arriving.
@@ -60,7 +146,6 @@
   */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --glide: cubic-bezier(0.25, 0.8, 0.3, 1);
-  --spring: cubic-bezier(0.22, 1.18, 0.36, 1);
   --quick: 120ms;
   --settle: 190ms;
   --unfold: 280ms;
@@ -75,24 +160,44 @@
   drop shadow nobody can see on black.
 */
 :root[data-theme='dark'] {
-  --canvas: #171719;
-  --page: #202023;
-  --ink: #e9e8e4;
-  --muted: #9a9a9f;
-  --faint: #6a6a70;
-  --hairline: #2d2d31;
-  --line: #313136;
-  --raise: #2a2a2e;
-  --accent: #86a5ec;
+  --canvas: #121212;
+  --page: #1a1a1a;
+  --ink: #f4f4f4;
+  --muted: rgb(255 255 255 / 60%);
+  --faint: rgb(255 255 255 / 40%);
+  --hairline: rgb(255 255 255 / 12%);
+  --line: rgb(255 255 255 / 20%);
+  --raise: rgb(255 255 255 / 8%);
+  /* Cobalt itself only reaches 3.4:1 on the dark card — under the line for
+     anything carrying a word — so dark runs a tint of it, the brand hue mixed
+     a third of the way to white. Amber needs no such help. */
+  --accent: #6c97ff;
   /* Lifted rather than inverted: the same tenth over a dark card would be
      invisible, so the wash carries more of the lighter accent. */
-  --held: rgb(134 165 236 / 16%);
+  --held: rgb(108 151 255 / 16%);
+
+  /* The ramp is re-stepped rather than flipped. Light to dark becomes dark to
+     light because the anchor moved: in light, a quiet day sits nearly on the
+     page and a loud one is nearly ink; in dark the card *is* the quiet end, so
+     the loud end has to climb away from it. Same accent, same four fractions,
+     mixed toward the dark card instead of toward the white page. */
+  --heat-0: #232326;
+  --heat-1: #2c364c;
+  --heat-2: #3e517f;
+  --heat-3: #6787d8;
+  --heat-4: #6c97ff;
+
+  /* The flip lands a step earlier than it does in light. The ramp climbs away
+     from a dark card rather than down onto a white page, so --heat-3 is
+     already light enough that the pale ink on it drops to 3.3:1 — under the
+     line — while dark ink on it clears 4.5:1. */
+  --heat-text-0: var(--muted);
+  --heat-text-1: var(--ink);
+  --heat-text-2: var(--ink);
+  --heat-text-3: #171719;
+  --heat-text-4: #171719;
 
   color-scheme: dark;
-}
-
-:root[data-theme='dark'] .editor-host {
-  box-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 22%);
 }
 
 :root[data-theme='dark'] .row:hover,
@@ -147,6 +252,7 @@ button {
 /* ---------------------------------------------------------------- layout */
 
 .workspace {
+  position: relative;
   display: grid;
   grid-template-columns: var(--rail) 1fr;
   height: 100%;
@@ -207,9 +313,12 @@ button {
 
 /* Chrome recedes; the mark in the sidebar is a wordmark, not a button. The
    greeting overrides this — that one is the loudest thing on its screen. */
+/* One ink, taken from whatever it sits on — near-black on paper, near-white on
+   the dark card. The gradient tile belongs to the identity layer and stays out
+   here; chrome has one accent and no other colour. */
 .palmamark {
   flex: none;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 /* Present to a screen reader, absent to everyone else. */
@@ -250,8 +359,10 @@ button {
   transition: opacity 120ms var(--ease), color 120ms var(--ease);
 }
 
+/* Starred is an active state, so it wears the accent like every other active
+   state. It used to be a gold that belonged to nothing else in the app. */
 .row-star.is-on {
-  color: #c9962f;
+  color: var(--accent);
   opacity: 1;
 }
 
@@ -261,7 +372,7 @@ button {
 }
 
 .row-star:hover {
-  color: #c9962f;
+  color: var(--ink);
 }
 
 /* Section labels, the way a Finder sidebar groups things. */
@@ -483,6 +594,7 @@ button {
 /* ------------------------------------------------------------------ tabs */
 
 .main {
+  position: relative;
   display: grid;
   grid-template-rows: var(--topbar) 1fr;
   min-width: 0;
@@ -602,20 +714,17 @@ button {
   color: var(--ink);
 }
 
-/* ------------------------------------------------------------------ card */
+/* --------------------------------------------------------------- surface */
 
-/* One card, floating on the window's own grey, holding the writing.
-   Positioned, because the drawn caret is placed against it. */
+/* The writing surface. Not a card any more — see the note by `.editor-host`
+   at the top of the file. Still positioned, because the drawn caret is placed
+   against it. */
 .editor-host {
   position: relative;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 5%);
 }
 
 .editor {
@@ -633,8 +742,9 @@ button {
   gap: 0.15rem;
   height: var(--topbar);
   padding: 0 0.55rem;
-  background: var(--page);
-  border-radius: var(--radius) var(--radius) 0 0;
+  /* The window's tone, not the card's — there is no card. Still opaque, and it
+     has to stay opaque: it is sticky, and prose scrolls underneath it. */
+  background: var(--canvas);
   white-space: nowrap;
 }
 
@@ -886,7 +996,7 @@ button.crumb:hover {
 
 .title::placeholder {
   color: var(--faint);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .body {
@@ -981,6 +1091,67 @@ button.crumb:hover {
   background: none;
   font-size: inherit;
   white-space: pre;
+}
+
+/*
+  A table is a grid of prose and nothing more.
+
+  No cell colour, no alignment controls, no column types, no totals — the
+  writer's content gets to be expressive, the interface does not. It is drawn
+  in the same hairline the quote and the code panel use, so a table reads as
+  part of the page rather than as a control that has landed on it, and it takes
+  its type from the prose around it rather than dropping into the UI register
+  the way code does. Code is *not sentences* and says so; a table is sentences,
+  arranged.
+*/
+.body .tableWrapper {
+  /* A wide table scrolls inside its own box. The alternative is a page that
+     scrolls sideways, which moves the prose out from under the reader to show
+     them a column of dates. */
+  overflow-x: auto;
+}
+
+.body table {
+  width: 100%;
+  border-collapse: collapse;
+  /* Columns sized by what is in them. Nothing here is resizable — see the note
+     in extensions.ts — so automatic layout is doing the whole job, and it does
+     it better than a writer dragging borders would. */
+  table-layout: auto;
+}
+
+.body :is(th, td) {
+  /* Positioned for the selected-cell wash below, which is drawn as an overlay
+     so it cannot disturb the row heights while a selection is dragged. */
+  position: relative;
+  min-width: 3em;
+  padding: 0.42em 0.62em;
+  border: 1px solid var(--hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+.body th {
+  background: var(--raise);
+  /* 500, not 700. A header row is chrome the writer made, and the only weights
+     above medium in this app belong to the document's own headings. */
+  font-weight: 500;
+}
+
+/* A cell is a small space, and the page's 1.05em of air reads as a gap inside
+   one rather than as rhythm. */
+.body :is(th, td) > * + * {
+  margin-top: 0.5em;
+}
+
+/* The run of cells ProseMirror reports while a selection is dragged across the
+   grid. Washed rather than outlined, the same as a held block. */
+.body .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--held);
+  pointer-events: none;
 }
 
 .body code {
@@ -1292,7 +1463,7 @@ button.crumb:hover {
     0 1px 2px rgb(0 0 0 / 5%),
     0 4px 10px rgb(0 0 0 / 6%),
     0 14px 34px rgb(0 0 0 / 10%);
-  animation: bubble-in var(--settle) var(--spring) both;
+  animation: bubble-in var(--settle) var(--ease) both;
 }
 
 :root[data-theme='dark'] .bubble {
@@ -1312,7 +1483,7 @@ button.crumb:hover {
   because the gaps are part of the shape arriving.
 */
 .bubble > * {
-  animation: bubble-part var(--unfold) var(--spring) both;
+  animation: bubble-part var(--unfold) var(--ease) both;
   animation-delay: calc(40ms + var(--turn, 0) * 22ms);
 }
 
@@ -1415,7 +1586,7 @@ button.crumb:hover {
 }
 
 /* The one control that says what it is in words: which block type you are in
-   is a fact about the paragraph, and an icon for "Heading 2" is a riddle. */
+   is a fact about the paragraph, and an icon for "Subheading" is a riddle. */
 .bubble-style {
   padding: 0 0.25rem 0 0.45rem;
   font-size: 0.75rem;
@@ -1489,7 +1660,7 @@ button.crumb:hover {
   text-align: left;
   white-space: nowrap;
   /* The list arrives the way the bar did, a beat per row. */
-  animation: bubble-part var(--settle) var(--spring) both;
+  animation: bubble-part var(--settle) var(--ease) both;
   animation-delay: calc(var(--turn, 0) * 18ms);
 }
 
@@ -1526,9 +1697,8 @@ button.crumb:hover {
   gap: 1rem;
   height: var(--status);
   padding: 0 0.85rem;
-  background: var(--page);
+  background: var(--canvas);
   border-top: 1px solid var(--hairline);
-  border-radius: 0 0 var(--radius) var(--radius);
   font-size: 0.6875rem;
   color: var(--muted);
   white-space: nowrap;
@@ -1594,7 +1764,7 @@ button.crumb:hover {
 .dialog-title {
   margin: 0 0 1rem;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.008em;
 }
 
@@ -1750,6 +1920,35 @@ button.crumb:hover {
 
   /* A grid of pictures split across a page break is two half-galleries. */
   .gallery {
+    break-inside: avoid;
+  }
+
+  /*
+    A table on paper.
+
+    The wrapper's horizontal scroll is a screen affordance and means nothing
+    here — left as `overflow: auto` it clips whatever does not fit instead of
+    letting the table lay itself out on the page. The borders are drawn in
+    black rather than the hairline alpha, which prints as almost nothing, and
+    the header repeats at the top of each page a long table runs onto.
+  */
+  .tableWrapper {
+    overflow: visible;
+  }
+
+  .body :is(th, td) {
+    border: 1px solid #000000;
+  }
+
+  .body th {
+    background: none;
+  }
+
+  .body thead {
+    display: table-header-group;
+  }
+
+  .body tr {
     break-inside: avoid;
   }
 
@@ -2072,7 +2271,7 @@ button.crumb:hover {
   taught. The bleed puts the colour slightly outside the text so a held
   paragraph looks like a held *block* rather than like selected words.
 */
-.body .ProseMirror-selectednode:where(p, h1, h2, h3, li, blockquote, pre, ul, ol) {
+.body .ProseMirror-selectednode:where(p, h1, h2, h3, li, blockquote, pre, ul, ol, table) {
   background: var(--held);
   border-radius: 3px;
   box-shadow: 0 0 0 4px var(--held);
@@ -2531,7 +2730,7 @@ mark[data-tone='red'] {
   margin: 0 0 0.45rem;
   font-family: var(--ui);
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--faint);
@@ -2791,10 +2990,11 @@ mark[data-tone='red'] {
   color: var(--ink);
 }
 
+/* The fill and the ink are the selection. A coloured bar down the left edge as
+   well is a third signal for one state — decoration wearing the accent. */
 .guide-topic.is-active {
   background: var(--raise);
   color: var(--ink);
-  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 /* A topic with nothing matching the search is left in place rather than
@@ -2822,7 +3022,7 @@ mark[data-tone='red'] {
 .guide-section h3 {
   margin: 0 0 0.35rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.006em;
 }
 
@@ -2934,11 +3134,10 @@ mark[data-tone='red'] {
   background: var(--raise);
 }
 
-/* The chosen one is marked by the accent it is previewed under, not by a fill,
-   so hovering the list never looks like choosing from it. */
+/* Same as the guide's list: the fill is the selection, and it does not also
+   need a stripe. */
 .history-entry.is-active {
   background: var(--raise);
-  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .history-when {
@@ -3038,28 +3237,21 @@ mark[data-tone='red'] {
   text-align: center;
 }
 
+/* The greeting wears the grey the question used to, because it *is* the
+   question now — the badge above is what carries the weight. */
 .welcome-greeting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: 1.9rem;
+  max-width: 24rem;
+  margin: 0.95rem auto 1.9rem;
+  font-size: 1.15rem;
   font-weight: 400;
-  letter-spacing: -0.022em;
-  color: var(--ink);
+  line-height: 1.45;
+  letter-spacing: -0.006em;
+  color: var(--muted);
 }
 
 .welcome-mark {
-  color: var(--ink);
-  opacity: 0.9;
-}
-
-.welcome-question {
-  margin: 0.5rem 0 1.9rem;
-  font-size: 1.05rem;
-  color: var(--muted);
-  letter-spacing: -0.006em;
+  display: block;
+  margin: 0 auto;
 }
 
 .welcome-field {
@@ -3168,6 +3360,836 @@ mark[data-tone='red'] {
 @media (max-width: 34rem) {
   .welcome-starts {
     grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------------------- chart */
+
+/*
+  The writing chart. A year of days, a square each.
+
+  Geometry comes from two custom properties set by the component — `--cell` and
+  `--gap` — because the tooltip is positioned by arithmetic over the same two
+  numbers. Nothing here should hard-code a square's width; if the two sides
+  ever disagree, every tooltip drifts a little further right than the last.
+*/
+.chart {
+  /* The gap inside a ring, which reads as a gap only if it matches whatever
+     the squares are sitting on. The month chart is in a dialog; the week strip
+     is out on the window. */
+  --ring-gap: var(--page);
+  --cell: 3.9rem;
+  --cell-height: 2.4rem;
+  --gap: 6px;
+  --week-cell: 34px;
+}
+
+/* The seven squares of this week, each under its weekday initial. Bigger than
+   the calendar's, because there are only seven of them and the strip is the
+   one chart nobody opened deliberately — it has to be readable in passing. */
+.chart-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--week-cell);
+  column-gap: 0.4rem;
+}
+
+.chart-stack {
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+}
+
+.chart-stack .chart-cell {
+  width: var(--week-cell);
+  height: var(--week-cell);
+  border-radius: 4px;
+}
+
+.chart-head {
+  font-size: 0.66rem;
+  line-height: 1;
+  color: var(--faint);
+}
+
+/* A month, in the shape everyone can already read. Centred, because seven
+   columns never fill a dialog sized for a row of four numbers, and a calendar
+   pinned to the left of all that space reads as having come loose. */
+.chart-heads,
+.chart-week {
+  display: grid;
+  grid-template-columns: repeat(7, var(--cell));
+  column-gap: var(--gap);
+}
+
+.chart-heads {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--faint);
+  text-align: center;
+}
+
+.chart-month {
+  display: grid;
+  row-gap: var(--gap);
+}
+
+/* `fit-content` as well as the auto margins: a grid with `width: auto` fills
+   its container and packs its seven tracks against the left, so the margins
+   have nothing to centre. */
+.chart-heads,
+.chart-month {
+  width: fit-content;
+  margin-inline: auto;
+}
+
+/* The date, on the square. Colour alone says how much; the number says which
+   day, so a month can be read without touching it. */
+.chart-month .chart-cell {
+  display: grid;
+  place-items: center;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-month .chart-cell.is-heat-0 { color: var(--heat-text-0); }
+.chart-month .chart-cell.is-heat-1 { color: var(--heat-text-1); }
+.chart-month .chart-cell.is-heat-2 { color: var(--heat-text-2); }
+.chart-month .chart-cell.is-heat-3 { color: var(--heat-text-3); }
+.chart-month .chart-cell.is-heat-4 { color: var(--heat-text-4); }
+
+/* A day still to come is an outline, so its number wears the outline's grey
+   rather than the fill's — there is no fill. */
+.chart-month .chart-cell.is-ahead {
+  color: var(--faint);
+}
+
+.chart-cell {
+  width: var(--cell);
+  height: var(--cell-height);
+  border-radius: 0.45rem;
+  background: var(--heat-0);
+}
+
+.chart-cell.is-heat-1 {
+  background: var(--heat-1);
+}
+
+.chart-cell.is-heat-2 {
+  background: var(--heat-2);
+}
+
+.chart-cell.is-heat-3 {
+  background: var(--heat-3);
+}
+
+.chart-cell.is-heat-4 {
+  background: var(--heat-4);
+}
+
+/* A day belonging to the month either side. Not drawn: a day that is not in
+   this month is not a day missed in it. */
+.chart-cell.is-blank {
+  background: none;
+}
+
+/* Later this week, or later this month. Drawn, because the week has a shape
+   worth seeing whole, but drawn as not-yet — a Friday that has not arrived is
+   not a Friday that was missed, and the empty grey says the wrong one of
+   those. */
+.chart-cell.is-ahead {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+/*
+  Rings are drawn *inside* the square, never around it.
+
+  An outward ring is 3.5px of shadow reaching into a 5px gap from both sides,
+  so today's square and the one being hovered next to it overlapped — 7px of
+  ring in 5px of space. Widening the gap would have bought it off at this cell
+  size and broken again at another. Inset, a ring cannot reach a neighbour at
+  any gap or any size, and the square keeps its own footprint in the grid.
+
+  Ink at the edge and page just inside it, so the ring reads as separate from
+  the square rather than as a darker edge of it. The order matters: the first
+  shadow paints over the later ones, so the ink band has to be written first
+  and narrower.
+*/
+.chart-cell.is-now {
+  box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 3.5px var(--ring-gap);
+}
+
+.chart-cell.is-now.is-ahead {
+  box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 3.5px var(--ring-gap),
+    inset 0 0 0 4.5px var(--hairline);
+}
+
+/* Today's date is also set heavier, because the ring alone is a hair away
+   from the one a hover draws — and two rings that mean different things must
+   not be told apart by their grey. */
+.chart-month .chart-cell.is-now {
+  font-weight: 500;
+}
+
+/* Pointer and keyboard land on the same thing, and it is the accent — the
+   same colour every other focus ring in the app draws. The square also lifts,
+   because a colour change here is otherwise indistinguishable from the next
+   value along the scale. Inset for the same reason as today's ring above. */
+.chart-month .chart-cell:not(.is-blank):hover,
+.chart-cell:focus-visible {
+  position: relative;
+  z-index: 1;
+  scale: 1.1;
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3.5px var(--ring-gap);
+}
+
+/*
+  The line under the squares, which is where a tooltip would have gone.
+
+  It is a row of the layout rather than a bubble over it: one row of squares
+  has the stat row directly above it in the panel and the four starts directly
+  above it on the welcome screen, and a bubble covered both. `min-height` holds
+  the line open whether or not anything is in it, so arriving with the pointer
+  never moves what is underneath.
+*/
+.chart-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: 1.4rem;
+  margin-top: 0.9rem;
+}
+
+/*
+  The writing panel: a wider dialog with its own head, four stat cards and the
+  month under them. It is the one dialog in the app that is a *view* rather
+  than a decision, which is why it gets a subtitle, a close cross of its own,
+  and room the others do not need.
+*/
+.dialog.is-panel {
+  position: relative;
+  width: min(46rem, 100%);
+  padding: 1.5rem 1.6rem 1.2rem;
+}
+
+.panel-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--muted);
+  background: var(--raise);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.panel-close:hover {
+  color: var(--ink);
+  background: var(--line);
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 2.5rem 1.4rem 0;
+}
+
+.panel-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--ink);
+}
+
+.panel-title h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+
+.panel-title p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/*
+  The month picker: a listbox of ours, not a `<select>`.
+
+  A native select draws its popup with the operating system, so the app's dark
+  surface got a white list with a Windows-blue highlight on top of it — the one
+  part of the interface the stylesheet could not reach.
+
+  Named `monthpick` rather than `picker`, which the emoji picker already owns
+  three hundred lines up — and which sets `overflow: hidden`, so the first cut
+  of this was clipped to the height of its own button and rendered as nothing
+  at all.
+*/
+.monthpick {
+  position: relative;
+  flex: none;
+}
+
+.monthpick-button {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+}
+
+.monthpick-button:hover,
+.monthpick-button.is-open {
+  background: var(--raise);
+}
+
+.monthpick-button svg {
+  flex: none;
+  color: var(--faint);
+}
+
+.monthpick-list {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 4;
+  min-width: 100%;
+  max-height: 15rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  outline: none;
+  animation: rise var(--quick) var(--glide) both;
+}
+
+.monthpick-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.32rem 0.45rem;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  white-space: nowrap;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Highlighted by where the keyboard is, which the pointer also moves — so
+   there is one active row rather than one for the mouse and one for the
+   arrows disagreeing about which is which. */
+.monthpick-option.is-active {
+  background: var(--raise);
+}
+
+.monthpick-option svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.9rem 0.95rem 0.85rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.7rem;
+}
+
+/*
+  One tint, the accent's. Four cards wore four hues so they could be told apart
+  at a glance without reading the labels; with two cards there is nothing to
+  tell apart, and four decorative hues in an app with one accent was never the
+  reason — it was the excuse.
+*/
+.stat-badge {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.55rem;
+  color: var(--accent);
+  background: var(--held);
+  border-radius: 0.55rem;
+}
+
+
+
+
+
+
+
+
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+
+
+.panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.panel-brag {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.panel-brag svg {
+  flex: none;
+  color: var(--accent);
+}
+
+/* The button sits in the legend row; the note it opens floats above it, so
+   opening it never moves the calendar. */
+.panel-help {
+  position: relative;
+  display: flex;
+}
+
+.panel-learn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.panel-learn:hover {
+  color: var(--ink);
+}
+
+.panel-explain {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  z-index: 2;
+  width: 19rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: left;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 14px 34px rgb(0 0 0 / 12%);
+  animation: rise var(--quick) var(--glide) both;
+}
+
+.panel-explain strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 40rem) {
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+/* The title and the month it is showing, on one line. */
+.chart-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-title .dialog-title {
+  margin: 0;
+}
+
+/* A native select, wearing the chrome the rest of the app wears. Native
+   because a month list is exactly what one is for, and rebuilding it would be
+   a menu to keyboard-handle for no gain the writer can see. */
+.chart-picker {
+  padding: 0.25rem 0.4rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.chart-picker:hover {
+  background: var(--raise);
+}
+
+.chart-detail {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chart-keys {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.chart-legend {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+
+/* Its own size, not the calendar's: a legend is a key to the colours, and at
+   the cell's real size it competes with the month for the eye. */
+.chart-legend .chart-cell {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+}
+
+.chart-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1.3rem;
+}
+
+.chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.chart-stat-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.chart-stat-value {
+  font-size: 1.55rem;
+  letter-spacing: -0.024em;
+  color: var(--ink);
+}
+
+
+.chart-stat-note {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/*
+  The strip under the greeting.
+
+  A hairline on hover rather than a fill: the empty square and the app's own
+  raised grey are within two values of each other, so a wash behind the strip
+  would swallow exactly the squares that say a day was missed.
+*/
+/* `fit-content` with auto margins rather than `inline-flex`: inline would put
+   the strip in the same line box as the skip button below it, and the two
+   would sit side by side. */
+.chart.is-compact {
+  --ring-gap: var(--canvas);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: fit-content;
+  margin: 1.5rem auto 0;
+  padding: 0.75rem 0.9rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.chart.is-compact:hover,
+.chart.is-compact:focus-visible {
+  border-color: var(--hairline);
+  outline: none;
+}
+
+.chart.is-compact:hover .chart-detail {
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------- stickies */
+
+/*
+  Sticky notes: thoughts stuck to the side of the page.
+
+  A fixed rail down the right, outside the element that scrolls, so notes hold
+  still while the prose moves under them. They were draggable once and it was
+  wrong twice: a thought parked over the third paragraph is lost the moment the
+  page is edited above it, and a note that can be anywhere is a note you have
+  to go looking for.
+
+  Colour, in an interface that has exactly one accent — and the distinction is
+  worth keeping straight. These are *content*, an object the writer made, the
+  way a highlight is. The rule against a second hue is about chrome having
+  opinions; a note the writer chose the colour of is not chrome.
+*/
+.stickies {
+  position: absolute;
+  top: calc(var(--topbar) * 2 + 0.9rem);
+  right: 0.9rem;
+  bottom: calc(var(--status) + 0.75rem);
+  z-index: 3;
+  display: flex;
+  width: 13.5rem;
+  pointer-events: none;
+}
+
+.stickies-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.2rem 0.35rem 0.6rem;
+  overflow-y: auto;
+  /* The rail is not a surface. The gaps between notes are still window, and a
+     click there goes to whatever is behind it. */
+  pointer-events: none;
+  scrollbar-width: thin;
+}
+
+.stickies-rail > * {
+  pointer-events: auto;
+}
+
+.sticky {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  padding: 0.75rem 0.8rem 0.5rem;
+  color: #17171a;
+  background: var(--sticky-paper);
+  /* Square-ish and barely rounded. A sticky note is cut, not moulded — the
+     radius of a card would make it a card. */
+  border-radius: 1px;
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 12%),
+    0 10px 18px -10px rgb(0 0 0 / 34%);
+  animation: sticky-in var(--settle) var(--ease) both;
+}
+
+/*
+  The peeled corner, which is the whole reason a square of colour reads as a
+  sticky note rather than as a swatch.
+
+  Two triangles from one element: the visible half is the window showing
+  through where the paper has lifted away, and the darker half is the shadow
+  the fold casts on the note under it. Drawn rather than shaded because a
+  gradient at this size is mud.
+*/
+.sticky-fold {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: linear-gradient(
+    315deg,
+    var(--canvas) 0%,
+    var(--canvas) 48%,
+    rgb(0 0 0 / 14%) 50%,
+    var(--sticky-paper) 52%
+  );
+}
+
+.sticky.is-lime {
+  --sticky-paper: #d8f533;
+}
+
+.sticky.is-orange {
+  --sticky-paper: #ffa32e;
+}
+
+.sticky.is-blue {
+  --sticky-paper: #4cc9f0;
+}
+
+.sticky.is-pink {
+  --sticky-paper: #ff5fa2;
+}
+
+.sticky-text {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0;
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+
+.sticky-text::placeholder {
+  color: rgb(23 23 26 / 32%);
+}
+
+/* The controls stay out of the way until the note is wanted — a rail of
+   stickies should read as notes, not as six little toolbars. */
+.sticky-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  /* Clear of the peeled corner. */
+  margin: 0.3rem 1rem 0 0;
+  opacity: 0;
+  transition: opacity var(--quick) var(--glide);
+}
+
+.sticky:hover .sticky-foot,
+.sticky:focus-within .sticky-foot {
+  opacity: 1;
+}
+
+.sticky-colours {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.sticky-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--sticky-paper);
+  box-shadow: inset 0 0 0 1px rgb(23 23 26 / 22%);
+  cursor: pointer;
+}
+
+.sticky-swatch.is-lime {
+  --sticky-paper: #d8f533;
+}
+
+.sticky-swatch.is-orange {
+  --sticky-paper: #ffa32e;
+}
+
+.sticky-swatch.is-blue {
+  --sticky-paper: #4cc9f0;
+}
+
+.sticky-swatch.is-pink {
+  --sticky-paper: #ff5fa2;
+}
+
+.sticky-swatch.is-on {
+  box-shadow: inset 0 0 0 1px rgb(23 23 26 / 55%);
+  scale: 1.15;
+}
+
+.sticky-remove {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  color: rgb(23 23 26 / 45%);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.sticky-remove:hover {
+  color: #17171a;
+  background: rgb(23 23 26 / 10%);
+}
+
+/* One more, under the last. Quiet until the rail is hovered — the chord is the
+   real route and this is the reminder that there is one. */
+.stickies-add {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0 auto;
+  color: var(--faint);
+  border: 1px dashed var(--line);
+  border-radius: 50%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.stickies:hover .stickies-add,
+.stickies-add:focus-visible {
+  opacity: 1;
+}
+
+.stickies-add:hover {
+  color: var(--ink);
+  border-style: solid;
+}
+
+/*
+  A note is placed, not dropped in. It comes up from under the paper it is
+  being stuck to and settles — ease-out, no overshoot, like everything else.
+*/
+@keyframes sticky-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
   }
 }
 
@@ -3392,6 +4414,12 @@ mark[data-tone='red'] {
 .sheet-tool,
 .row-star,
 .row-add,
+.sticky-swatch,
+.sticky-remove,
+.stickies-add,
+.chart-cell,
+.chart,
+.chart-detail,
 .block-btn {
   transition:
     background-color var(--quick) var(--glide),
@@ -3442,7 +4470,7 @@ mark[data-tone='red'] {
   transform: translateY(-50%) translateX(-3px);
   transition:
     opacity var(--quick) var(--glide),
-    transform var(--settle) var(--spring);
+    transform var(--settle) var(--ease);
 }
 
 .block-gutter.is-shown {
@@ -3490,6 +4518,85 @@ mark[data-tone='red'] {
 }
 
 /*
+  The browser build's own screens.
+
+  Two of them stand in front of the app — a second tab, and a phone — and one
+  sits at the foot of the window. They take the dialog's material rather than
+  inventing one: the same page, the same hairline, the same rise. What is being
+  said is unusual; the app saying it should not be.
+*/
+.standing {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  background: var(--canvas);
+  overflow-y: auto;
+}
+
+.standing-card {
+  width: min(26rem, 100%);
+  text-align: center;
+}
+
+.standing-title {
+  margin: 1.35rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+.standing-body {
+  margin: 0.6rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.standing-action {
+  margin-top: 1.35rem;
+}
+
+.standing-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+
+/* Along the foot of the window rather than over the writing: it is a fact
+   about the app, not something that happened, and nothing it says is worth
+   covering a sentence for. */
+.webnote {
+  position: fixed;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  left: 0.9rem;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0.7rem 0.85rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 12%);
+}
+
+.webnote-text {
+  flex: 1 1 18rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/*
   Anything that was not there a moment ago.
 
   The rise is 4 pixels and the scale is a hair under 1: enough that the eye
@@ -3523,7 +4630,9 @@ mark[data-tone='red'] {
 .tones,
 .picker,
 .palette,
-.dialog {
+.dialog,
+.standing-card,
+.webnote {
   animation: rise var(--settle) var(--glide) both;
 }
 
@@ -3533,12 +4642,12 @@ mark[data-tone='red'] {
   animation: fade var(--quick) linear both;
 }
 
-/* The dialog is the one that gets the spring: it is the largest thing that
-   ever appears, and the only one where the extra beat of settling reads as
-   weight rather than as delay. */
+/* The dialog takes the longest of the three durations: it is the largest
+   thing that ever appears, and the extra beat of settling reads as weight
+   rather than as delay. It used to take the spring for the same reason — the
+   duration carries it now. */
 .dialog {
   animation-duration: var(--unfold);
-  animation-timing-function: var(--spring);
 }
 
 .scrim,

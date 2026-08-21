@@ -93,6 +93,67 @@ export interface RevisionRecord {
   createdAt: number;
 }
 
+/** The four papers a sticky note comes on. */
+export type StickyColour = 'lime' | 'orange' | 'blue' | 'pink';
+
+export const STICKY_COLOURS: readonly StickyColour[] = ['lime', 'orange', 'blue', 'pink'];
+
+/**
+ * A thought stuck to the side of a page.
+ *
+ * Deliberately *not* part of the document. A sticky note is the aside you write
+ * while writing something else — a reminder, a name to check, an argument with
+ * yourself — and the whole point is that it is not in the draft: it does not
+ * export, it does not count towards the page's words, it does not appear in a
+ * revision, and deleting it takes nothing with it. Keeping them in the
+ * ProseMirror doc would have made every one of those false.
+ *
+ * They have no position. Notes live in a fixed rail down the right of the
+ * window and stack in the order they were written — which is why there is no
+ * `x` or `y` here. A note that could be dragged anywhere was the first cut of
+ * this and it was wrong: a thought parked over the third paragraph is a thought
+ * you lose the moment the page is edited above it.
+ */
+export interface StickyNote {
+  id: string;
+  /** The page it is stuck to. Notes travel with their page, not the window. */
+  documentId: string;
+  text: string;
+  colour: StickyColour;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * One day of writing, as one row. The whole history of a working year is 365
+ * of these, which is why it is kept as its own tiny table rather than derived
+ * from `revisions` — those are pruned, and they carry a copy of the prose,
+ * so counting a year out of them means reading a year of documents.
+ *
+ * `words` is words *touched*, not words gained: a save that cuts forty words
+ * counts the same as one that adds forty. Net growth is the wrong measure of
+ * a day's work — it reads a morning spent tightening a chapter as an empty
+ * square, which is exactly the morning worth encouraging.
+ *
+ * `seconds` is time actually spent, accumulated from the gaps between edits
+ * and only while those gaps stay short — see `ACTIVE_GAP_MS`. It is context
+ * rather than score: it stops a window left open overnight from counting,
+ * without becoming the number anyone is asked to chase.
+ */
+export interface ActivityDay {
+  /** Local calendar day as `YYYY-MM-DD`. The primary key. */
+  day: string;
+  /** Words added and removed, both counted positively. */
+  words: number;
+  /** Seconds of active writing. */
+  seconds: number;
+  /**
+   * When the last edit landed, epoch ms. Kept because the next edit's credit
+   * is the gap since this one, so the row has to remember where it left off.
+   */
+  lastAt: number;
+}
+
 /**
  * An image, addressed by what it is rather than by where it came from.
  *

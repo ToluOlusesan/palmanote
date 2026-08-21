@@ -57,3 +57,35 @@ CREATE TABLE IF NOT EXISTS revisions (
 
 CREATE INDEX IF NOT EXISTS revisions_document_created
   ON revisions (document_id, created_at DESC);
+
+-- One row per day anything was written. Keyed by the *local* calendar day as
+-- text, not by a timestamp: a day is what the person writing it called a day,
+-- so the boundary is their midnight, and a row written in Lagos keeps its date
+-- if the laptop later opens in Vancouver.
+--
+-- Never pruned. A year is 365 rows of four small values, which is less than a
+-- single revision of a single page, and the whole point of the chart is that
+-- it goes back further than anything else in here does.
+CREATE TABLE IF NOT EXISTS activity (
+  day      TEXT PRIMARY KEY,           -- 'YYYY-MM-DD', local
+  words    INTEGER NOT NULL DEFAULT 0, -- words touched: added and removed both
+  seconds  INTEGER NOT NULL DEFAULT 0, -- active writing time
+  last_at  INTEGER NOT NULL            -- last edit, epoch ms; the gap anchor
+);
+
+-- Thoughts stuck to the side of a page. Not part of the document: they do not
+-- export, do not count towards its words, and are not in its revisions — which
+-- is the whole reason they are a table rather than a node.
+--
+-- ON DELETE CASCADE, so a page taking its notes with it is the database's job
+-- rather than something the renderer has to remember.
+CREATE TABLE IF NOT EXISTS sticky_notes (
+  id          TEXT PRIMARY KEY,
+  document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  text        TEXT    NOT NULL DEFAULT '',
+  colour      TEXT    NOT NULL,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS sticky_notes_document ON sticky_notes (document_id);

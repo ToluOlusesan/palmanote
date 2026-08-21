@@ -29,6 +29,16 @@ export function plainTextFromDoc(doc: PMDoc | null): string {
   return doc.content.map(blockToText).join('\n\n');
 }
 
+/**
+ * The nodes whose children are a run of text rather than a stack of blocks.
+ *
+ * Everything else holds blocks, and blocks need something between them or the
+ * last word of one is glued to the first word of the next and the pair counts
+ * once. That was quietly true of a quote holding two paragraphs; a table makes
+ * it loud, because a row of six cells would otherwise be one word.
+ */
+const INLINE_PARENTS = new Set(['paragraph', 'heading']);
+
 function blockToText(node: PMNode): string {
   if (node.type === 'sceneBreak') return '#';
   if (node.type === 'pageLink') return String(node.attrs?.label ?? '');
@@ -39,7 +49,7 @@ function blockToText(node: PMNode): string {
   if (node.text !== undefined) return node.text;
   if (node.type === 'hardBreak') return '\n';
   if (!node.content) return '';
-  return node.content.map(blockToText).join('');
+  return node.content.map(blockToText).join(INLINE_PARENTS.has(node.type) ? '' : '\n');
 }
 
 /** All text in a document, blocks joined by newline. Used for counting. */

@@ -242,4 +242,22 @@ export function extensionFor(mime: string): string {
   return 'png';
 }
 
+/**
+ * The other direction, for pictures that arrive as a name and some bytes
+ * rather than as a `File` the browser has already typed.
+ *
+ * That is every picture that comes in through an import: the desktop shell
+ * reads a path off the disk and sends bytes across the bridge, and nothing on
+ * the way tells us what they are. `storeImage` checks the mime against
+ * `ACCEPTED`, so without this every imported picture would be refused as "not
+ * an image PalmaNote can read".
+ */
+export function mimeForName(name: string): string {
+  const extension = name.slice(name.lastIndexOf('.') + 1).toLowerCase();
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+  if (extension === 'gif') return 'image/gif';
+  if (extension === 'webp') return 'image/webp';
+  return 'image/png';
+}
+
 export type { AssetRecord };

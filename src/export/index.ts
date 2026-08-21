@@ -170,9 +170,13 @@ function markdownTree(walk: Awaited<ReturnType<typeof walkScope>>): ExportFile[]
       '',
     ].join('\n');
 
+    // How far back up to the export root, where `assets/` lives. A page at the
+    // top links `assets/x.png`; one three books deep links `../../../assets/x.png`.
+    const climb = '../'.repeat(dir ? dir.split('/').length : 0);
+
     return {
       path: `${dir ? `${dir}/` : ''}${name}.md`,
-      data: front + markdownFromDoc(entry.content) + '\n',
+      data: front + markdownFromDoc(entry.content, climb) + '\n',
     };
   });
 }

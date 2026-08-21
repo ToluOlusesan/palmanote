@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 /**
  * The PalmaNote mark: a page with a folded corner, a palm standing on it, and
  * a waterline running through the page and out the other side.
@@ -14,6 +16,12 @@
 
 const VIEW_BOX = '0 0 1139.19 1183.17';
 
+/** The artwork's own box, and the square tile the identity badge sits on. */
+const ART = { width: 1139.19, height: 1183.17 };
+const TILE = ART.height;
+/** Corner radius, as a fraction of the tile. Matches make-icon.mjs. */
+const RADIUS = 0.21;
+
 const PATHS = [
   'm583.78,489.18c3.31,14.4,6.42,26.86,9.03,39.42,10.85,52.33,9.6,104.92.7,157.19-5.93,34.85-15.1,69.13-21.99,103.84-2.28,11.47-3.01,23.49-2.62,35.2,1,30.59,19.36,52.05,50.89,59.36,37.06,8.58,71.13-1.34,104.4-18.3-2.58-6.95-5.37-13.22-7.26-19.76-9.77-33.8-5.59-65.58,14.7-94.71,7.56-10.85,17.51-18.97,29.82-24.14,33.72-14.17,65.62,4.99,68.23,41.51,1.81,25.28-7.18,47.74-21.39,67.91-9.02,12.8-19.97,24.25-30.41,36.73,12.14,8.12,26.34,12.03,41.4,13.29,37.93,3.17,74.06-5.35,108.88-18.95,35.19-13.75,71.1-20.54,108.87-19.34,27.05.86,54.15.15,81.23.2,13.13.03,20.92,7.1,20.92,18.8,0,11.07-7.89,18.41-20.45,18.47-28.52.13-57.06.71-85.56-.1-32.24-.92-62.77,5.67-92.92,16.49-39.29,14.1-79.58,23.43-121.84,20-25.19-2.04-48.81-8.65-68.66-25.07-4.28-3.54-7.17-1.65-10.74.3-29.04,15.85-59.86,25.45-93.17,25.42-34.38-.03-65.26-10.31-91.18-33.36-4.53-4.03-7.17-2.52-11.04-.01-32.89,21.31-68.47,34.1-108.13,33.3-30.08-.61-57.25-9.11-79.72-30.16-1.63-1.53-5.38-2.58-7.28-1.79-48.77,20.4-98.88,19.22-149.53,9.61-51.72-9.81-103.79-7.95-155.9-4.73-7.47.46-14.92,1.39-22.39,1.83-10.85.63-18.76-5.58-20.41-15.71-1.66-10.21,4.43-19.69,15.01-21.83,6.71-1.36,13.72-1.46,20.6-1.72,48.93-1.81,97.9-4.26,146.68,2.25,19.97,2.66,39.72,6.98,59.71,9.34,26.83,3.16,53.51,1.49,79.54-6.46,3.48-1.06,6.86-2.46,7.89-2.84-2.76-19.83-7.05-38.15-7.44-56.56-.53-25.02,8.84-47.4,26.18-65.83,13.29-14.12,29.72-22.07,49.37-20.45,29.09,2.39,47.94,28.48,44.08,60.21-4.3,35.37-22.5,62.9-48.98,85.63-2.56,2.2-5.29,4.2-8.01,6.34,28.49,27.48,101.32,20.76,143.35-12.39-3.26-12.35-7.44-24.35-9.47-36.69-4.09-24.83,2.03-48.55,9.75-71.99,13.33-40.46,26.58-80.93,32.54-123.37,6.22-44.32,5.75-88.4-3.13-132.31-.22-1.1-.7-2.14-1.55-4.68-55.36,27.47-99.89,65.51-129.07,120.53-10.56-21.81-2.51-65.23,17.73-92.1,20.54-27.25,49.43-41.09,82.05-48.69-61.43-16.73-120.54-10.09-177.99,17.51,8.22-29.73,42.9-62.59,83.28-70.67,39.26-7.86,74.48,3.16,108.14,22.97-30.68-48.25-70.76-85.56-125.38-109.37,36.91-9.68,69.67-6.18,100.04,14.09,30.22,20.17,43.6,50.95,54.36,84.76,1.53-4.67,3.04-9.36,4.6-14.02,11.73-35.04,32.07-63.01,66.16-79.24,26.54-12.63,54.03-14.21,83.67-5.57-52.78,24.94-93.33,61.91-125.08,109.51,4.01-2.18,7.99-4.39,12.02-6.53,27.93-14.87,57.36-23.15,89.05-17.04,40.15,7.74,67.18,31.98,84.56,71.55-57.07-28.81-114.41-34.08-173.94-17.77,40.89,9.71,74.57,28.92,92.58,68.83,10.3,22.82,11.4,46.54,5.57,72.62-27.94-55.31-71.73-91.58-124.97-120.77Zm-219.64,354.58c7.86-7.89,16.05-15.03,22.94-23.27,11.79-14.09,20.45-29.9,21.13-48.88.26-7.16-1.38-14-8.2-17.81-6.89-3.85-13.36-.98-19.49,2.55-1.73,1-3.34,2.24-4.86,3.55-20.64,17.82-26.74,58.72-11.51,83.86Zm389.78,2.31c21.06-18.93,38.3-39.19,41.52-67.97.85-7.63.22-15.65-7.43-19.73-7.99-4.26-15.15-.02-21.27,5.04-21.09,17.42-27.66,57.63-12.83,82.66Z',
   'm186.34,827.03c-14.32-1.45-27.39-2.77-41.05-4.15,0-3.37,0-6.22,0-9.07-.02-222.97-.06-445.95-.04-668.92,0-79.08,63.75-144.31,142.99-144.59,156.42-.55,312.85-.19,469.28-.1,27.57.02,51.42,10.1,70.66,29.58,53.24,53.89,105.65,108.63,159.25,162.15,28.02,27.98,40.77,60.59,40.65,100-.51,168.24-.25,336.47-.28,504.71,0,5.96,0,11.92,0,18.09-14.05.62-26.87,1.19-40.62,1.81,0-3.94,0-7.62,0-11.29-.03-170.54-.03-341.09-.12-511.63-.02-38.73-21.27-59.6-60.12-59.56-25.93.03-51.85.16-77.78.05-38.22-.16-60.21-22.16-60.27-60.15-.05-29.96.03-59.92-.09-89.88-.1-27.19-15.22-42.64-42.16-42.66-151.53-.12-303.06-.28-454.59-.09-56.12.07-105.53,50.44-105.57,107.14-.14,199.92-.12,399.85-.15,599.77,0,25.88,0,51.76,0,78.78Z',
@@ -24,16 +32,41 @@ const PATHS = [
  * Optical bolding, in viewBox units.
  *
  * The artwork's thinnest features — the palm fronds and the waterline — are
- * under 1% of its 1139-unit box, so below about 28px they rasterise to pale
- * grey. Stroking each path in its own fill grows it outward and holds the
- * shape together. The same trick, and the same reason, as in make-icon.mjs.
+ * under 1% of its 1139-unit box, so small they rasterise to mush. Stroking each
+ * path in its own fill grows it outward and holds the shape together. The same
+ * ladder, and the same reason, as in make-icon.mjs.
+ *
+ * The icon script runs the same ladder against the size the artwork is *drawn*
+ * at, which for a tile is smaller than the tile itself. Here the mark is the
+ * whole box, so the two are the same number.
  */
-function bolden(size: number): number {
-  if (size >= 30) return 0;
-  if (size >= 22) return 6;
-  return 12;
+function bolden(drawn: number): number {
+  if (drawn <= 20) return 18;
+  if (drawn <= 24) return 14;
+  if (drawn <= 32) return 10;
+  if (drawn <= 48) return 6;
+  if (drawn <= 64) return 3;
+  return 0;
 }
 
+/**
+ * How much air the badge's mark gets, as a fraction of the tile. The same
+ * ladder as `scripts/make-icon.mjs`: at small sizes the tile is not the mark,
+ * the mark is.
+ */
+const inset = (size: number) => (size <= 32 ? 0.05 : size <= 64 ? 0.1 : 0.15);
+
+/**
+ * The mark, in one ink.
+ *
+ * There are two layers to this brand and they must not bleed into each other.
+ * The **identity** layer — the app icon, the installer, marketing — is allowed
+ * the full Cobalt-to-Violet gradient, and it lives in `make-icon.mjs`. The
+ * **interior** layer is the app someone actually works in, and in here the
+ * mark is flat: `currentColor`, so it is ink on paper and near-white on the
+ * dark card, and it changes with the surface it sits on rather than importing
+ * a gradient into chrome that has one accent and no other colour.
+ * */
 export function PalmaMark({ size = 16, className }: { size?: number; className?: string }) {
   const weight = bolden(size);
   return (
@@ -52,6 +85,63 @@ export function PalmaMark({ size = 16, className }: { size?: number; className?:
       {PATHS.map((d) => (
         <path key={d.slice(0, 24)} d={d} />
       ))}
+    </svg>
+  );
+}
+
+/**
+ * The identity mark: white artwork on the Cobalt-to-Violet tile.
+ *
+ * The same tile, radius, inset ladder and stops `scripts/make-icon.mjs`
+ * rasterises for the app icon, so the badge over the greeting is the icon on
+ * the taskbar. This is the *only* place inside the app the gradient appears —
+ * the launch screen is the closest thing PalmaNote has to a splash, and the
+ * one moment the product is allowed to introduce itself rather than get out of
+ * the way. Everywhere else the mark is `PalmaMark` above, in one ink.
+ */
+export function PalmaBadge({ size = 48, className }: { size?: number; className?: string }) {
+  // Gradients are addressed by id and ids are document-global, so two badges on
+  // one screen would otherwise be two definitions fighting over one name.
+  const gradient = `palma-brand-${useId()}`;
+  const scale = 1 - inset(size) * 2;
+  const weight = bolden(size * scale);
+  const x = (TILE - ART.width * scale) / 2;
+  const y = (TILE - ART.height * scale) / 2;
+
+  return (
+    <svg
+      className={['palmabadge', className].filter(Boolean).join(' ')}
+      width={size}
+      height={size}
+      viewBox={`0 0 ${TILE} ${TILE}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        {/* Two stops, corner to corner. Cobalt and Violet are neighbours on the
+            wheel, so the whole run stays saturated — there is no grey crossing
+            to design around, and no reason to hold either end. */}
+        <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#1d5fff" />
+          <stop offset="1" stopColor="#7c5cff" />
+        </linearGradient>
+      </defs>
+
+      <rect width={TILE} height={TILE} rx={TILE * RADIUS} fill={`url(#${gradient})`} />
+
+      {/* One colour inside the mark, always. The gradient carries the colour;
+          the artwork stays pure white. */}
+      <g
+        transform={`translate(${x} ${y}) scale(${scale})`}
+        fill="#ffffff"
+        stroke={weight > 0 ? '#ffffff' : undefined}
+        strokeWidth={weight > 0 ? weight : undefined}
+        strokeLinejoin="round"
+      >
+        {PATHS.map((d) => (
+          <path key={d.slice(0, 24)} d={d} />
+        ))}
+      </g>
     </svg>
   );
 }

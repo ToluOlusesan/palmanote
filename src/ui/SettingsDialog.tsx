@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useWritingSettings, whatToCallYou } from '../state/writingSettings.ts';
+import { useWritingSettings } from '../state/writingSettings.ts';
 
 interface Switch {
   key: 'animatedCaret' | 'welcome';
@@ -85,41 +85,6 @@ export function SettingsDialog({
         onMouseDown={(event) => event.stopPropagation()}
       >
         <h2 className="dialog-title">Settings</h2>
-
-        {/*
-          First, because it is the only setting that is about you rather than
-          about the app, and because it is the one a new copy of this most
-          wants answering. The name was hard-coded until somebody else built
-          their own version of this and got greeted as its author.
-        */}
-        <fieldset className="field">
-          <legend>You</legend>
-          <label className="text-field">
-            <span>What should it call you?</span>
-            <input
-              type="text"
-              value={writing.settings.name}
-              placeholder="you"
-              spellCheck={false}
-              autoComplete="off"
-              aria-describedby="name-note"
-              onChange={(event) => writing.set('name', event.target.value)}
-            />
-          </label>
-          <p className="setting-note" id="name-note">
-            {writing.settings.welcome ? (
-              <>
-                The greeting reads <strong>“Hey {whatToCallYou(writing.settings.name)},”</strong>.
-                Leave it empty and it stays that way.
-              </>
-            ) : (
-              <>
-                Only used by the greeting, which is off — turn it back on below and it will read{' '}
-                <strong>“Hey {whatToCallYou(writing.settings.name)},”</strong>.
-              </>
-            )}
-          </p>
-        </fieldset>
 
         {group('Writing', WRITING)}
         {group('Launch', LAUNCH)}

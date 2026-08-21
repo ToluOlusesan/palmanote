@@ -55,6 +55,42 @@ pub struct RevisionRecord {
     pub created_at: i64,
 }
 
+/// A thought stuck to the side of a page. Mirrors `StickyNote` in
+/// `src/core/types.ts` — deliberately not part of the document, so it does not
+/// export, does not count towards the page's words, and is not in a revision.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct StickyNote {
+    pub id: String,
+    pub document_id: String,
+    pub text: String,
+    pub colour: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// One day of writing. Mirrors `ActivityDay` in `src/core/types.ts`: `words`
+/// is words *touched* rather than gained, and `seconds` is time accrued from
+/// the gaps between edits.
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityDay {
+    pub day: String,
+    pub words: i64,
+    pub seconds: i64,
+    pub last_at: i64,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RecordActivityInput {
+    /// Local calendar day, `YYYY-MM-DD`. Worked out by the renderer, which is
+    /// the side that knows what day the person thinks it is.
+    pub day: String,
+    pub words: i64,
+    pub at: i64,
+}
+
 /// An image, keyed by the SHA-256 of its own bytes.
 ///
 /// `data` is base64 on this side too: the renderer hashes and encodes, and

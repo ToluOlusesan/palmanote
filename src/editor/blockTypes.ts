@@ -29,9 +29,16 @@ import type { Editor } from '@tiptap/react';
  * drag handle opens. Before it existed they held the same nine entries twice,
  * which is exactly the kind of duplication that goes stale on one side only.
  *
- * `is` matters as much as `run`. A menu that offers "Heading 1" without saying
+ * `is` matters as much as `run`. A menu that offers "Heading" without saying
  * that this block already is one is a menu you have to read the document to
  * use.
+
+ * The three of them are named Heading, Subheading and Small heading rather
+ * than H1/H2/H3 — the levels are a fact about the markup, not about the
+ * writing. Not "Title" for the first, which is the obvious pick and the wrong
+ * one here: the page already has a title, in a field of its own above the
+ * prose, and two things called that is worse than one with a duller name. The
+ * old names still find them in the `/` menu.
  */
 export interface BlockType {
   id: string;
@@ -61,7 +68,7 @@ export const BLOCK_TYPES: BlockType[] = [
   },
   {
     id: 'h1',
-    label: 'Heading 1',
+    label: 'Heading',
     hint: 'Ctrl+Alt+1',
     glyph: TextHOne,
     is: (editor) => editor.isActive('heading', { level: 1 }),
@@ -69,7 +76,7 @@ export const BLOCK_TYPES: BlockType[] = [
   },
   {
     id: 'h2',
-    label: 'Heading 2',
+    label: 'Subheading',
     hint: 'Ctrl+Alt+2',
     glyph: TextHTwo,
     is: (editor) => editor.isActive('heading', { level: 2 }),
@@ -77,7 +84,7 @@ export const BLOCK_TYPES: BlockType[] = [
   },
   {
     id: 'h3',
-    label: 'Heading 3',
+    label: 'Small heading',
     hint: 'Ctrl+Alt+3',
     glyph: TextHThree,
     is: (editor) => editor.isActive('heading', { level: 3 }),
