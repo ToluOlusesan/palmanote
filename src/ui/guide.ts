@@ -241,7 +241,11 @@ export const GUIDE: GuideSection[] = [
     rows: [
       { keys: 'Ctrl + Space', what: 'A sticky note in the rail, with the caret already in it' },
       { keys: 'Ctrl + Alt + M', what: 'A comment on the words you are holding' },
+      { keys: 'Ctrl + Shift + Space', what: 'Hide the rail, or bring it back' },
       { keys: 'Right-click', what: 'Both are in the menu — “Sticky note” and “Comment on this”' },
+      { what: 'Selecting words also puts a comment icon in the bar that comes to them.' },
+      { what: 'The note button in the top bar hides the rail and brings it back, and says how many are waiting.' },
+      { what: 'A thin strip at the right edge of the window brings it back too.' },
       { what: 'Commented words wear a dotted underline. A comment shows “in the page” — press it to go to them.' },
       { what: 'Four papers to choose from, on any note. Press one of the dots at the foot.' },
       { keys: 'Escape', what: 'Back to the prose, from a note' },

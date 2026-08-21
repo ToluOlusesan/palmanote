@@ -255,7 +255,7 @@ export function EditorPane({
 
       {/* The two never appear together: the `/` menu wants a caret and this
           one wants words held. Both read the same plugin. */}
-      <SelectionBar editor={editor} />
+      <SelectionBar editor={editor} onComment={onComment} />
 
       {/* Here rather than beside the other dialogs in App, because restoring a
           version has to go through the editor that holds the live one. */}

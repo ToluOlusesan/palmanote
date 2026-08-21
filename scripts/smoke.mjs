@@ -426,6 +426,7 @@ check(
     'Italic',
     'Strikethrough',
     'Code',
+    'Comment',
     'Bullet list',
     'Numbered list',
     'Task list',
@@ -1979,6 +1980,33 @@ await body().click();
 await page.keyboard.press('Control+Space');
 await page.waitForTimeout(700);
 check('a sticky is still a sticky', await page.locator('.sticky:not(.is-comment)').count(), 1);
+
+// The rail can be put away and the notes are still there — hiding a column is
+// not throwing away what is in it.
+await page.keyboard.press('Control+Shift+Space');
+await page.waitForTimeout(400);
+check('the rail can be put away', await page.locator('.stickies').count(), 0);
+check('and leaves a way back at the edge', await page.locator('.rail-handle').count(), 1);
+check(
+  'and a visible one on the bar, which says how many are waiting',
+  await page.locator('.chrome-btn[aria-label="Show notes"]').getAttribute('title'),
+  'Show notes (2) — Ctrl+Shift+Space',
+);
+await page.locator('.chrome-btn[aria-label="Show notes"]').click();
+await page.waitForTimeout(400);
+check('which brings the notes back', await page.locator('.sticky').count(), 2);
+await page.locator('.rail-handle').count();
+
+// And the comment icon in the bar that comes to a selection.
+await body().click();
+await page.keyboard.press('Control+End');
+await page.keyboard.press('Shift+Home');
+await page.waitForSelector('.bubble', { timeout: 5000 });
+check(
+  'the selection bar offers a comment',
+  await page.locator('.bubble-btn[aria-label="Comment"]').count(),
+  1,
+);
 await page.locator('.sticky.is-comment .sticky-remove').click();
 await page.waitForTimeout(700);
 check('throwing the comment away takes the mark with it', await page.locator('.body .commented').count(), 0);

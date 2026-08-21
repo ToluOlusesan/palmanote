@@ -4575,6 +4575,60 @@ mark[data-tone='red'] {
   rotate: 90deg;
 }
 
+/* Puts the whole column away. Quiet until the pointer is in the rail, like
+   every other control on a note — a rail of them should read as notes rather
+   than as a set of little toolbars. */
+.stickies-hide {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0 0 -0.15rem auto;
+  border-radius: 4px;
+  color: var(--faint);
+  opacity: 0;
+  transition:
+    opacity var(--settle) var(--glide),
+    background-color var(--quick) var(--ease);
+}
+
+.stickies:hover .stickies-hide,
+.stickies-hide:focus-visible {
+  opacity: 1;
+}
+
+.stickies-hide:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+/* The way back in, mirroring the sidebar's edge handle on the other side of
+   the window: a strip of nothing that answers a pointer. */
+.rail-handle {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: 18px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity var(--settle) var(--glide);
+}
+
+.rail-handle::before {
+  content: '';
+  position: absolute;
+  inset: 50% 6px auto auto;
+  width: 2px;
+  height: 40px;
+  translate: 0 -50%;
+  background: var(--faint);
+  border-radius: 2px;
+}
+
+.rail-handle:hover,
+.rail-handle:focus-visible {
+  opacity: 1;
+}
+
 /*
   A run of words somebody wrote a comment about.
 

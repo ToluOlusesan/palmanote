@@ -395,6 +395,15 @@ to close the library.
   `editor.chain().focus()`: Tiptap's focus is deferred and re-derives the
   selection from the DOM a frame later, which quietly undid the restore about
   one time in three.
+- **And where the state disagrees with the screen, the screen wins.** A
+  selection made with the keyboard is the browser's own doing; ProseMirror
+  learns of it from `selectionchange` and folds it in on its next flush, so a
+  right-click landing before that flush found a state that still said nothing
+  was selected — words plainly highlighted, cut and copy greyed. It reads the
+  DOM selection through `posAtDOM` when the state looks empty. This is the
+  fault the smoke suite failed on intermittently for six runs before it was
+  understood, and the intermittency was the whole tell: it was a race, not a
+  rule.
 - **Greyed rather than gone**, so the menu's shape never changes between
   openings — and a greyed item keeps its shortcut beside it, which is the route
   that still works.
@@ -427,6 +436,11 @@ mechanism:
 - **A trigger mid-word never opens a menu** — dates, fractions, file paths and
   email addresses are all safe. When both characters are behind the caret the
   nearer one wins.
+- The bar carries **one thing that is not a mark**: a comment on the held
+  words. It belongs here for the reason the bar exists — it is done *to* words
+  that already exist rather than put down where the caret is — and it is
+  allowed in where a sticker or a picture is not, because it marks the
+  selection rather than eating it.
 - A selection gets a **bar rather than a list**: a column of every verb is the
   right shape for "put something here" and the wrong shape for "do something to
   this". It **transforms rather than inserts**, so no stickers and no images —
@@ -1360,6 +1374,14 @@ and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
   export, does not count towards the page's words, is not in a revision, and
   deleting it takes nothing with it. Keeping them as nodes in the ProseMirror
   doc would have made every one of those false, which is why they are a table.
+- **The rail can be put away** — `Ctrl+Shift+Space`, a control at the top of
+  the rail, or the note button in the top bar, which is also how it comes back
+  and says how many notes are waiting behind it. There is a thin strip at the
+  window's edge too, mirroring the sidebar's, but a hidden control is a poor
+  way to undo hiding something. `Ctrl+Space` opens the rail before adding to
+  it, because writing into a closed drawer is not a feature. The state sits
+  beside `treeVisible` in `palmanote:ui`, since that is where the window's
+  layout is remembered.
 - **A fixed rail down the right**, outside the element that scrolls, so notes
   hold still while the prose moves under them. They have no position of their
   own and stack in the order they were written. They were draggable for a

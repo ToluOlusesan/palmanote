@@ -5,6 +5,7 @@ import {
   Gear,
   GridFour,
   Moon,
+  NoteBlank,
   Question,
   Sidebar,
   Sun,
@@ -70,7 +71,8 @@ export function App() {
 function Workspace() {
   const library = useLibrary();
   const tabs = useTabs();
-  const { treeVisible, setTreeVisible, ready, totalWords, goBack, goForward } = library;
+  const { treeVisible, setTreeVisible, railVisible, setRailVisible, ready, totalWords, goBack, goForward } =
+    library;
   const hostRef = useRef<HTMLDivElement>(null);
   const [sessionBaseline, setSessionBaseline] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -296,7 +298,16 @@ function Workspace() {
       // sidebar or the title field has the focus too.
       if (ctrl && !event.shiftKey && key === ' ') {
         event.preventDefault();
+        // Adding a note to a rail that is put away would be writing into a
+        // drawer, so this opens it first.
+        setRailVisible(true);
         stickies.add();
+        return;
+      }
+      // And the chord that puts the column away, paired with the one above it.
+      if (ctrl && event.shiftKey && key === ' ') {
+        event.preventDefault();
+        setRailVisible(!railVisible);
         return;
       }
       // A comment on the held words — Word's chord for the same thing. Tested
@@ -352,6 +363,8 @@ function Workspace() {
     library,
     newPage,
     paletteOpen,
+    railVisible,
+    setRailVisible,
     setTreeVisible,
     stickies,
     tabs,
@@ -414,6 +427,24 @@ function Workspace() {
           >
             <GridFour size={18} />
           </button>
+          {/* The rail's own switch, on the bar. The strip at the window's edge
+              brings it back too, but a hidden control is a poor way to undo
+              hiding something — this one is where you can see it, and it says
+              how many notes are waiting behind it. */}
+          <button
+            type="button"
+            className="chrome-btn"
+            aria-label={railVisible ? 'Hide notes' : 'Show notes'}
+            aria-pressed={railVisible}
+            title={
+              railVisible
+                ? 'Hide notes — Ctrl+Shift+Space'
+                : `Show notes${stickies.notes.length > 0 ? ` (${stickies.notes.length})` : ''} — Ctrl+Shift+Space`
+            }
+            onClick={() => setRailVisible(!railVisible)}
+          >
+            <NoteBlank size={18} weight={railVisible ? 'fill' : 'regular'} />
+          </button>
           {/* The guide, on the bar rather than two levels down inside Settings.
               A list of thirty shortcuts is worth nothing if finding it needs a
               shortcut you would have had to read the list to know. */}
@@ -464,12 +495,26 @@ function Workspace() {
         </div>
         {/* Beside the paper rather than on it, and outside the element that
             scrolls, so the notes hold still while the prose moves. */}
-        {ready && !greeting && !pdf && (
+        {ready && !greeting && !pdf && railVisible && (
           <StickyNotes
             stickies={stickies}
+            onHide={() => setRailVisible(false)}
             onGoToAnchor={(anchor) =>
               editorRef.current ? selectComment(editorRef.current, anchor) : false
             }
+          />
+        )}
+
+        {/* The way back, and only when there is something to come back to. The
+            same shape as the sidebar's edge handle, on the other side: a thin
+            strip that answers a pointer rather than a control taking space. */}
+        {ready && !greeting && !pdf && !railVisible && stickies.notes.length > 0 && (
+          <button
+            type="button"
+            className="rail-handle"
+            aria-label="Show notes"
+            title={`${stickies.notes.length} note${stickies.notes.length === 1 ? '' : 's'} — Ctrl+Shift+Space`}
+            onClick={() => setRailVisible(true)}
           />
         )}
 

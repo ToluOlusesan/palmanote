@@ -138,7 +138,30 @@ export interface HeldSelection {
  */
 export function selectionBefore(editor: Editor): HeldSelection | null {
   const { from, to, empty } = editor.state.selection;
-  return empty ? null : { from, to };
+  if (!empty) return { from, to };
+
+  /*
+    The state can be a beat behind the screen, and this is one of the moments
+    it is. A selection made with the keyboard — Shift+Home, Shift+Arrow — is
+    the browser's own doing; ProseMirror learns about it from `selectionchange`
+    and folds it into the state on its next flush. Right-click before that flush
+    lands and the state still says "nothing selected", so the words plainly
+    highlighted on screen would come up with Cut and Copy greyed.
+
+    So where the state disagrees with the screen, the screen wins: it is what
+    the writer is looking at, and what they right-clicked.
+  */
+  const dom = window.getSelection();
+  if (!dom || dom.isCollapsed || !dom.anchorNode || !dom.focusNode) return null;
+  if (!editor.view.dom.contains(dom.anchorNode)) return null;
+  try {
+    const anchor = editor.view.posAtDOM(dom.anchorNode, dom.anchorOffset);
+    const head = editor.view.posAtDOM(dom.focusNode, dom.focusOffset);
+    if (anchor === head) return null;
+    return { from: Math.min(anchor, head), to: Math.max(anchor, head) };
+  } catch {
+    return null;
+  }
 }
 
 /**

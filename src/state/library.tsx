@@ -39,20 +39,23 @@ interface UiState {
   selectedId: string | null;
   expanded: string[];
   treeVisible: boolean;
+  /** The rail of notes and comments down the right. */
+  railVisible: boolean;
 }
 
 function readUiState(): UiState {
   try {
     const raw = localStorage.getItem(UI_STATE_KEY);
-    if (!raw) return { selectedId: null, expanded: [], treeVisible: true };
+    if (!raw) return { selectedId: null, expanded: [], treeVisible: true, railVisible: true };
     const parsed = JSON.parse(raw) as Partial<UiState>;
     return {
       selectedId: parsed.selectedId ?? null,
       expanded: Array.isArray(parsed.expanded) ? parsed.expanded : [],
       treeVisible: parsed.treeVisible ?? true,
+      railVisible: parsed.railVisible ?? true,
     };
   } catch {
-    return { selectedId: null, expanded: [], treeVisible: true };
+    return { selectedId: null, expanded: [], treeVisible: true, railVisible: true };
   }
 }
 
@@ -72,12 +75,15 @@ export interface Library {
   canGoForward: boolean;
   expanded: ReadonlySet<string>;
   treeVisible: boolean;
+  /** The rail of notes and comments down the right of the window. */
+  railVisible: boolean;
 
   select(id: string | null): void;
   goBack(): void;
   goForward(): void;
   setExpanded(id: string, expanded: boolean): void;
   setTreeVisible(visible: boolean): void;
+  setRailVisible(visible: boolean): void;
 
   /**
    * `follow` defaults to true: making a page normally means going to it. The
@@ -152,6 +158,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const selectedId = nav.index >= 0 ? (nav.stack[nav.index] ?? null) : null;
   const [expanded, setExpandedSet] = useState<ReadonlySet<string>>(() => new Set(initialUi.expanded));
   const [treeVisible, setTreeVisible] = useState(initialUi.treeVisible);
+  // Kept here beside the sidebar's own visibility rather than in the notes
+  // hook: this is where the window is laid out, and the hook is about storage.
+  const [railVisible, setRailVisible] = useState(initialUi.railVisible);
 
   // The ref mirrors nav so navigation can read the current stack, touch
   // history, and set state in one go. Doing any of that inside a setState
@@ -294,9 +303,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, [selectedId, byId]);
 
   useEffect(() => {
-    const state: UiState = { selectedId, expanded: [...expanded], treeVisible };
+    const state: UiState = { selectedId, expanded: [...expanded], treeVisible, railVisible };
     localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
-  }, [selectedId, expanded, treeVisible]);
+  }, [selectedId, expanded, treeVisible, railVisible]);
 
   const setExpanded = useCallback((id: string, isExpanded: boolean) => {
     setExpandedSet((current) => {
@@ -323,6 +332,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       canGoForward: nav.index < nav.stack.length - 1,
       expanded,
       treeVisible,
+      railVisible,
+      setRailVisible,
       select,
       goBack: () => history.back(),
       goForward: () => history.forward(),
@@ -416,6 +427,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       nav,
       expanded,
       treeVisible,
+      railVisible,
       select,
       setExpanded,
       applyMeta,

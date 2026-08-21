@@ -1,5 +1,6 @@
 import {
   CaretDown,
+  ChatTeardropText,
   Code,
   Highlighter,
   ListBullets,
@@ -69,7 +70,23 @@ const STYLES = BLOCK_TYPES.filter((type) => !type.isList);
  * thing that was already there and is now visible, while one whose parts land
  * in sequence reads as a thing that came to you.
  */
-export function SelectionBar({ editor }: { editor: Editor | null }) {
+export function SelectionBar({
+  editor,
+  onComment,
+}: {
+  editor: Editor | null;
+  /**
+   * A comment on the held words.
+   *
+   * It belongs in this bar and not in the `/` menu for the reason the bar
+   * exists at all: it is something done *to* words that are already there,
+   * rather than something put down where the caret is. It also does not eat
+   * the selection the way a sticker or a picture would — it marks it and
+   * leaves it exactly where it was, which is the rule that keeps images and
+   * stickers out of here.
+   */
+  onComment: (editor: Editor) => void;
+}) {
   // What the editor says right now, and what is on screen. They differ for one
   // beat: when a selection is dropped, the bar stays to animate itself out.
   const [live, setLive] = useState<Held | null>(null);
@@ -259,6 +276,22 @@ export function SelectionBar({ editor }: { editor: Editor | null }) {
         c.toggleStrike(),
       )}
       {button('Code', 'Ctrl+E', editor.isActive('code'), Code, (c) => c.toggleCode())}
+
+      {separator('comment')}
+
+      {/* Not a mark the writer toggles, so it is written by hand rather than
+          through `button` above: it has no pressed state to show and its work
+          is done outside the editor, in the rail. */}
+      <button
+        type="button"
+        className="bubble-btn"
+        style={turn()}
+        aria-label="Comment"
+        title="Comment — Ctrl+Alt+M"
+        onClick={() => onComment(editor)}
+      >
+        <ChatTeardropText size={16} />
+      </button>
 
       {separator('lists')}
 

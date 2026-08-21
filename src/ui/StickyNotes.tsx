@@ -1,4 +1,4 @@
-import { ChatTeardropText, Plus, X } from '@phosphor-icons/react';
+import { ChatTeardropText, Plus, X, CaretRight } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 
 import { STICKY_COLOURS, type StickyColour, type StickyNote } from '../core/types.ts';
@@ -22,8 +22,11 @@ import type { Stickies } from '../state/stickies.ts';
 export function StickyNotes({
   stickies,
   onGoToAnchor,
+  onHide,
 }: {
   stickies: Stickies;
+  /** Puts the whole rail away. The notes are kept; the column is not. */
+  onHide: () => void;
   /**
    * Takes you to the words a comment is about. False when there is nothing
    * left to go to, which is how the rail learns a comment has been orphaned —
@@ -37,6 +40,17 @@ export function StickyNotes({
   return (
     <aside className="stickies" aria-label="Notes and comments">
       <div className="stickies-rail">
+        {/* At the top rather than the bottom, where the eye already is when it
+            decides the column is in the way. */}
+        <button
+          type="button"
+          className="stickies-hide"
+          title="Hide notes — Ctrl+Shift+Space"
+          aria-label="Hide notes"
+          onClick={onHide}
+        >
+          <CaretRight size={12} weight="bold" />
+        </button>
         {stickies.notes.map((note) => (
           <Sticky key={note.id} note={note} stickies={stickies} onGoToAnchor={onGoToAnchor} />
         ))}
