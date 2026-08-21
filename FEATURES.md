@@ -46,8 +46,17 @@ resolved once at load. Nothing above that file knows which shell it is in.
 ### The browser build
 
 The same source, served as static files, published from
-[.github/workflows/web.yml](.github/workflows/web.yml) on every push to `main`
-and living at **<https://toluolusesan.github.io/palmanote/>**. `base` is `./`
+[.github/workflows/web.yml](.github/workflows/web.yml) on every push to `main`.
+
+It is **published** to `toluolusesan.github.io/palmanote/` and **served** at
+**<https://palmaboard.com/note/app/>**, which proxies it. The distinction is
+not cosmetic: a browser's storage belongs to the origin that served the page,
+so the address people are given is the address their library lives at, and
+moving it later strands everything written before the move. The published
+permalink carries no version, so shipping a build never touches the site that
+fronts it.
+
+`base` is `./`
 in [vite.config.ts](vite.config.ts) and every path in
 [index.html](index.html) goes through `%BASE_URL%`, so the same `dist/` works
 at a domain root, in a subdirectory, and over `file://` in the desktop shell.
