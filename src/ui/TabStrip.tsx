@@ -1,11 +1,11 @@
-import { PushPin, X } from '@phosphor-icons/react';
+import { Plus, PushPin, X } from '@phosphor-icons/react';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 
 import { useLibrary } from '../state/library.tsx';
 import { DocumentIcon } from './IconPicker.tsx';
 import { useTabs } from '../state/tabs.tsx';
 
-export function TabStrip({ onPick }: { onPick?: () => void }) {
+export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () => void }) {
   const { byId } = useLibrary();
   const tabs = useTabs();
   const stripRef = useRef<HTMLDivElement>(null);
@@ -45,7 +45,26 @@ export function TabStrip({ onPick }: { onPick?: () => void }) {
     setDropAt(null);
   };
 
-  if (tabs.tabs.length === 0) return <div className="tabstrip" />;
+  /**
+   * The `+` at the end of the run, which is where every browser keeps it.
+   *
+   * Rendered even when there are no tabs at all, because an empty strip is
+   * exactly when a way to start one is worth having — and it is the only
+   * visible route to a new page that does not go through the sidebar.
+   */
+  const newTab = onNew ? (
+    <button
+      type="button"
+      className="tab-new"
+      aria-label="New page"
+      title="New page — Ctrl+T"
+      onClick={onNew}
+    >
+      <Plus size={14} weight="bold" />
+    </button>
+  ) : null;
+
+  if (tabs.tabs.length === 0) return <div className="tabstrip">{newTab}</div>;
 
   return (
     <div
@@ -150,6 +169,8 @@ export function TabStrip({ onPick }: { onPick?: () => void }) {
           </div>
         );
       })}
+
+      {newTab}
     </div>
   );
 }

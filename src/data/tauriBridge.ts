@@ -5,9 +5,6 @@
  * shell is underneath. Here they become `invoke` calls to the Rust commands in
  * `src-tauri/src/main.rs`; the argument and return shapes match because both
  * sides serialise the types in `src/core/types.ts`.
- *
- * The one place the two shells genuinely differ is PDF, and it is handled
- * where it shows rather than faked here — see `printToPDF` below.
  */
 
 import { invoke } from '@tauri-apps/api/core';
@@ -56,16 +53,6 @@ export function createTauriBridge(): PalmaNoteBridge {
     pickImport: (folder) => invoke('pick_import', { folder }),
     restoreSnapshot: () => invoke('restore_snapshot'),
     pickPdf: () => invoke('pick_pdf'),
-
-    /**
-     * WebView2 can print to a file, but Tauri exposes no route to it, so this
-     * opens the print dialog with "Save as PDF" preselected by the platform
-     * instead. One extra click, and the same print stylesheet does the layout.
-     */
-    async printToPDF() {
-      window.print();
-      return { written: 0, location: null, cancelled: false };
-    },
 
     openExternal: (url) => invoke('open_external', { url }),
 

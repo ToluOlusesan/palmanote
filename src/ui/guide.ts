@@ -33,7 +33,10 @@ export const GUIDE: GuideSection[] = [
     intro:
       'Everything is saved as you type — there is no save key and nothing to remember. Writing is the resting state of the app: it launches with the caret in a page, and Escape always returns you to one.',
     rows: [
+      { keys: 'F1', what: 'Open this guide, from anywhere' },
       { keys: 'Escape', what: 'Back to the writing, from anywhere' },
+      { keys: 'Right-click', what: 'Cut, copy, paste, and what can be done to the block under the pointer' },
+      { what: 'The mark at the top of the sidebar goes back to the launch screen.' },
       { keys: 'Ctrl + Z', what: 'Undo — survives switching pages and coming back' },
       { keys: 'Ctrl + Y', what: 'Redo' },
       { keys: 'Alt + ←  /  Alt + →', what: 'Back and forward through pages you have visited' },
@@ -221,6 +224,7 @@ export const GUIDE: GuideSection[] = [
       'Clicking a page in the sidebar previews it in a single reusable tab, so browsing does not bury you in tabs. Editing it, or double-clicking, makes the tab permanent.',
     rows: [
       { keys: 'Ctrl + T', what: 'New page in a new tab' },
+      { what: 'Or press the + at the end of the tab strip, which does the same thing.' },
       { keys: 'Ctrl + W', what: 'Close the tab' },
       { keys: 'Ctrl + Shift + T', what: 'Reopen the last one you closed' },
       { keys: 'Ctrl + Tab  /  Ctrl + Shift + Tab', what: 'Next and previous tab' },
@@ -252,11 +256,12 @@ export const GUIDE: GuideSection[] = [
     rows: [
       { keys: 'Ctrl + Shift + E', what: 'Export' },
       { keys: 'Ctrl + Shift + I', what: 'Import — Word documents, markdown, or a PDF to read alongside' },
+      { what: 'It asks two things: what kind of file, and how much of your library.' },
       { what: 'Word document — opens in Word and Google Docs, with real heading styles.' },
-      { what: 'Manuscript format — double-spaced, running header, chapters starting on new pages.' },
-      { what: 'PDF — through the platform print dialog.' },
-      { what: 'Markdown — one file, or a folder of files mirroring your tree.' },
+      { what: 'Manuscript format — a switch under Word: double-spaced, running header, title page, chapters starting on new pages.' },
+      { what: 'Markdown — one page comes out as one file; more than one comes out as folders mirroring your pages.' },
       { what: 'Everything — the markdown tree, the picture files, and the complete raw database.' },
+      { what: 'PDF is out of the app for now while it is rebuilt.' },
     ],
     aside:
       '“Everything” is the escape hatch and sits with the rest rather than hidden away. Someone with that folder and no copy of PalmaNote can rebuild what was here, by hand if they have to. On the desktop app a copy of the whole library is also written to your Documents folder each night, and the last thirty are kept.',
@@ -265,15 +270,15 @@ export const GUIDE: GuideSection[] = [
     id: 'settings',
     title: 'Settings',
     intro:
-      'One question and two switches, and that is on purpose — anything that needs a switch usually needed a decision instead.',
+      'Two switches, and that is on purpose — anything that needs a switch usually needed a decision instead.',
     rows: [
       { keys: 'Ctrl + ,', what: 'Open settings' },
-      { what: 'What should it call you — the name the greeting uses. Leave it empty and it says “Hey you”.' },
+      { keys: 'F1', what: 'Open this guide — also the ? in the top bar' },
       { what: 'Animated cursor — the cursor slides between positions rather than jumping.' },
       { what: 'Greeting on launch — somewhere to start before the writing. Escape always skips it.' },
       { what: 'The theme button in the top bar cycles system, light and dark.' },
     ],
     aside:
-      'The name is the one setting the app cannot guess. It used to be written into the source, which was fine while one person used it and wrong the moment somebody else built their own copy and got greeted by its author’s name.',
+      'There was a third setting here — a name for the greeting to use. The greeting lost the half of it that said a name, at which point the setting had no reader at all, and a control whose only effect is invisible is worse than no control.',
   },
 ];

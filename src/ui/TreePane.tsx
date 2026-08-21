@@ -25,10 +25,12 @@ export function TreePane({
   onOpen,
   onPreview,
   onImport,
+  onHome,
 }: {
   onOpen: () => void;
   onPreview: () => void;
   onImport: () => void;
+  onHome: () => void;
 }) {
   const library = useLibrary();
   const tabs = useTabs();
@@ -261,7 +263,19 @@ export function TreePane({
       )}
 
       <header className="tree-head">
-        <PalmaMark size={22} />
+        {/* The mark is the way back to the launch screen. Every app whose logo
+            sits in a corner has taught that pressing it goes home, and this one
+            has a home — the four starting points and the week's writing — that
+            was previously reachable only by relaunching. */}
+        <button
+          type="button"
+          className="tree-home"
+          aria-label="Home — the launch screen"
+          title="Home"
+          onClick={onHome}
+        >
+          <PalmaMark size={22} />
+        </button>
         <span className="visually-hidden">PalmaNote</span>
         <button
           type="button"

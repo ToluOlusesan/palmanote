@@ -8,6 +8,12 @@ export interface MenuItem {
   destructive?: boolean;
   /** Present makes it a toggle: a tick appears in the gutter when true. */
   checked?: boolean;
+  /**
+   * Greyed rather than gone — the same rule the block menu keeps, and for the
+   * same reason: a menu whose items move between openings is a menu you have
+   * to read every time instead of reaching for by position.
+   */
+  disabled?: boolean;
   /** Shown under the label, for switches whose consequence is not obvious. */
   note?: string;
   /** Stays open after being chosen — for toggles you may want several of. */
@@ -15,11 +21,17 @@ export interface MenuItem {
 }
 
 /**
- * A small menu anchored to a point, for tree rows.
+ * A small menu anchored to a point.
  *
- * Deliberately not a general menu system: one level, no submenus, no icons.
- * It exists because archiving used to be reachable only by pressing Backspace
- * on a focused row, which is not a thing anyone discovers.
+ * Deliberately not a general menu system: one level, no submenus, no icons. It
+ * exists because archiving used to be reachable only by pressing Backspace on a
+ * focused row, which is not a thing anyone discovers — and it is now what a
+ * right-click on the writing opens too, because a second small menu that looked
+ * slightly different would be a worse answer than either.
+ *
+ * (The block handle's menu is still its own component. That one is two lists
+ * and nine block types that are unreadable without icons, which is a different
+ * shape rather than a variation on this one.)
  */
 export function RowMenu({
   x,
@@ -60,8 +72,18 @@ export function RowMenu({
   }, [onClose]);
 
   const choose = (item: MenuItem) => {
+    if (item.disabled) return;
     if (!item.keepOpen) onClose();
     item.onSelect();
+  };
+
+  /** Arrow keys step over anything greyed rather than landing on it. */
+  const step = (from: number, direction: 1 | -1) => {
+    for (let i = 1; i <= items.length; i++) {
+      const index = (from + direction * i + items.length * i) % items.length;
+      if (!items[index]?.disabled) return index;
+    }
+    return from;
   };
 
   return (
@@ -79,10 +101,10 @@ export function RowMenu({
             onClose();
           } else if (event.key === 'ArrowDown') {
             event.preventDefault();
-            setActive((current) => (current + 1) % items.length);
+            setActive((current) => step(current, 1));
           } else if (event.key === 'ArrowUp') {
             event.preventDefault();
-            setActive((current) => (current - 1 + items.length) % items.length);
+            setActive((current) => step(current, -1));
           } else if (event.key === 'Enter') {
             event.preventDefault();
             const item = items[active];
@@ -97,14 +119,15 @@ export function RowMenu({
             className={[
               'menu-item',
               item.destructive ? 'is-destructive' : '',
-              index === active ? 'is-active' : '',
+              index === active && !item.disabled ? 'is-active' : '',
               item.checked !== undefined ? 'is-checkable' : '',
             ]
               .filter(Boolean)
               .join(' ')}
             role={item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
             aria-checked={item.checked}
-            onMouseEnter={() => setActive(index)}
+            disabled={item.disabled}
+            onMouseEnter={() => !item.disabled && setActive(index)}
             onClick={() => choose(item)}
           >
             <span className="menu-label">

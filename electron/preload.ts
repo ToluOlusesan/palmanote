@@ -41,7 +41,6 @@ const api: PalmaNoteBridge = {
   collectAssets: () => ipcRenderer.invoke('db:collectAssets'),
 
   writeExport: (request: WriteExportRequest) => ipcRenderer.invoke('files:writeExport', request),
-  printToPDF: (title) => ipcRenderer.invoke('files:printToPDF', title),
   pickImport: (folder) => ipcRenderer.invoke('files:pickImport', folder),
   restoreSnapshot: () => ipcRenderer.invoke('files:restoreSnapshot'),
   pickPdf: () => ipcRenderer.invoke('files:pickPdf'),

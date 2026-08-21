@@ -106,7 +106,6 @@ export interface PalmaNoteBridge {
    * when the picker was dismissed.
    */
   pickPdf(): Promise<{ path: string; name: string } | null>;
-  printToPDF(title: string): Promise<WriteExportOutcome>;
 
   /**
    * Hands a link to the machine's browser. Rejects anything that is not

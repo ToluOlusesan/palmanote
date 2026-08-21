@@ -1860,12 +1860,143 @@ check('as does the chord, which is the gesture that replaces the drag', await li
   'three',
 ]);
 
+// ------------------------------------------------------- the context menu
+// The system menu is replaced here, so the three verbs it had are this app's
+// responsibility now. Right-clicking a *selection* is the case worth pinning
+// down: ProseMirror answers the right button by moving the caret, which used
+// to collapse the very selection somebody right-clicked in order to copy, and
+// the menu came up with Cut and Copy greyed at exactly the wrong moment.
+// On a page of its own, made by the `+` — which is the other thing this
+// section proves. Everything above has spent the document it was working in on
+// tables, lists and dragged blocks, and "the last paragraph" is not a reliable
+// thing to point at by the end of it.
+section('the plus on the tab strip');
+const tabsBefore = await page.locator('.tab').count();
+await page.locator('.tab-new').click();
+await page.waitForTimeout(800);
+check('it opens a tab', (await page.locator('.tab').count()) > tabsBefore, true);
+check(
+  'with the caret in the title, the same as Ctrl+T',
+  await page.evaluate(() => document.activeElement?.className),
+  'title',
+);
+
+section('right click on the writing');
+await page.keyboard.type('Context');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+await body().click();
+await page.keyboard.type('A line to hold.');
+await page.waitForTimeout(300);
+
+/** Over the words themselves — the middle of a full-width line is past its end. */
+const rightClickTheLine = async () => {
+  const box = await page.locator('.body p').last().boundingBox();
+  await page.mouse.click(box.x + 20, box.y + box.height / 2, { button: 'right' });
+  await page.waitForSelector('.menu', { timeout: 5000 });
+};
+
+await rightClickTheLine();
+check('it offers the clipboard and the block', await page.locator('.menu-item .menu-label').allInnerTexts(), [
+  'Cut',
+  'Copy',
+  'Paste',
+  'Duplicate block',
+  'Delete block',
+]);
+check('cut is greyed when no words are held', await page.locator('.menu-item').first().isDisabled(), true);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+
+await body().click();
+await page.waitForTimeout(200);
+await page.keyboard.press('Control+End');
+await page.keyboard.press('Shift+Home');
+// The selection has to actually exist before the right-click means anything —
+// asserted here so a failure below says which of the two steps broke.
+await page.waitForFunction(() => !(window.getSelection()?.isCollapsed ?? true), null, { timeout: 5000 });
+await rightClickTheLine();
+check('right-clicking held words leaves them held', await page.locator('.menu-item').first().isDisabled(), false);
+await page.locator('.menu-item', { hasText: 'Copy' }).first().click();
+await page.waitForTimeout(400);
+check(
+  'and copy puts them on the clipboard',
+  (await page.evaluate(() => navigator.clipboard.readText())).includes('A line to hold.'),
+  true,
+);
+
+// A string of our own, so this asserts *what* arrived rather than that the
+// page got longer — and let the selection go first, or the paste lands on top
+// of the words it came from and proves nothing either way.
+await page.evaluate(() => navigator.clipboard.writeText('PASTED-BY-MENU'));
+await page.keyboard.press('End');
+await rightClickTheLine();
+await page.locator('.menu-item', { hasText: 'Paste' }).first().click();
+await page.waitForTimeout(1000);
+check('paste goes in the way Ctrl+V does', (await bodyText()).includes('PASTED-BY-MENU'), true);
+
+// ---------------------------------------------------------------- the guide
+// A list of thirty shortcuts is worth nothing if finding it needs a shortcut
+// you would have had to read the list to know, so it is on the bar and on F1.
+section('the guide');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+await page.keyboard.press('F1');
+await page.waitForSelector('.guide', { timeout: 5000 });
+check('F1 opens the guide', await page.locator('.guide-topics .guide-topic').count() > 5, true);
+check(
+  'and it carries the keys themselves',
+  (await page.locator('.guide-row kbd').allInnerTexts()).includes('F1'),
+  true,
+);
+await page.keyboard.press('F1');
+await page.waitForTimeout(250);
+check('the same key puts it away', await page.locator('.guide').count(), 0);
+await page.locator('.chrome-btn[aria-label="Guide"]').click();
+await page.waitForSelector('.guide', { timeout: 5000 });
+check('so does the ? on the bar', await page.locator('.guide').count(), 1);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+
+// ---------------------------------------------------------------- the logo
+// Going home unmounts the editor, and an unmount is the one way of leaving a
+// page the autosave has no hook for. What was typed a moment before has to
+// still be there afterwards.
+section('the mark goes home');
+await body().click();
+await page.keyboard.type('Typed on the way out.');
+await page.locator('.tree-home').click();
+await page.waitForSelector('.welcome', { timeout: 5000 });
+check('the mark returns to the launch screen', await page.locator('.welcome').count(), 1);
+await page.reload({ waitUntil: 'networkidle' });
+await dismissWelcome();
+check('and nothing typed on the way out was lost', (await bodyText()).includes('Typed on the way out.'), true);
+
 // ------------------------------------------------------------------ export
 section('export');
 await page.keyboard.press('Control+Shift+KeyE');
 await page.waitForSelector('.dialog');
 check('ctrl-shift-E opens the export dialog', await page.locator('.dialog-title').innerText(), 'Export');
-check('every route out is offered', await page.locator('.dialog .field').first().locator('.choice').count(), 5);
+check('three ways out, and no PDF', await page.locator('.dialog .field').first().locator('.choice-label').allInnerTexts(), [
+  'Word document',
+  'Markdown',
+  'Everything',
+]);
+check(
+  'the manuscript apparatus stays folded away',
+  await page.locator('.dialog .text-field').count(),
+  0,
+);
+await page.locator('.dialog .choice', { hasText: 'Manuscript' }).locator('input').check();
+await page.waitForTimeout(250);
+check('until it is asked for', await page.locator('.dialog .text-field').count(), 4);
+await page.locator('.dialog .choice', { hasText: 'Everything' }).first().locator('input').check();
+await page.waitForTimeout(250);
+check(
+  'and the escape hatch asks nothing else',
+  await page.locator('.dialog legend').allInnerTexts(),
+  ['As'],
+);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 check('escape closes it', await page.locator('.dialog').count(), 0);

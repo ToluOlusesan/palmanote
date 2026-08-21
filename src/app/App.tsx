@@ -5,6 +5,7 @@ import {
   Gear,
   GridFour,
   Moon,
+  Question,
   Sidebar,
   Sun,
 } from '@phosphor-icons/react';
@@ -90,8 +91,43 @@ function Workspace() {
     if (ready && sessionBaseline === null) setSessionBaseline(totalWords);
   }, [ready, sessionBaseline, totalWords]);
 
+  /** The open editor's save, lent upwards by EditorPane while it is mounted. */
+  const flushRef = useRef<((snapshot: boolean) => Promise<void>) | null>(null);
+
   const focusEditor = useCallback(() => {
     hostRef.current?.querySelector<HTMLElement>('.body')?.focus();
+  }, []);
+
+  /**
+   * A new page, in a new tab, with the caret in its title. What Ctrl+T does and
+   * what the `+` at the end of the tab strip does — one function, so the two
+   * can never come to mean slightly different things.
+   *
+   * It lands beside the open page rather than at the top of the tree: a new
+   * page while you are in a chapter almost always belongs next to that chapter.
+   */
+  const newPage = useCallback(() => {
+    const parentId = library.selectedId
+      ? (library.byId.get(library.selectedId)?.parentId ?? null)
+      : null;
+    void library.create({ parentId, afterId: library.selectedId }).then(() => {
+      window.setTimeout(() => hostRef.current?.querySelector<HTMLInputElement>('.title')?.focus(), 30);
+    });
+  }, [library]);
+
+  /**
+   * Back to the launch screen.
+   *
+   * The flush is not optional. Showing the greeting unmounts the editor, and
+   * an unmount is the one way of leaving a page that the autosave has no hook
+   * for — it saves on a document swap, on blur, on tab-hide and on unload, none
+   * of which this is. `save` reads the document synchronously before it awaits
+   * anything, so calling it here catches the text even though the pane is about
+   * to go.
+   */
+  const goHome = useCallback(() => {
+    void flushRef.current?.(true);
+    setGreeting(true);
   }, []);
 
   const bootFocused = useRef(false);
@@ -175,12 +211,7 @@ function Workspace() {
       }
       if (ctrl && !event.shiftKey && key.toLowerCase() === 't') {
         event.preventDefault();
-        const parentId = library.selectedId
-          ? (library.byId.get(library.selectedId)?.parentId ?? null)
-          : null;
-        void library.create({ parentId, afterId: library.selectedId }).then(() => {
-          window.setTimeout(() => hostRef.current?.querySelector<HTMLInputElement>('.title')?.focus(), 30);
-        });
+        newPage();
         return;
       }
       if (ctrl && event.shiftKey && key.toLowerCase() === 'e') {
@@ -191,6 +222,13 @@ function Workspace() {
       if (ctrl && key === ',') {
         event.preventDefault();
         setSettingsOpen(true);
+        return;
+      }
+      // F1, which is what every application on this platform has meant by help
+      // for thirty years, and the one key nothing in the editor wants.
+      if (key === 'F1') {
+        event.preventDefault();
+        setGuideOpen((open) => !open);
         return;
       }
       // Toggles rather than only opening, so the chord that summons it also
@@ -260,6 +298,7 @@ function Workspace() {
     goBack,
     goForward,
     library,
+    newPage,
     paletteOpen,
     setTreeVisible,
     stickies,
@@ -273,6 +312,7 @@ function Workspace() {
         onOpen={openedSomething}
         onPreview={leaveGreeting}
         onImport={() => setImporting(true)}
+        onHome={goHome}
       />
 
       {/* A quiet strip at the window edge brings the sidebar back without a shortcut. */}
@@ -297,7 +337,7 @@ function Workspace() {
             <Sidebar size={18} />
           </button>
 
-          <TabStrip onPick={openedSomething} />
+          <TabStrip onPick={openedSomething} onNew={newPage} />
 
           {/* The window's drag region: everything the tabs do not claim.
               Tauri reads the attribute, Electron reads the CSS property. */}
@@ -321,6 +361,18 @@ function Workspace() {
             onClick={() => setActivityOpen(true)}
           >
             <GridFour size={18} />
+          </button>
+          {/* The guide, on the bar rather than two levels down inside Settings.
+              A list of thirty shortcuts is worth nothing if finding it needs a
+              shortcut you would have had to read the list to know. */}
+          <button
+            type="button"
+            className="chrome-btn"
+            aria-label="Guide"
+            title="What everything does — F1"
+            onClick={() => setGuideOpen(true)}
+          >
+            <Question size={18} />
           </button>
           <button
             type="button"
@@ -373,6 +425,7 @@ function Workspace() {
               hostRef={hostRef}
               historyOpen={historyOpen}
               onCloseHistory={() => setHistoryOpen(false)}
+              flushRef={flushRef}
             />
           )}
         </div>

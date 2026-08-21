@@ -7,6 +7,12 @@ import { useLibrary } from '../state/library.tsx';
 import { useTabs } from '../state/tabs.tsx';
 import { Backlinks } from './Backlinks.tsx';
 import { BlockGutter } from './BlockGutter.tsx';
+import {
+  EditorContextMenu,
+  placeCaretForMenu,
+  selectionBefore,
+  type HeldSelection,
+} from './EditorContextMenu.tsx';
 import { HistoryDialog } from './HistoryDialog.tsx';
 import { AddCoverButton, PageCover } from './PageCover.tsx';
 import { SelectionBar } from './SelectionBar.tsx';
@@ -114,18 +120,34 @@ export function EditorPane({
   hostRef,
   historyOpen,
   onCloseHistory,
+  flushRef,
 }: {
   sessionBaseline: number;
   hostRef: RefObject<HTMLDivElement | null>;
   historyOpen: boolean;
   onCloseHistory: () => void;
+  /**
+   * Lent upwards so the window can save what is on screen *before* it takes
+   * this pane away. Going back to the launch screen unmounts the editor, and
+   * an unmount is the one leaving-the-page route the autosave has no hook for.
+   */
+  flushRef: RefObject<((snapshot: boolean) => Promise<void>) | null>;
 }) {
   const library = useLibrary();
   const tabs = useTabs();
   const doc = library.selectedId ? library.byId.get(library.selectedId) : undefined;
   const scrollHost = useCallback(() => hostRef.current, [hostRef]);
-  const { editor, characters, restore } = useDocumentEditor(doc?.id ?? null, scrollHost);
+  const { editor, characters, restore, flush } = useDocumentEditor(doc?.id ?? null, scrollHost);
   const title = useDebouncedTitle(doc?.id ?? null, doc?.title ?? '');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const heldSelection = useRef<HeldSelection | null>(null);
+
+  useEffect(() => {
+    flushRef.current = flush;
+    return () => {
+      flushRef.current = null;
+    };
+  }, [flush, flushRef]);
 
   // Editing a previewed document is what makes it worth a permanent tab.
   const promote = tabs.promote;
@@ -162,7 +184,27 @@ export function EditorPane({
           how long a line should be to read, and a banner is not a line. */}
       <PageCover doc={doc} />
 
-      <div className="sheet">
+      <div
+        className="sheet"
+        // Capture, and mousedown rather than contextmenu: ProseMirror answers
+        // the right button by moving the caret, so this is the last moment the
+        // selection the writer is pointing at still exists.
+        onMouseDownCapture={(event) => {
+          if (event.button === 2 && editor) heldSelection.current = selectionBefore(editor);
+        }}
+        onContextMenu={(event) => {
+          if (!editor) return;
+          // Not over a picture's own controls, a sticky or the gutter: those
+          // carry their own handles, and a menu about the prose would be the
+          // wrong menu there.
+          if ((event.target as HTMLElement).closest('.gallery-chrome, .cover-actions, .blockgutter')) {
+            return;
+          }
+          event.preventDefault();
+          placeCaretForMenu(editor, event.clientX, event.clientY, heldSelection.current);
+          setContextMenu({ x: event.clientX, y: event.clientY });
+        }}
+      >
         <AddCoverButton doc={doc} />
         <input
           className="title"
@@ -188,6 +230,15 @@ export function EditorPane({
         <BlockGutter editor={editor} />
       </div>
 
+
+      {contextMenu && editor && (
+        <EditorContextMenu
+          editor={editor}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
 
       <SlashMenu editor={editor} />
 

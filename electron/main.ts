@@ -190,23 +190,10 @@ function registerHandlers(): void {
     return { written: request.files.length, location: root, cancelled: false };
   });
 
-  call('files:printToPDF', async (title: string) => {
-    if (!mainWindow) return { written: 0, location: null, cancelled: true };
-    const chosen = await dialog.showSaveDialog(mainWindow, {
-      title: 'Save as PDF',
-      defaultPath: join(app.getPath('documents'), `${title}.pdf`),
-      filters: [{ name: 'PDF', extensions: ['pdf'] }],
-    });
-    if (chosen.canceled || !chosen.filePath) return { written: 0, location: null, cancelled: true };
-    // The print stylesheet does the layout; Chromium does the rendering.
-    const data = await mainWindow.webContents.printToPDF({
-      printBackground: false,
-      pageSize: 'Letter',
-      margins: { marginType: 'default' },
-    });
-    writeFileSync(chosen.filePath, data);
-    return { written: 1, location: chosen.filePath, cancelled: false };
-  });
+  // `files:printToPDF` lived here. PDF is out of the app entirely for now,
+  // on its way to being rebuilt — the print stylesheet stays, because that is
+  // what it will be rebuilt on, and because Ctrl+P is still a thing a browser
+  // does whether or not this app has an opinion about it.
 
   call('files:reveal', (path: string) => shell.showItemInFolder(path));
   // Checked here rather than trusted from the renderer, for the same reason

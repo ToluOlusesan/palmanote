@@ -311,14 +311,37 @@ button {
   white-space: nowrap;
 }
 
-/* Chrome recedes; the mark in the sidebar is a wordmark, not a button. The
-   greeting overrides this — that one is the loudest thing on its screen. */
 /* One ink, taken from whatever it sits on — near-black on paper, near-white on
    the dark card. The gradient tile belongs to the identity layer and stays out
    here; chrome has one accent and no other colour. */
 .palmamark {
   flex: none;
   color: var(--ink);
+}
+
+/* The mark is the way home, and it answers a pointer like everything else in
+   the chrome — but quietly. A wordmark that lit up like a button would be the
+   loudest thing in a sidebar of page titles, which is the wrong order. */
+.tree-home {
+  display: grid;
+  flex: none;
+  place-items: center;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  border-radius: 0.4rem;
+  opacity: 0.9;
+  transition:
+    opacity var(--quick) var(--ease),
+    background-color var(--quick) var(--ease);
+}
+
+.tree-home:hover {
+  background: var(--raise);
+  opacity: 1;
+}
+
+.tree-home:active {
+  scale: 0.93;
 }
 
 /* Present to a screen reader, absent to everyone else. */
@@ -712,6 +735,32 @@ button {
 .tab-close:hover {
   background: var(--raise);
   color: var(--ink);
+}
+
+/* The `+` at the end of the run. Always visible rather than appearing on
+   hover, unlike the close buttons: a close button is about a tab you are
+   already pointing at, and this one is about a page that does not exist yet. */
+.tab-new {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-left: 0.15rem;
+  border-radius: 5px;
+  color: var(--faint);
+  transition:
+    background-color var(--quick) var(--ease),
+    color var(--quick) var(--ease);
+}
+
+.tab-new:hover {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+.tab-new:active {
+  scale: 0.93;
 }
 
 /* --------------------------------------------------------------- surface */
@@ -2054,6 +2103,15 @@ button.crumb:hover {
 
 .menu-item.is-active {
   background: var(--raise);
+}
+
+/* Greyed, and still readable. An item that cannot run right now — Copy with
+   nothing selected, Paste where the browser will not hand over the clipboard —
+   keeps its place so the menu's shape never changes between openings, and
+   keeps its shortcut, which is the route that still works. */
+.menu-item:disabled {
+  color: var(--faint);
+  cursor: default;
 }
 
 .menu-hint {

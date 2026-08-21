@@ -22,7 +22,6 @@ a browser.
 | Window | frameless, custom caption buttons, remembered bounds | ordinary page |
 | Files out | native save/folder dialogs | File System Access API, else one zip |
 | Files in | native picker, whole folders walked in Rust | `<input type="file">`, `webkitRelativePath` |
-| PDF | platform print dialog | browser print dialog |
 | PDF reading | yes, WebView2's own viewer | no |
 | Backups | nightly `VACUUM INTO` Documents, last 30 kept | none — the note at the foot of the window says so |
 | Snapshot restore | yes | no |
@@ -365,6 +364,40 @@ opens four), H1/H2/H3, and the three list types. Every control is also a shortcu
 and an input rule. It stays where it is; the
 [selection bar](#4-the--and--menus-and-the-selection-bar) is the one that comes
 to the words.
+
+### The context menu
+
+[EditorContextMenu.tsx](src/ui/EditorContextMenu.tsx). Right-clicking the
+writing opens the app's own menu rather than the one the engine draws — five
+items: cut, copy, paste, duplicate this block, delete this block.
+
+Replacing the system menu is a decision that has to earn itself, because that
+menu works everywhere and this one has to. What earns it: WebView2's menu
+offers to *reload the page*, which in an app that **is** the page is an offer
+to close the library.
+
+- **Paste goes through the door Ctrl+V goes through.** It reads the clipboard
+  and then dispatches a real paste event at the editor, rather than inserting
+  the content itself, because the two are not the same path — a paste runs
+  `handlePaste` (image data becomes a stored asset, a `springboard://page/…`
+  becomes a live page link) and then `transformPastedHTML`, which is the strip
+  that keeps a web page's `style` and `class` off the nodes and unwraps a table
+  drawn round a layout. Inserting the HTML directly would be a second, dirtier
+  way in, and it would be the one nobody tested.
+- **Cut and copy go through `document.execCommand`**, which fires the editor's
+  own clipboard handlers, so a marked-up run lands on the clipboard as the same
+  HTML `Ctrl+C` puts there.
+- **The selection is read on mousedown, in the capture phase.** ProseMirror
+  answers the right button by moving the caret, so by the time `contextmenu`
+  arrives the selection somebody right-clicked *in order to copy* has already
+  gone, and the menu came up with cut and copy greyed at exactly the wrong
+  moment. Putting it back is a dispatch straight at the view rather than an
+  `editor.chain().focus()`: Tiptap's focus is deferred and re-derives the
+  selection from the DOM a frame later, which quietly undid the restore about
+  one time in three.
+- **Greyed rather than gone**, so the menu's shape never changes between
+  openings — and a greyed item keeps its shortcut beside it, which is the route
+  that still works.
 
 ### Status bar
 
@@ -753,6 +786,10 @@ apart. It was already written and reachable only from `@` inside the prose.
 
 [src/state/tabs.tsx](src/state/tabs.tsx), [TabStrip.tsx](src/ui/TabStrip.tsx).
 
+- **A `+` at the end of the strip**, where every browser keeps one, doing
+  exactly what `Ctrl+T` does — one function behind both, so they cannot come to
+  mean slightly different things. It is drawn even when no tabs are open, which
+  is when a way to start one is most worth having.
 - **Preview tabs**, VS Code style: clicking a page in the sidebar reuses one
   temporary tab, so browsing does not bury you. Editing it — or double-clicking —
   makes it permanent.
@@ -807,7 +844,12 @@ simply never fires and the rest works unchanged.
 
 [Welcome.tsx](src/ui/Welcome.tsx), [templates.ts](src/ui/templates.ts).
 
-A greeting with four starting points that open **templates**, not blank pages:
+A greeting with four starting points that open **templates**, not blank pages.
+**The mark at the top of the sidebar comes back here** — every app whose logo
+sits in a corner has taught that pressing it goes home, and this one had a home
+that was reachable only by relaunching. Going back unmounts the editor, which
+is the one way of leaving a page the autosave has no hook for, so the window
+flushes what is on screen before it takes the pane away.
 
 | | opens |
 |---|---|
@@ -991,8 +1033,12 @@ Images are embedded and scaled to the 6.5" text block (never blown up). Emoji ge
 their own run with an explicit `Segoe UI Emoji` font, or Word substitutes a box.
 Highlights map to Word's named highlight colours.
 
-**PDF** through the print stylesheet — the platform print dialog on the desktop,
-the browser's own otherwise. No PDF library.
+**PDF is not here.** It was the print stylesheet handed to the platform's own
+print dialog, and it is out of the app entirely while it is rebuilt — the
+format, the branch in the dialog and `printToPDF` on the bridge, in both
+shells. The stylesheet stays, because that is what it will be rebuilt on and
+because Ctrl+P is a thing a browser does whether or not this app has an
+opinion about it.
 
 **Markdown** as one file in tree order, or as a folder mirroring the tree — one
 numbered file per page (`01 …`, so the directory reads in tree order rather than
@@ -1052,6 +1098,14 @@ exactly the one file that was picked, by the person who picked it.
 button in the top bar. Three states rather than two, because following the
 machine is a real preference. It also sets `color-scheme`, so the engine draws
 the right scrollbars and form controls.
+
+**The guide** ([GuideDialog.tsx](src/ui/GuideDialog.tsx),
+[guide.ts](src/ui/guide.ts)) is on `F1` and on a `?` in the top bar. It was
+reachable only through a link inside Settings, which is the discoverability
+version of a locked room with the key inside: a list of thirty shortcuts is
+worth nothing if finding it needs a shortcut you would have had to read the
+list to know. It is a reference rather than a tour — searchable, sectioned,
+and openable mid-sentence, because that is when the question actually arrives.
 
 **Settings** ([SettingsDialog.tsx](src/ui/SettingsDialog.tsx)), `Ctrl+,` — two
 switches, on purpose, because anything that needs a switch usually needed a
@@ -1149,6 +1203,7 @@ reachable from here.
 | | |
 |---|---|
 | `Esc` | back to the writing, from anywhere |
+| right-click | cut, copy, paste, and the block under the pointer |
 | `Ctrl+K` | go to page — opens and closes the palette |
 | `Ctrl+\` or `Ctrl+/` | show or hide the sidebar |
 | `Ctrl+T` | new page in a new tab, caret in the title |
@@ -1164,6 +1219,7 @@ reachable from here.
 | `Ctrl+Space` | a sticky note in the rail |
 | `Ctrl+Shift+Y` | your writing — opens and closes the chart |
 | `Ctrl+,` | settings |
+| `F1` | the guide — opens and closes it |
 | `Ctrl+N` / `Ctrl+Shift+N` | new page after / inside the selected one |
 
 **Editor** — [keymap.ts](src/editor/keymap.ts) + StarterKit
@@ -1401,9 +1457,6 @@ Honest state, not a wish list.
   asserted structurally by the test suite; nobody has confirmed the navigation
   pane populates in the real application. That is the one export claim that is
   still unverified.
-- **PDF loses a click on Tauri.** WebView2 can print to a file, but Tauri exposes
-  no route to `PrintToPdfAsync`, so `printToPDF` opens the platform print dialog.
-  Closing the gap means calling WebView2's COM interface from Rust.
 - **The [README](README.md) is behind the build.** It still says light-only with
   the dark palette removed, and does not mention import, the `/` and `@` menus,
   page links, images, galleries, covers, stickers, highlights, the icon picker,
@@ -1440,7 +1493,7 @@ Honest state, not a wish list.
 |---|---|
 | `npm test` | storage, fractional ordering, markdown in and out — every round trip that used to lose something, and every construct another editor writes — tables both ways, docx structure including a real `w:tbl`, the gallery grouping rule, what a block is and where it goes, the writing chart's arithmetic, and the zip the browser build exports through, inflated back with `node:zlib` (`node --test`) |
 | `npm run test:rust` | the Rust store, ordering keys, the clipboard payloads, and a library from before covers existed (`cargo test`) |
-| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, opening a *second* tab and checking it was refused the library rather than allowed to race, dragging a block with real mouse events, reordering a gallery to prove a moved picture is not a copied one, and filling a table by keyboard: `Tab` across the cells, off the end into a new row, and inside a list in a cell where it has to nest instead |
+| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, right-clicking a selection and checking it is still held when the menu opens, going home by the mark and checking nothing typed on the way out was lost, opening a *second* tab and checking it was refused the library rather than allowed to race, dragging a block with real mouse events, reordering a gallery to prove a moved picture is not a copied one, and filling a table by keyboard: `Tab` across the cells, off the end into a new row, and inside a list in a cell where it has to nest instead |
 | `npm run desktop:smoke` | drives the packaged desktop build over CDP, and asserts the console is empty |
 | `npm run scale` | writes 122,400 words across 63 documents, times what a writer would feel, and verifies its own cleanup |
 | `npm run capture` | draws the running interface into an SVG with named, nested layers — artwork to animate from, not a feature of the app |
