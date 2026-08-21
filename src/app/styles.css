@@ -4576,6 +4576,52 @@ mark[data-tone='red'] {
 }
 
 /*
+  A run of words somebody wrote a comment about.
+
+  A dotted underline in the accent rather than a wash: a highlight is the
+  writer marking their own prose and the four colours are theirs to mean
+  things with, so a comment cannot take one without spending a colour that is
+  already spoken for. An underline sits under the words instead of over them
+  and leaves every one of those four free.
+*/
+.commented {
+  text-decoration: underline dotted var(--accent);
+  text-underline-offset: 0.22em;
+  text-decoration-thickness: 1.5px;
+}
+
+/* The line at the top of a comment, saying it is attached to something and
+   offering to take you there. Quiet: the note's text is the point, and this
+   is the address on the envelope. */
+.sticky-anchor {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0 0 0.3rem;
+  font-size: 0.6875rem;
+  color: rgb(10 10 10 / 55%);
+  text-align: left;
+  transition: opacity var(--quick) var(--ease);
+}
+
+.sticky-anchor:hover {
+  color: rgb(10 10 10 / 80%);
+  text-decoration: underline;
+}
+
+/* The words it was about are gone. Struck through rather than hidden — the
+   thought is still worth reading, and it is the writer's to throw away. */
+.sticky-anchor.is-orphaned {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.sticky-anchor.is-orphaned:hover {
+  text-decoration: line-through;
+}
+
+/*
   The browser build's own screens.
 
   Two of them stand in front of the app — a second tab, and a phone — and one

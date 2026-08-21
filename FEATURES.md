@@ -1317,14 +1317,44 @@ workspace.
 
 ---
 
-## 22. Sticky notes
+## 22. Sticky notes, and comments
 
 [StickyNotes.tsx](src/ui/StickyNotes.tsx), [stickies.ts](src/state/stickies.ts),
 and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
 
 - **`Ctrl+Space` puts one in the rail**, wherever the caret is, with the caret
   in it. Bound at the window rather than in the editor's keymap, so it works
-  from the sidebar and the title field too.
+  from the sidebar and the title field too. `Ctrl+Alt+M` — Word's chord — makes
+  a **comment** on the words being held instead, and both are in the
+  right-click menu.
+- **A comment is a sticky that points at something**, and that is the whole of
+  the difference: one nullable `anchor` column holding the id of a `comment`
+  mark in the prose ([Comment.ts](src/editor/Comment.ts)). Everything else —
+  the rail, the four papers, the debounced write, the promise that none of it
+  exports or counts — is shared, because both are the same object: the aside
+  you write *while* writing something else.
+- **The anchor is a mark, not a stored position.** A position recorded when the
+  comment was written is wrong the moment a paragraph is inserted above it; a
+  mark is carried by the text it is on, so it survives editing, reordering,
+  undo and a restore from history with nothing keeping it in step. `inclusive:
+  false`, so typing at either end of a commented run does not silently swallow
+  the new words.
+- **Only the id is in the document.** The comment's text stays in the table
+  beside the stickies, which is what keeps every promise the stickies made: it
+  does not export, does not count towards the page, and is not copied into a
+  revision snapshot every two minutes. What the document holds is a marked run
+  and a 36-character string.
+- **Commented words wear a dotted accent underline**, not a wash. The four
+  highlight colours are the writer's to mean things with, and a comment cannot
+  take one without spending a colour that is already spoken for.
+- **Deleting a comment takes the mark off the words**, wherever they ended up —
+  found by walking the document for the id rather than by a remembered range,
+  because by then the sentence may have been cut in half and half of it bolded.
+- **A comment whose words are gone says so** rather than quietly vanishing. It
+  is asked at the moment of the click, not tracked: the answer changes with
+  every keystroke and nothing should be watching a document to keep a badge
+  honest. The thought was still worth having, and throwing it away is the
+  writer's to decide.
 - **Not part of the document.** A sticky is the aside you write *while* writing
   something else — a name to check, an argument with yourself. So it does not
   export, does not count towards the page's words, is not in a revision, and

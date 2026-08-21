@@ -1897,10 +1897,12 @@ const rightClickTheLine = async () => {
 };
 
 await rightClickTheLine();
-check('it offers the clipboard and the block', await page.locator('.menu-item .menu-label').allInnerTexts(), [
+check('it offers the clipboard, the asides and the block', await page.locator('.menu-item .menu-label').allInnerTexts(), [
   'Cut',
   'Copy',
   'Paste',
+  'Comment on this',
+  'Sticky note',
   'Duplicate block',
   'Delete block',
 ]);
@@ -1934,6 +1936,55 @@ await rightClickTheLine();
 await page.locator('.menu-item', { hasText: 'Paste' }).first().click();
 await page.waitForTimeout(1000);
 check('paste goes in the way Ctrl+V does', (await bodyText()).includes('PASTED-BY-MENU'), true);
+
+// --------------------------------------------------- stickies and comments
+// One row in storage, one rail on screen, and one field between them: a
+// comment carries the id of a mark in the prose, a sticky carries null. What
+// is asserted here is the join — that the mark and the note survive a reload
+// together, and that throwing the note away takes the mark with it.
+section('stickies and comments');
+await body().click();
+await page.keyboard.press('Control+End');
+await page.keyboard.press('Enter');
+await page.keyboard.type('A sentence worth a note.');
+await page.waitForTimeout(300);
+await page.keyboard.press('Shift+Home');
+await page.waitForTimeout(200);
+await page.keyboard.press('Control+Alt+KeyM');
+await page.waitForTimeout(800);
+check('a comment lands in the rail', await page.locator('.sticky.is-comment').count(), 1);
+check('and the words wear the mark', (await page.locator('.body .commented').count()) > 0, true);
+await page.locator('.sticky.is-comment .sticky-text').fill('Is this the right word?');
+await page.waitForTimeout(800);
+
+await page.reload({ waitUntil: 'networkidle' });
+await dismissWelcome();
+await page.waitForTimeout(400);
+check('it survives a reload', await page.locator('.sticky.is-comment').count(), 1);
+check(
+  'with its text',
+  (await page.locator('.sticky.is-comment .sticky-text').inputValue()).includes('right word'),
+  true,
+);
+check('and its underline', (await page.locator('.body .commented').count()) > 0, true);
+await page.locator('.sticky-anchor').click();
+await page.waitForTimeout(400);
+check(
+  'and pressing it holds those words again',
+  await page.evaluate(() => (window.getSelection()?.toString() ?? '').length > 0),
+  true,
+);
+
+await body().click();
+await page.keyboard.press('Control+Space');
+await page.waitForTimeout(700);
+check('a sticky is still a sticky', await page.locator('.sticky:not(.is-comment)').count(), 1);
+await page.locator('.sticky.is-comment .sticky-remove').click();
+await page.waitForTimeout(700);
+check('throwing the comment away takes the mark with it', await page.locator('.body .commented').count(), 0);
+check('and leaves the sticky where it was', await page.locator('.sticky').count(), 1);
+await page.locator('.sticky .sticky-remove').click();
+await page.waitForTimeout(500);
 
 // ---------------------------------------------------------------- the guide
 // A list of thirty shortcuts is worth nothing if finding it needs a shortcut

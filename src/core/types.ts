@@ -120,6 +120,19 @@ export interface StickyNote {
   documentId: string;
   text: string;
   colour: StickyColour;
+  /**
+   * The id of the `comment` mark this note is attached to, or null for a
+   * sticky, which is attached to the page and to nothing in it.
+   *
+   * That one field is the whole difference between the two. Both are the aside
+   * you write *while* writing something else, and both are kept out of the
+   * document for the same reasons — neither exports, neither counts towards
+   * the words, neither is in a revision. A comment simply also points at a run
+   * of words, and the pointing is a mark in the prose rather than a position
+   * stored here: a paragraph inserted above it would make a stored position
+   * wrong, and a mark just moves.
+   */
+  anchor: string | null;
   createdAt: number;
   updatedAt: number;
 }

@@ -11,6 +11,7 @@ import { writingSettings } from '../state/writingSettings.ts';
 import { Shortcuts } from './keymap.ts';
 import { Caret } from './caret.ts';
 import { Gallery } from './Gallery.ts';
+import { Comment } from './Comment.ts';
 import { Highlight } from './Highlight.ts';
 import { Image } from './Image.ts';
 import { PageLink } from './PageLink.ts';
@@ -128,6 +129,9 @@ export const extensions = [
   TaskItem.configure({ nested: true }),
   SceneBreak,
   Highlight,
+  // Not a decoration a writer applies — the anchor half of a comment, whose
+  // text lives beside the stickies rather than in the document. See Comment.ts.
+  Comment,
   PageLink,
   Sticker,
   Image,

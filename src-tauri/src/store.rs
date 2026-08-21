@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS sticky_notes (
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   text        TEXT    NOT NULL DEFAULT '',
   colour      TEXT    NOT NULL,
+  anchor      TEXT,
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
 );
@@ -255,6 +256,16 @@ fn migrate(db: &Connection) -> rusqlite::Result<()> {
     if !columns.iter().any(|name| name == "cover_offset") {
         db.execute_batch("ALTER TABLE documents ADD COLUMN cover_offset INTEGER NOT NULL DEFAULT 50")?;
     }
+
+    // A library from before comments existed has stickies and no column to
+    // hang one on. Null is a sticky, which is what every row in it already is.
+    let mut sticky = db.prepare("PRAGMA table_info(sticky_notes)")?;
+    let sticky_columns: Vec<String> = sticky
+        .query_map([], |row| row.get::<_, String>("name"))?
+        .collect::<rusqlite::Result<_>>()?;
+    if !sticky_columns.iter().any(|name| name == "anchor") {
+        db.execute_batch("ALTER TABLE sticky_notes ADD COLUMN anchor TEXT")?;
+    }
     Ok(())
 }
 
@@ -350,7 +361,7 @@ impl Store {
     pub fn list_stickies(&self, document_id: &str) -> Result<Vec<StickyNote>> {
         self.with(|db| {
             let mut statement = db.prepare(
-                "SELECT id, document_id, text, colour, created_at, updated_at
+                "SELECT id, document_id, text, colour, anchor, created_at, updated_at
                  FROM sticky_notes WHERE document_id = ?1 ORDER BY created_at",
             )?;
             let rows = statement.query_map(params![document_id], |row| {
@@ -359,6 +370,7 @@ impl Store {
                     document_id: row.get("document_id")?,
                     text: row.get("text")?,
                     colour: row.get("colour")?,
+                    anchor: row.get("anchor")?,
                     created_at: row.get("created_at")?,
                     updated_at: row.get("updated_at")?,
                 })
@@ -370,8 +382,8 @@ impl Store {
     pub fn put_sticky(&self, note: StickyNote) -> Result<StickyNote> {
         self.with(|db| {
             db.execute(
-                "INSERT INTO sticky_notes (id, document_id, text, colour, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                "INSERT INTO sticky_notes (id, document_id, text, colour, anchor, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
                  ON CONFLICT(id) DO UPDATE SET
                    text = excluded.text, colour = excluded.colour,
                    updated_at = excluded.updated_at",
@@ -380,6 +392,7 @@ impl Store {
                     note.document_id,
                     note.text,
                     note.colour,
+                    note.anchor,
                     note.created_at,
                     note.updated_at
                 ],

@@ -58,6 +58,9 @@ pub struct RevisionRecord {
 /// A thought stuck to the side of a page. Mirrors `StickyNote` in
 /// `src/core/types.ts` — deliberately not part of the document, so it does not
 /// export, does not count towards the page's words, and is not in a revision.
+///
+/// `anchor` holds the id of the comment mark it is attached to, or None for a
+/// sticky, which is attached to the page and to nothing in it.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct StickyNote {
@@ -65,6 +68,8 @@ pub struct StickyNote {
     pub document_id: String,
     pub text: String,
     pub colour: String,
+    #[serde(default)]
+    pub anchor: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }

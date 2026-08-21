@@ -66,11 +66,17 @@ export function EditorContextMenu({
   x,
   y,
   onClose,
+  onComment,
+  onSticky,
 }: {
   editor: Editor;
   x: number;
   y: number;
   onClose: () => void;
+  /** Marks the held words and opens a note about them in the rail. */
+  onComment: (editor: Editor) => void;
+  /** A note about the page rather than about anything in it. */
+  onSticky: () => void;
 }) {
   const hasSelection = !editor.state.selection.empty;
 
@@ -91,6 +97,16 @@ export function EditorContextMenu({
       disabled: !CAN_READ_CLIPBOARD,
       onSelect: () => void pasteFromClipboard(editor),
     },
+    // The two asides, in the order you reach for them: one about these words,
+    // one about the page. Both land in the same rail and are the same row in
+    // storage — a comment is a sticky that points at something.
+    {
+      label: 'Comment on this',
+      hint: 'Ctrl+Alt+M',
+      disabled: !hasSelection,
+      onSelect: () => onComment(editor),
+    },
+    { label: 'Sticky note', hint: 'Ctrl+Space', onSelect: onSticky },
     {
       label: 'Duplicate block',
       hint: 'Alt+Shift+D',

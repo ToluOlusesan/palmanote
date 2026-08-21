@@ -121,6 +121,9 @@ export function EditorPane({
   historyOpen,
   onCloseHistory,
   flushRef,
+  editorRef,
+  onComment,
+  onSticky,
 }: {
   sessionBaseline: number;
   hostRef: RefObject<HTMLDivElement | null>;
@@ -132,6 +135,10 @@ export function EditorPane({
    * an unmount is the one leaving-the-page route the autosave has no hook for.
    */
   flushRef: RefObject<((snapshot: boolean) => Promise<void>) | null>;
+  /** Lent upwards for the same reason: the notes rail lives outside this pane. */
+  editorRef: RefObject<Editor | null>;
+  onComment: (editor: Editor) => void;
+  onSticky: () => void;
 }) {
   const library = useLibrary();
   const tabs = useTabs();
@@ -144,10 +151,12 @@ export function EditorPane({
 
   useEffect(() => {
     flushRef.current = flush;
+    editorRef.current = editor;
     return () => {
       flushRef.current = null;
+      editorRef.current = null;
     };
-  }, [flush, flushRef]);
+  }, [editor, editorRef, flush, flushRef]);
 
   // Editing a previewed document is what makes it worth a permanent tab.
   const promote = tabs.promote;
@@ -237,6 +246,8 @@ export function EditorPane({
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
+          onComment={onComment}
+          onSticky={onSticky}
         />
       )}
 

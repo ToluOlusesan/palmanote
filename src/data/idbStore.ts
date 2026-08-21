@@ -437,7 +437,10 @@ export class IdbStore implements PalmaNoteStore {
       db.transaction(STICKIES, 'readonly').objectStore(STICKIES).index('byDocument'),
       documentRange(documentId),
     );
-    return rows;
+    // A note written before comments existed has no `anchor` key at all, and
+    // `undefined` is not the same as "attached to nothing" to anything reading
+    // it. The SQLite shells get this from `ALTER TABLE`; this is that migration.
+    return rows.map((row) => ({ ...row, anchor: row.anchor ?? null }));
   }
 
   async putSticky(note: StickyNote): Promise<StickyNote> {

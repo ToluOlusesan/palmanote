@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS sticky_notes (
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   text        TEXT    NOT NULL DEFAULT '',
   colour      TEXT    NOT NULL,
+  -- The comment mark this note is attached to, or NULL for a sticky, which is
+  -- attached to the page and to nothing in it. See StickyNote in core/types.ts.
+  anchor      TEXT,
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
 );

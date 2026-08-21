@@ -21,8 +21,15 @@ const SETTLE_MS = 400;
 
 export interface Stickies {
   notes: StickyNote[];
-  /** Adds one to the rail and returns it, so the caller can focus it. */
-  add: () => StickyNote | null;
+  /**
+   * Adds one to the rail and returns it, so the caller can focus it.
+   *
+   * With an `anchor` it is a comment — the id of the mark in the prose it is
+   * about. Without one it is a sticky, attached to the page and to nothing in
+   * it. Everything after this point treats them identically, which is the
+   * point of them being one thing.
+   */
+  add: (anchor?: string | null) => StickyNote | null;
   patch: (id: string, change: Partial<Pick<StickyNote, 'text' | 'colour'>>) => void;
   remove: (id: string) => void;
 }
@@ -81,13 +88,14 @@ export function useStickies(documentId: string | null): Stickies {
     );
   }, []);
 
-  const add = useCallback((): StickyNote | null => {
+  const add = useCallback((anchor: string | null = null): StickyNote | null => {
       if (!documentId) return null;
       const now = Date.now();
       const note: StickyNote = {
         id: crypto.randomUUID(),
         documentId,
         text: '',
+        anchor,
         // Cycled rather than random, so a page of them comes out looking like
         // a set instead of a bag of sweets.
         colour: STICKY_COLOURS[notes.length % STICKY_COLOURS.length] as StickyColour,

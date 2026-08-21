@@ -9,8 +9,11 @@ import {
   Sidebar,
   Sun,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import type { Editor } from '@tiptap/react';
+
+import { clearComment, selectComment } from '../editor/Comment.ts';
 import { isDesktop } from '../data/bridge.ts';
 import { ActivityDialog } from '../ui/ActivityDialog.tsx';
 import { LibraryProvider, useLibrary } from '../state/library.tsx';
@@ -85,7 +88,41 @@ function Workspace() {
   // Owned here rather than in the editor pane: the rail is a fixed column
   // beside the paper, not something inside it, so it has to live outside the
   // element that scrolls.
-  const stickies = useStickies(library.selectedId);
+  const rawStickies = useStickies(library.selectedId);
+
+  /**
+   * Removing a comment has to take its mark out of the prose as well, or the
+   * words stay underlined with nothing behind them. Wrapped here rather than
+   * inside the hook, because the hook is about storage and knows nothing about
+   * a document — and a sticky, which has no anchor, falls straight through.
+   */
+  const stickies = useMemo(
+    () => ({
+      ...rawStickies,
+      remove: (id: string) => {
+        const note = rawStickies.notes.find((candidate) => candidate.id === id);
+        if (note?.anchor && editorRef.current) clearComment(editorRef.current, note.anchor);
+        rawStickies.remove(id);
+      },
+    }),
+    [rawStickies],
+  );
+
+  /**
+   * A note about *these words*: mark them, then open a note in the rail
+   * carrying the mark's id. The id is the only thing that goes into the
+   * document — the comment's text stays beside the stickies, so it does not
+   * export, does not count towards the page, and is not copied into every
+   * revision snapshot.
+   */
+  const commentOnSelection = useCallback(
+    (editor: Editor) => {
+      const id = crypto.randomUUID();
+      editor.chain().focus().setMark('comment', { id }).run();
+      stickies.add(id);
+    },
+    [stickies],
+  );
 
   useEffect(() => {
     if (ready && sessionBaseline === null) setSessionBaseline(totalWords);
@@ -93,6 +130,12 @@ function Workspace() {
 
   /** The open editor's save, lent upwards by EditorPane while it is mounted. */
   const flushRef = useRef<((snapshot: boolean) => Promise<void>) | null>(null);
+  /**
+   * And the editor itself, for the same reason: the rail of notes is rendered
+   * here, outside the scrolling paper, but a *comment* in that rail is about
+   * words that only the editor can find.
+   */
+  const editorRef = useRef<Editor | null>(null);
 
   const focusEditor = useCallback(() => {
     hostRef.current?.querySelector<HTMLElement>('.body')?.focus();
@@ -256,6 +299,14 @@ function Workspace() {
         stickies.add();
         return;
       }
+      // A comment on the held words — Word's chord for the same thing. Tested
+      // separately from `ctrl` above, which deliberately excludes Alt.
+      if (event.ctrlKey && event.altKey && key.toLowerCase() === 'm') {
+        event.preventDefault();
+        const editor = editorRef.current;
+        if (editor && !editor.state.selection.empty) commentOnSelection(editor);
+        return;
+      }
       // Not Ctrl+Shift+W, however well it fits "writing": the tab-close above
       // does not check Shift, so that chord already means something and would
       // mean it first. Toggles, like the palette — the chord that summons it
@@ -294,6 +345,7 @@ function Workspace() {
     return () => window.removeEventListener('keydown', onKey);
   }, [
     canBrowseHistory,
+    commentOnSelection,
     focusEditor,
     goBack,
     goForward,
@@ -412,7 +464,14 @@ function Workspace() {
         </div>
         {/* Beside the paper rather than on it, and outside the element that
             scrolls, so the notes hold still while the prose moves. */}
-        {ready && !greeting && !pdf && <StickyNotes stickies={stickies} />}
+        {ready && !greeting && !pdf && (
+          <StickyNotes
+            stickies={stickies}
+            onGoToAnchor={(anchor) =>
+              editorRef.current ? selectComment(editorRef.current, anchor) : false
+            }
+          />
+        )}
 
         <div className="editor-host" ref={hostRef}>
           {pdf && <PdfReader file={pdf} onClose={() => setPdf(null)} />}
@@ -426,6 +485,9 @@ function Workspace() {
               historyOpen={historyOpen}
               onCloseHistory={() => setHistoryOpen(false)}
               flushRef={flushRef}
+              editorRef={editorRef}
+              onComment={commentOnSelection}
+              onSticky={() => stickies.add()}
             />
           )}
         </div>

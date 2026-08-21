@@ -234,6 +234,24 @@ export const GUIDE: GuideSection[] = [
     ],
   },
   {
+    id: 'notes',
+    title: 'Stickies and comments',
+    intro:
+      'Two ways to write something down beside the writing rather than in it. A sticky is about the page; a comment is about particular words. Both live in the rail down the right, and neither is part of what you are writing.',
+    rows: [
+      { keys: 'Ctrl + Space', what: 'A sticky note in the rail, with the caret already in it' },
+      { keys: 'Ctrl + Alt + M', what: 'A comment on the words you are holding' },
+      { keys: 'Right-click', what: 'Both are in the menu — “Sticky note” and “Comment on this”' },
+      { what: 'Commented words wear a dotted underline. A comment shows “in the page” — press it to go to them.' },
+      { what: 'Four papers to choose from, on any note. Press one of the dots at the foot.' },
+      { keys: 'Escape', what: 'Back to the prose, from a note' },
+      { keys: 'Backspace', what: 'In an empty note, throws it away' },
+      { what: 'Deleting a comment also takes the underline off the words.' },
+    ],
+    aside:
+      'Neither exports, neither counts towards the page’s word count, and neither is kept in a revision — they are the aside you write while writing something else, not part of the thing itself. A comment whose words you later delete says so rather than quietly vanishing: the thought was still worth having, and throwing it away is yours to decide. Notes stack in the order you wrote them and cannot be dragged, because a thought parked over the third paragraph is lost the moment you edit above it.',
+  },
+  {
     id: 'history',
     title: 'History',
     intro:
