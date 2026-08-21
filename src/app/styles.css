@@ -4572,7 +4572,10 @@ mark[data-tone='red'] {
 .webnote {
   position: fixed;
   right: 0.9rem;
-  bottom: 0.9rem;
+  /* Clear of the status bar rather than across it: the word count is the one
+     thing on this screen a writer looks at while writing, and a note about
+     storage must not be sitting on it. */
+  bottom: calc(var(--status) + 0.6rem);
   left: 0.9rem;
   z-index: 30;
   display: flex;

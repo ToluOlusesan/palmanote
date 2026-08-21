@@ -20,12 +20,13 @@ a browser.
 | Shell | Tauri 2 over WebView2, SQLite in a Rust process | plain page |
 | Storage | `%APPDATA%/com.springboard.app/springboard.sqlite` | IndexedDB |
 | Window | frameless, custom caption buttons, remembered bounds | ordinary page |
-| Files out | native save/folder dialogs | File System Access API, else downloads |
+| Files out | native save/folder dialogs | File System Access API, else one zip |
 | Files in | native picker, whole folders walked in Rust | `<input type="file">`, `webkitRelativePath` |
 | PDF | platform print dialog | browser print dialog |
 | PDF reading | yes, WebView2's own viewer | no |
-| Backups | nightly `VACUUM INTO` Documents, last 30 kept | none |
+| Backups | nightly `VACUUM INTO` Documents, last 30 kept | none — the note at the foot of the window says so |
 | Snapshot restore | yes | no |
+| Two of it at once | one window, and the question does not arise | the second tab is declined |
 
 The app was called Springboard until 13 August 2026, and every name that
 *addresses* something keeps that spelling on purpose: the bundle identifier
@@ -41,6 +42,54 @@ The seam is [src/data/bridge.ts](src/data/bridge.ts) — twenty-odd methods,
 resolved once at load. Nothing above that file knows which shell it is in.
 [tauriBridge.ts](src/data/tauriBridge.ts) implements it over `invoke`;
 [electron/](electron/) still holds the older implementation of the same contract.
+
+### The browser build
+
+The same source, served as static files, published from
+[.github/workflows/web.yml](.github/workflows/web.yml) on every push to `main`
+and living at **<https://toluolusesan.github.io/palmanote/>**. `base` is `./`
+in [vite.config.ts](vite.config.ts) and every path in
+[index.html](index.html) goes through `%BASE_URL%`, so the same `dist/` works
+at a domain root, in a subdirectory, and over `file://` in the desktop shell.
+There is no server, no API and no build step at request time; moving it to
+another host is a copy.
+
+It is the whole app rather than a preview of one — but a tab is not a window
+and a browser is not a disk, and four things follow from that.
+[WebShell.tsx](src/ui/WebShell.tsx) holds the three that are visible, and every
+branch is behind `isDesktop`, so the installer builds exactly what it built
+before any of this existed.
+
+- **A second tab is declined.** Two tabs each hold the whole library in memory
+  and each autosave it back, so the second write wins — silently, with nothing
+  in the history to recover, because the losing tab never knew it lost. A Web
+  Lock in [soleTab.ts](src/state/soleTab.ts) settles it *above* the providers,
+  so a tab that will not be allowed to write never opens the library at all.
+  When the first tab closes, the second is offered a reload rather than handed
+  the library: its copy is whatever it read at boot, and taking over with that
+  in hand is the same overwrite by a slower route. A browser too old for Web
+  Locks is let through — the race is a risk, and locking someone out of their
+  own pages over a risk is worse than the risk.
+- **An export leaves as one file.** Chromium hands the File System Access API a
+  real folder; Firefox and Safari have neither, and one `<a download>` per file
+  makes a forty-page export forty prompts. [zip.ts](src/data/zip.ts) is a zip
+  writer of our own — deflate through `CompressionStream`, stored where that is
+  missing, no dependency — and [zip.test.ts](src/data/zip.test.ts) reads the
+  archives back with `node:zlib` rather than with itself, because an archive
+  only its own author can open is not an export.
+- **A phone is told, and then let through.** Below 44rem the sidebar, the tabs
+  and the margin the block handle lives in have nowhere to go. The screen says
+  so and offers the door anyway: someone who wants to read a page they wrote on
+  their laptop has every right to, and a link that refuses to open is not a
+  link. Asked once at boot rather than watched — a live media query would
+  unmount the app mid-paragraph the moment a window was dragged narrow.
+- **Where the work is kept is said once**, at the foot of the window, before
+  there is anything to lose. `navigator.storage.persist()` is requested at boot
+  ([library.tsx](src/state/library.tsx)) and a manifest makes the app
+  installable, which is the other half of the same argument: a browser grants
+  persistent storage to an app someone installed, and persistent storage is the
+  difference between a library that survives a quiet fortnight and one the
+  browser is within its rights to evict.
 
 ### Motion
 
@@ -811,7 +860,11 @@ creates one blank page rather than showing an empty room.
   writes started in `beforeunload` are not guaranteed to finish; `localStorage`
   writes are.
 - `navigator.storage.persist()` is requested at boot so a browser does not evict
-  the manuscript under storage pressure.
+  the manuscript under storage pressure. It is a request rather than a
+  guarantee — the browser decides, and it decides more readily for an app that
+  has been installed, which is what the manifest is for. Everything below this
+  line is the desktop build's, and the browser build has none of it: that is
+  what the note at the foot of the window is admitting.
 - SQLite runs in WAL with `synchronous = NORMAL` and foreign keys on.
 - **Nightly `VACUUM INTO`** to `Documents/Springboard Snapshots`, once shortly
   after launch as well so a machine that is never left on still gets one. The
@@ -951,6 +1004,14 @@ and linked with ordinary relative paths, `palmanote-export.json` holding every
 document and every revision, and a `README.txt` explaining the folder to someone
 who has never heard of this app. A person with that folder can rebuild the
 archive without PalmaNote existing.
+
+**How the files land** is [files.ts](src/data/files.ts), and nothing above it
+knows which of the three ways ran: a native save dialog in the desktop shell, a
+real folder through the File System Access API in Chromium, or a download. That
+last one used to be one prompt per file, which made a folder export of a
+library an argument with the browser; it is now a single `.zip` of the same
+shape, and only a genuinely single-file export — one `.docx`, one `.md` with no
+pictures — still comes down as itself.
 
 Correctness is asserted mechanically in
 [docx.test.ts](src/export/docx.test.ts): generated files are unzipped and checked
@@ -1368,9 +1429,9 @@ Honest state, not a wish list.
 
 | | |
 |---|---|
-| `npm test` | storage, fractional ordering, markdown in and out — every round trip that used to lose something, and every construct another editor writes — tables both ways, docx structure including a real `w:tbl`, the gallery grouping rule, what a block is and where it goes, and the writing chart's arithmetic (`node --test`) |
+| `npm test` | storage, fractional ordering, markdown in and out — every round trip that used to lose something, and every construct another editor writes — tables both ways, docx structure including a real `w:tbl`, the gallery grouping rule, what a block is and where it goes, the writing chart's arithmetic, and the zip the browser build exports through, inflated back with `node:zlib` (`node --test`) |
 | `npm run test:rust` | the Rust store, ordering keys, the clipboard payloads, and a library from before covers existed (`cargo test`) |
-| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, dragging a block with real mouse events, reordering a gallery to prove a moved picture is not a copied one, and filling a table by keyboard: `Tab` across the cells, off the end into a new row, and inside a list in a cell where it has to nest instead |
+| `npm run smoke` | drives the browser build in real Chrome — including killing a tab mid-sentence and checking the sentence survived, opening a *second* tab and checking it was refused the library rather than allowed to race, dragging a block with real mouse events, reordering a gallery to prove a moved picture is not a copied one, and filling a table by keyboard: `Tab` across the cells, off the end into a new row, and inside a list in a cell where it has to nest instead |
 | `npm run desktop:smoke` | drives the packaged desktop build over CDP, and asserts the console is empty |
 | `npm run scale` | writes 122,400 words across 63 documents, times what a writer would feel, and verifies its own cleanup |
 | `npm run capture` | draws the running interface into an SVG with named, nested layers — artwork to animate from, not a feature of the app |
