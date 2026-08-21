@@ -17,7 +17,7 @@ import { HistoryDialog } from './HistoryDialog.tsx';
 import { AddCoverButton, PageCover } from './PageCover.tsx';
 import { SelectionBar } from './SelectionBar.tsx';
 import { SlashMenu } from './SlashMenu.tsx';
-import { Toolbar } from './Toolbar.tsx';
+import { Toolbar, type RailControl } from './Toolbar.tsx';
 import { formatCount } from './TreePane.tsx';
 
 /**
@@ -66,7 +66,7 @@ function useDebouncedTitle(id: string | null, stored: string) {
  * The formatting controls share this row rather than taking one of their own,
  * so nothing was given up to make room for them.
  */
-function PageBar({ editor }: { editor: Editor | null }) {
+function PageBar({ editor, rail }: { editor: Editor | null; rail?: RailControl }) {
   const { trail, canGoBack, canGoForward, goBack, goForward, select } = useLibrary();
   return (
     <header className="pagebar">
@@ -110,7 +110,7 @@ function PageBar({ editor }: { editor: Editor | null }) {
         })}
       </nav>
 
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} rail={rail} />
     </header>
   );
 }
@@ -124,6 +124,7 @@ export function EditorPane({
   editorRef,
   onComment,
   onSticky,
+  rail,
 }: {
   sessionBaseline: number;
   hostRef: RefObject<HTMLDivElement | null>;
@@ -139,6 +140,7 @@ export function EditorPane({
   editorRef: RefObject<Editor | null>;
   onComment: (editor: Editor) => void;
   onSticky: () => void;
+  rail: RailControl;
 }) {
   const library = useLibrary();
   const tabs = useTabs();
@@ -172,7 +174,7 @@ export function EditorPane({
   if (!doc) {
     return (
       <main className="editor">
-        <PageBar editor={null} />
+        <PageBar editor={null} rail={rail} />
         <div className="empty">
           <p>No page open.</p>
           <button type="button" className="ghost" onClick={() => void library.create({ parentId: null })}>
@@ -187,7 +189,7 @@ export function EditorPane({
 
   return (
     <main className="editor">
-      <PageBar editor={editor} />
+      <PageBar editor={editor} rail={rail} />
 
       {/* Outside the sheet on purpose: the measure is 40rem because that is
           how long a line should be to read, and a banner is not a line. */}

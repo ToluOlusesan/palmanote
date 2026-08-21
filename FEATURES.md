@@ -1082,6 +1082,15 @@ library an argument with the browser; it is now a single `.zip` of the same
 shape, and only a genuinely single-file export — one `.docx`, one `.md` with no
 pictures — still comes down as itself.
 
+**The Word file is packed as an `ArrayBuffer`.** It was a Node `Buffer`, which
+a browser does not have, so the first person to export a Word document from the
+web build got "nodebuffer is not supported by this platform" — and nothing
+caught it, because every test of the docx writer runs in Node, where a Buffer is
+exactly what you get. `npm run smoke` now presses the button rather than only
+reading the dialog: it takes `showDirectoryPicker` away so the export goes down
+the downloads route Firefox and Safari take, waits for the file, and checks it
+begins `PK`. A check that reads a dialog proves the dialog.
+
 Correctness is asserted mechanically in
 [docx.test.ts](src/export/docx.test.ts): generated files are unzipped and checked
 for heading style ids rather than run formatting, a `numbering.xml` that exists
@@ -1375,8 +1384,11 @@ and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
   deleting it takes nothing with it. Keeping them as nodes in the ProseMirror
   doc would have made every one of those false, which is why they are a table.
 - **The rail can be put away** — `Ctrl+Shift+Space`, a control at the top of
-  the rail, or the note button in the top bar, which is also how it comes back
-  and says how many notes are waiting behind it. There is a thin strip at the
+  the rail, or the note button in the **page bar**, beside bold and the
+  headings, which is also how it comes back and says how many notes are waiting
+  behind it. It sat in the window's top bar for a version, next to settings and
+  the theme, which is where the *window's* switches live; this is not one of
+  those. It is about the page in front of you. There is a thin strip at the
   window's edge too, mirroring the sidebar's, but a hidden control is a poor
   way to undo hiding something. `Ctrl+Space` opens the rail before adding to
   it, because writing into a closed drawer is not a feature. The state sits

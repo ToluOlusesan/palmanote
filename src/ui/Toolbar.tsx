@@ -1,6 +1,7 @@
 import {
   Highlighter,
   ListBullets,
+  NoteBlank,
   ListChecks,
   ListNumbers,
   SquaresFour,
@@ -26,7 +27,14 @@ import { activeHighlight, HIGHLIGHT_LABELS, HIGHLIGHT_TONES } from '../editor/Hi
  * keyboard shortcut and, for the marks and lists, an input rule — this is the
  * discoverable copy, not the primary route.
  */
-export function Toolbar({ editor }: { editor: Editor | null }) {
+export interface RailControl {
+  visible: boolean;
+  /** Shown in the tooltip when it is put away, so nothing is silently waiting. */
+  count: number;
+  toggle: () => void;
+}
+
+export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailControl }) {
   // Marks toggle per keystroke, so the row has to re-render on every
   // transaction to keep its pressed states honest.
   const [, bump] = useState(0);
@@ -105,6 +113,32 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
       )}
       {button('Task list', '[] ', editor.isActive('taskList'), ListChecks, () =>
         editor.chain().focus().toggleTaskList().run(),
+      )}
+
+      {/* The rail of notes and comments, at the end of the row.
+          It sat in the window's top bar beside settings and the theme, which
+          is where the *window's* switches live — and this is not one of those.
+          It belongs with bold and the headings: it is about the page you are
+          looking at, and the notes are things you made in it. */}
+      {rail && (
+        <>
+          <span className="tool-sep" />
+          <button
+            type="button"
+            className={`tool${rail.visible ? ' is-active' : ''}`}
+            aria-label={rail.visible ? 'Hide notes' : 'Show notes'}
+            aria-pressed={rail.visible}
+            title={
+              rail.visible
+                ? 'Hide notes — Ctrl+Shift+Space'
+                : `Show notes${rail.count > 0 ? ` (${rail.count})` : ''} — Ctrl+Shift+Space`
+            }
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={rail.toggle}
+          >
+            <NoteBlank size={17} weight={rail.visible ? 'fill' : 'regular'} />
+          </button>
+        </>
       )}
 
       {/* Only when the selection is images and nothing else. A control that is

@@ -5,7 +5,6 @@ import {
   Gear,
   GridFour,
   Moon,
-  NoteBlank,
   Question,
   Sidebar,
   Sun,
@@ -427,24 +426,11 @@ function Workspace() {
           >
             <GridFour size={18} />
           </button>
-          {/* The rail's own switch, on the bar. The strip at the window's edge
-              brings it back too, but a hidden control is a poor way to undo
-              hiding something — this one is where you can see it, and it says
-              how many notes are waiting behind it. */}
-          <button
-            type="button"
-            className="chrome-btn"
-            aria-label={railVisible ? 'Hide notes' : 'Show notes'}
-            aria-pressed={railVisible}
-            title={
-              railVisible
-                ? 'Hide notes — Ctrl+Shift+Space'
-                : `Show notes${stickies.notes.length > 0 ? ` (${stickies.notes.length})` : ''} — Ctrl+Shift+Space`
-            }
-            onClick={() => setRailVisible(!railVisible)}
-          >
-            <NoteBlank size={18} weight={railVisible ? 'fill' : 'regular'} />
-          </button>
+          {/* The notes switch is *not* here. It sat beside settings and the
+              theme for a version, which is where the window's own switches
+              live — and it is not one of those. It is in the page bar with
+              bold and the headings, because it is about the page in front of
+              you. See Toolbar.tsx. */}
           {/* The guide, on the bar rather than two levels down inside Settings.
               A list of thirty shortcuts is worth nothing if finding it needs a
               shortcut you would have had to read the list to know. */}
@@ -532,7 +518,15 @@ function Workspace() {
               flushRef={flushRef}
               editorRef={editorRef}
               onComment={commentOnSelection}
-              onSticky={() => stickies.add()}
+              onSticky={() => {
+                setRailVisible(true);
+                stickies.add();
+              }}
+              rail={{
+                visible: railVisible,
+                count: stickies.notes.length,
+                toggle: () => setRailVisible(!railVisible),
+              }}
             />
           )}
         </div>

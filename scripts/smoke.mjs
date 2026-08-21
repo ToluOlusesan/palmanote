@@ -8,13 +8,16 @@
  * Override the browser with CHROME_PATH if Chrome is somewhere unusual.
  */
 
+import { readFile } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
 
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const URL = process.env.PALMANOTE_URL ?? 'http://localhost:5273/';
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+// Downloads are accepted so the export section can press the button and look
+// at what actually came out, rather than trusting the dialog that offered it.
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
 // Reading the clipboard is something only this test does — the app writes to it
 // on a click, which needs no permission. Granting it here is what lets a check
 // look at what "Copy link" actually put there.
@@ -1988,11 +1991,11 @@ await page.waitForTimeout(400);
 check('the rail can be put away', await page.locator('.stickies').count(), 0);
 check('and leaves a way back at the edge', await page.locator('.rail-handle').count(), 1);
 check(
-  'and a visible one on the bar, which says how many are waiting',
-  await page.locator('.chrome-btn[aria-label="Show notes"]').getAttribute('title'),
+  'and a visible one in the page bar, which says how many are waiting',
+  await page.locator('.tool[aria-label="Show notes"]').getAttribute('title'),
   'Show notes (2) — Ctrl+Shift+Space',
 );
-await page.locator('.chrome-btn[aria-label="Show notes"]').click();
+await page.locator('.tool[aria-label="Show notes"]').click();
 await page.waitForTimeout(400);
 check('which brings the notes back', await page.locator('.sticky').count(), 2);
 await page.locator('.rail-handle').count();
@@ -2076,6 +2079,45 @@ check(
   await page.locator('.dialog legend').allInnerTexts(),
   ['As'],
 );
+/*
+  And then actually run one.
+
+  Everything above only opened the dialog and read it, which is exactly how a
+  Word export could ship broken: `Packer.toBuffer` asks the zip writer for a
+  Node Buffer, every test of the docx writer runs in Node where that is what
+  you get, and in a browser it threw "nodebuffer is not supported by this
+  platform" the moment anybody pressed the button. A check that reads a dialog
+  proves the dialog. This presses it.
+*/
+/*
+  Down the downloads route rather than the folder picker.
+
+  Chromium has `showDirectoryPicker`, and files.ts rightly prefers it — a real
+  folder beats a download. But a directory picker cannot open in a headless
+  browser, so the export would sit there waiting for a dialog that will never
+  appear. Taking the function away puts this on the path Firefox and Safari
+  take, which is the one that also has to hold up.
+*/
+await page.evaluate(() => {
+  delete window.showDirectoryPicker;
+});
+await page.locator('.dialog .choice', { hasText: 'Word document' }).locator('input').check();
+await page.locator('.dialog .choice').filter({ hasText: 'This page — ' }).locator('input').check();
+await page.waitForTimeout(200);
+const saving = page.waitForEvent('download', { timeout: 20000 });
+await page.locator('.dialog .btn.is-primary').click();
+const saved = await saving;
+check('a Word export really comes out', saved.suggestedFilename().endsWith('.docx'), true);
+// A .docx is a zip, so the first two bytes are PK. An error page or an empty
+// file would sail past a check on the name alone.
+const path = await saved.path();
+check(
+  'and it is a real file rather than a name',
+  path ? (await readFile(path)).subarray(0, 2).toString('latin1') : '',
+  'PK',
+);
+await page.waitForTimeout(400);
+
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 check('escape closes it', await page.locator('.dialog').count(), 0);

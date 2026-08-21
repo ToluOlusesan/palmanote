@@ -160,7 +160,20 @@ export async function docxFromWalk(
     ],
   });
 
-  return Packer.toBuffer(document).then((buffer) => new Uint8Array(buffer));
+  /*
+    `toArrayBuffer`, not `toBuffer`.
+
+    `toBuffer` asks the zip writer for a Node Buffer, which a browser does not
+    have — the export died with "nodebuffer is not supported by this platform"
+    the first time somebody exported a Word file from the web build. It went
+    unnoticed because every test of this file runs in Node, where a Buffer is
+    exactly what you get.
+
+    An ArrayBuffer is the one output both platforms have, so this is a single
+    path rather than a branch — and a branch is what would have let the two
+    drift apart again.
+  */
+  return Packer.toArrayBuffer(document).then((buffer) => new Uint8Array(buffer));
 }
 
 // --------------------------------------------------------------- structure
