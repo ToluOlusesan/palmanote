@@ -31,6 +31,7 @@ import { SettingsDialog } from '../ui/SettingsDialog.tsx';
 import { StickyNotes } from '../ui/StickyNotes.tsx';
 import { TabStrip } from '../ui/TabStrip.tsx';
 import { TreePane } from '../ui/TreePane.tsx';
+import { Tutorial, tourSeen } from '../ui/Tutorial.tsx';
 import { Palette } from '../ui/Palette.tsx';
 import { Welcome } from '../ui/Welcome.tsx';
 import { WindowControls } from '../ui/WindowControls.tsx';
@@ -84,6 +85,10 @@ function Workspace() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  // Read once, at mount: whether this is somebody's first time here. Shown
+  // only after the greeting is answered, because the tour is about the room
+  // and the greeting is the door.
+  const [touring, setTouring] = useState(() => !tourSeen());
   const [pdf, setPdf] = useState<OpenPdf | null>(null);
   const theme = useTheme();
   // Owned here rather than in the editor pane: the rail is a fixed column
@@ -532,13 +537,26 @@ function Workspace() {
         </div>
       </div>
 
+      {/* Last in the tree so it is over everything, and only once there is
+          something to point at: it teaches the writing surface, and the
+          greeting is still covering it until it is answered. */}
+      {touring && ready && !greeting && !pdf && <Tutorial onDone={() => setTouring(false)} />}
+
       {settingsOpen && (
         <SettingsDialog
           onClose={() => setSettingsOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
         />
       )}
-      {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
+      {guideOpen && (
+        <GuideDialog
+          onClose={() => setGuideOpen(false)}
+          onReplayTour={() => {
+            setGuideOpen(false);
+            setTouring(true);
+          }}
+        />
+      )}
       {activityOpen && <ActivityDialog onClose={() => setActivityOpen(false)} />}
       {paletteOpen && (
         <Palette
@@ -551,8 +569,9 @@ function Workspace() {
         />
       )}
       {/* Where the work is kept — said once, in the build where the answer is
-          not "a file you could point at". */}
-      {!isDesktop && ready && <StorageNote onExport={() => setExporting(true)} />}
+          not "a file you could point at". Not while the tour is up: two things
+          introducing themselves at once is neither of them being read. */}
+      {!isDesktop && ready && !touring && <StorageNote onExport={() => setExporting(true)} />}
 
       {importing && (
         <ImportDialog

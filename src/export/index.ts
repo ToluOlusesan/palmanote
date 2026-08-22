@@ -32,6 +32,16 @@ export interface ExportRequest {
   scope: ExportScope;
   preset: DocxPreset;
   details: ManuscriptDetails;
+  /**
+   * What to call the file, without an extension.
+   *
+   * Optional, and where it is absent the walk names itself — the page's title
+   * for one page, `PalmaNote` for the whole library. The dialog always sends
+   * one, because on the web there is no save dialog to correct a name in: the
+   * download simply takes whatever it was given, so the writer has to be able
+   * to see and change it *before* pressing the button.
+   */
+  name?: string;
 }
 
 export interface ExportResult {
@@ -85,7 +95,7 @@ export async function buildExport(
     raw,
     new Map([...assets].map(([id, asset]) => [id, asset.extension])),
   );
-  const base = safeFileName(walk.title, 'PalmaNote');
+  const base = safeFileName(request.name?.trim() || walk.title, 'PalmaNote');
 
   switch (request.format) {
     case 'docx': {

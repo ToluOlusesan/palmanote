@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { GUIDE } from './guide.ts';
+import { forgetTour } from './Tutorial.tsx';
 
 /**
  * What everything does, in one place you can open mid-sentence.
@@ -14,7 +15,15 @@ import { GUIDE } from './guide.ts';
  * Escape closes it, and stops there rather than reaching the window handler,
  * which would take the writer somewhere they did not ask to go.
  */
-export function GuideDialog({ onClose }: { onClose: () => void }) {
+export function GuideDialog({
+  onClose,
+  onReplayTour,
+}: {
+  onClose: () => void;
+  /** Runs the first-launch tour again. Offered here because this is where
+   *  somebody who has forgotten how the app works comes looking. */
+  onReplayTour?: () => void;
+}) {
   const [chosen, setChosen] = useState(GUIDE[0]?.id ?? '');
   const [query, setQuery] = useState('');
   const body = useRef<HTMLDivElement>(null);
@@ -121,6 +130,18 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
 
         <div className="dialog-foot">
           <span className="dialog-note">Ctrl + , opens settings. Escape always goes back to the writing.</span>
+          {onReplayTour && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                forgetTour();
+                onReplayTour();
+              }}
+            >
+              Show me around again
+            </button>
+          )}
           <button type="button" className="btn is-primary" onClick={onClose}>
             Done
           </button>

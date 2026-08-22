@@ -858,6 +858,26 @@ simply never fires and the rest works unchanged.
 
 [Welcome.tsx](src/ui/Welcome.tsx), [templates.ts](src/ui/templates.ts).
 
+### The first launch
+
+[Tutorial.tsx](src/ui/Tutorial.tsx). Five coachmarks, each dimming the window
+except a cutout around the actual control it is about — the sidebar, the tab
+strip, the page, the notes switch, the guide. Taught on the real interface
+rather than on a drawing of it, because a tour that draws its own picture of a
+button teaches you a picture.
+
+It ends by handing over to the guide rather than trying to be one: five cards
+cannot hold thirty shortcuts and should not try. This teaches the shape of the
+room; `F1` holds the detail for the rest of the time you use the app, and
+"Show me around again" in the guide's footer puts the tour back.
+
+Shown once, after the greeting is answered — the tour is about the writing
+surface and the greeting is still covering it until then. Leaving is one press
+and is offered on every card, because a tour you cannot get out of is a modal
+dialog wearing a friendly hat. The browser build's note about storage waits
+until the tour is done: two things introducing themselves at once is neither of
+them being read.
+
 A greeting with four starting points that open **templates**, not blank pages.
 **The mark at the top of the sidebar comes back here** — every app whose logo
 sits in a corner has taught that pressing it goes home, and this one had a home
@@ -1073,6 +1093,16 @@ and linked with ordinary relative paths, `palmanote-export.json` holding every
 document and every revision, and a `README.txt` explaining the folder to someone
 who has never heard of this app. A person with that folder can rebuild the
 archive without PalmaNote existing.
+
+**What the file is called** is asked in the dialog, in a field prefilled with
+the page's own title. It matters most on the web, where there is no save dialog
+to correct a name in — the download takes whatever it is handed. The suggestion
+follows the scope and stops following it the moment the writer types, because a
+field that rewrites itself under your hands is worse than one that does
+nothing; the extension sits *outside* the box, because getting it wrong is how
+a file arrives called `chapter.docx.docx`. And the scope now defaults to the
+page in front of you rather than the whole library, which is both the commoner
+want and the reason a Word export used to come out called `PalmaNote`.
 
 **How the files land** is [files.ts](src/data/files.ts), and nothing above it
 knows which of the three ways ran: a native save dialog in the desktop shell, a

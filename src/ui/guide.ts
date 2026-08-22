@@ -277,6 +277,7 @@ export const GUIDE: GuideSection[] = [
       'Your writing is yours and stays readable without this app. Export offers several routes out, including one that takes everything.',
     rows: [
       { keys: 'Ctrl + Shift + E', what: 'Export' },
+      { what: 'The file is named after the page you are in. Change it in the Save as field before exporting.' },
       { keys: 'Ctrl + Shift + I', what: 'Import — Word documents, markdown, or a PDF to read alongside' },
       { what: 'It asks two things: what kind of file, and how much of your library.' },
       { what: 'Word document — opens in Word and Google Docs, with real heading styles.' },
@@ -296,6 +297,7 @@ export const GUIDE: GuideSection[] = [
     rows: [
       { keys: 'Ctrl + ,', what: 'Open settings' },
       { keys: 'F1', what: 'Open this guide — also the ? in the top bar' },
+      { what: '“Show me around again”, at the foot of this guide, replays the first-launch tour.' },
       { what: 'Animated cursor — the cursor slides between positions rather than jumping.' },
       { what: 'Greeting on launch — somewhere to start before the writing. Escape always skips it.' },
       { what: 'The theme button in the top bar cycles system, light and dark.' },

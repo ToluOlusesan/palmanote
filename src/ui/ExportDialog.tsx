@@ -20,7 +20,11 @@ interface Settings {
 
 const DEFAULTS: Settings = {
   format: 'docx',
-  scope: 'all',
+  // The page in front of you, not the whole library. Exporting everything as
+  // one Word document is a real thing to want and a strange thing to assume,
+  // and it was also how the file came out called PalmaNote rather than called
+  // what the writer had just been working on.
+  scope: 'document',
   manuscript: false,
   details: { surname: '', title: '', author: '', contact: '' },
 };
@@ -80,6 +84,8 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const panel = useRef<HTMLDivElement>(null);
+  /** Empty until the writer types: the name shown is the suggestion until then. */
+  const [renamed, setRenamed] = useState<string | null>(null);
 
   const current = library.selectedId ? library.byId.get(library.selectedId) : undefined;
   // The escape hatch is the whole library by definition, so asking how much of
@@ -87,6 +93,26 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const wholeLibrary = settings.format === 'everything';
   const scope: Scope = wholeLibrary || !current ? 'all' : settings.scope;
   const onePage = scope === 'document';
+
+  /**
+   * What the file will be called.
+   *
+   * The suggestion follows the scope — the page's own title, or the app's name
+   * for the whole library — and stops following it the moment the writer types
+   * something, because a field that rewrites itself under your hands is worse
+   * than one that does nothing.
+   */
+  const suggested = scope === 'all' ? 'PalmaNote' : current?.title?.trim() || 'Untitled';
+  const name = renamed ?? suggested;
+  const suffix = wholeLibrary
+    ? ' — a folder'
+    : settings.format === 'markdown'
+      ? onePage
+        ? '.md'
+        : ' — a folder'
+      : settings.manuscript
+        ? ' (manuscript).docx'
+        : '.docx';
 
   useEffect(() => {
     panel.current?.querySelector<HTMLElement>('input, button')?.focus();
@@ -133,6 +159,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
         scope: target,
         preset: settings.manuscript ? 'manuscript' : 'reading',
         details,
+        name,
       });
       const outcome = await writeExport(result);
       if (outcome.cancelled) return;
@@ -266,6 +293,28 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
             )}
           </fieldset>
         )}
+
+        {/* Last, because it is the last thing decided — and present at all
+            because a browser download takes the name it is handed and offers
+            no dialog to correct it in. */}
+        <fieldset className="field">
+          <legend>Save as</legend>
+          <div className="filename">
+            <input
+              type="text"
+              value={name}
+              aria-label="File name"
+              spellCheck={false}
+              onChange={(event) => setRenamed(event.target.value)}
+              onBlur={() => {
+                // An emptied field goes back to suggesting rather than
+                // exporting something called nothing.
+                if (renamed !== null && renamed.trim() === '') setRenamed(null);
+              }}
+            />
+            <span className="filename-suffix">{suffix}</span>
+          </div>
+        </fieldset>
 
         <div className="dialog-foot">
           <span className="dialog-note">{message}</span>

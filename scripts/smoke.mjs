@@ -95,6 +95,13 @@ const dismissWelcome = async (target = page) => {
   await target.keyboard.press('Escape');
   await target.waitForSelector('.body', { timeout: 15000 });
   await target.waitForTimeout(150);
+  // The first-launch tour stands in front of the writing on a fresh profile.
+  // Checked properly in its own section below; everywhere else it is simply
+  // in the way, and Escape is how a writer gets past it too.
+  if (await target.locator('.tour').count()) {
+    await target.keyboard.press('Escape');
+    await target.waitForTimeout(250);
+  }
 };
 
 // --------------------------------------------------------------- welcome
@@ -113,6 +120,7 @@ check(
 );
 await page.keyboard.press('Escape');
 await page.waitForSelector('.body', { timeout: 8000 });
+
 // Waited for rather than asserted on the next tick. The caret is placed by a
 // requestAnimationFrame loop that retries until the editor has mounted, so
 // `.body` existing and `.body` holding the focus are two different moments —
@@ -126,6 +134,36 @@ const caretLanded = await page
   .then(() => true)
   .catch(() => false);
 check('escape leaves it with the caret in the page', caretLanded, true);
+
+// ----------------------------------------------------------- the first tour
+// A fresh profile is a first launch, so this runs before anything else can
+// touch the app — which is also the honest order for it.
+section('the first tour');
+await page.waitForSelector('.tour-card', { timeout: 8000 });
+check('a first launch is shown around', (await page.locator('.tour-step').innerText()).trim(), '1 of 5');
+check(
+  'the note about storage waits its turn',
+  await page.locator('.webnote').count(),
+  0,
+);
+const lit = [];
+for (let card = 0; card < 5; card++) {
+  const hole = await page.locator('.tour-hole').boundingBox();
+  lit.push(hole ? Math.round(hole.width * hole.height) : 0);
+  if (card < 4) {
+    await page.locator('.tour-card .btn.is-primary').click();
+    await page.waitForTimeout(420);
+  }
+}
+// Each card lights a real control rather than falling back to a card floating
+// in the middle of a dimmed window — which is what a stale selector looks like.
+check('and every card lights a real control', lit.every((area) => area > 0), true);
+await page.locator('.tour-card .btn.is-primary').click();
+await page.waitForTimeout(300);
+check('the last card puts it away', await page.locator('.tour').count(), 0);
+check('and the storage note takes its place', await page.locator('.webnote').count(), 1);
+await page.locator('.webnote .btn', { hasText: 'Got it' }).click();
+await page.waitForTimeout(200);
 
 // ---------------------------------------------------------------- basics
 section('the page');
@@ -2075,9 +2113,9 @@ check('until it is asked for', await page.locator('.dialog .text-field').count()
 await page.locator('.dialog .choice', { hasText: 'Everything' }).first().locator('input').check();
 await page.waitForTimeout(250);
 check(
-  'and the escape hatch asks nothing else',
+  'and the escape hatch asks nothing but the name',
   await page.locator('.dialog legend').allInnerTexts(),
-  ['As'],
+  ['As', 'Save as'],
 );
 /*
   And then actually run one.
@@ -2103,11 +2141,26 @@ await page.evaluate(() => {
 });
 await page.locator('.dialog .choice', { hasText: 'Word document' }).locator('input').check();
 await page.locator('.dialog .choice').filter({ hasText: 'This page — ' }).locator('input').check();
+// Manuscript was switched on a few lines above to prove its fields appear.
+await page.locator('.dialog .choice', { hasText: 'Manuscript' }).locator('input').uncheck();
+await page.waitForTimeout(250);
+// The name the file will be saved under, which on the web is the only chance
+// to see it: the download takes what it is handed and offers no dialog to
+// correct it in. It follows the page — this section is working in the one the
+// context-menu checks made, and it says so.
+check(
+  'the file is named after the page, not after the app',
+  await page.locator('.filename input').inputValue(),
+  'Context',
+);
+check('and says what will be added to it', await page.locator('.filename-suffix').innerText(), '.docx');
+await page.locator('.filename input').fill('A name of my own');
+await page.waitForTimeout(200);
 await page.waitForTimeout(200);
 const saving = page.waitForEvent('download', { timeout: 20000 });
 await page.locator('.dialog .btn.is-primary').click();
 const saved = await saving;
-check('a Word export really comes out', saved.suggestedFilename().endsWith('.docx'), true);
+check('a Word export comes out under the name it was given', saved.suggestedFilename(), 'A name of my own.docx');
 // A .docx is a zip, so the first two bytes are PK. An error page or an empty
 // file would sail past a check on the name alone.
 const path = await saved.path();

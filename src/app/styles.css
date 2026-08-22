@@ -1872,6 +1872,38 @@ button.crumb:hover {
   grid-column: 1 / -1;
 }
 
+/* The name the file will be saved under, with what will be appended to it
+   sitting outside the box. The extension is not the writer's to type — getting
+   it wrong is how a .docx arrives as "chapter.docx.docx" — so it is shown
+   rather than offered. */
+.filename {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.filename input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.28rem 0.4rem;
+  transition:
+    border-color var(--quick) var(--glide),
+    box-shadow var(--quick) var(--glide);
+}
+
+.filename-suffix {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
 .text-field input,
 .text-field textarea {
   font: inherit;
@@ -4673,6 +4705,76 @@ mark[data-tone='red'] {
 
 .sticky-anchor.is-orphaned:hover {
   text-decoration: line-through;
+}
+
+/*
+  The first-launch tour.
+
+  The dim is one element wearing a very large shadow rather than four panels
+  around a hole: a single box means the lit area can move between cards with a
+  transition instead of four edges trying to agree on where they are.
+*/
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.tour-hole {
+  position: fixed;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 9999px rgb(20 20 22 / 46%);
+  transition:
+    left var(--unfold) var(--ease),
+    top var(--unfold) var(--ease),
+    width var(--unfold) var(--ease),
+    height var(--unfold) var(--ease);
+}
+
+.tour-card {
+  position: fixed;
+  width: 20rem;
+  padding: 1rem 1.1rem 0.85rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 18%);
+  transition:
+    left var(--unfold) var(--ease),
+    top var(--unfold) var(--ease);
+}
+
+.tour-step {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+.tour-title {
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: -0.008em;
+}
+
+.tour-body {
+  margin: 0.4rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.tour-keys {
+  margin: 0.6rem 0 0;
+}
+
+.tour-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
 }
 
 /*
