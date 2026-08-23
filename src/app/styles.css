@@ -3372,8 +3372,12 @@ mark[data-tone='red'] {
   padding: 0.35rem 0;
 }
 
+/* The one placeholder in the app that has to be *read* rather than merely
+   not be in the way: it is the instruction for the first screen anybody sees.
+   `--faint` is the right weight for a hint beside something that already
+   exists — here there is nothing else on the line, and a tester missed it. */
 .welcome-input::placeholder {
-  color: var(--faint);
+  color: var(--muted);
 }
 
 .welcome-go {

@@ -114,12 +114,18 @@ export function Welcome({ onLeave, onOpenActivity }: {
             void begin(null);
           }}
         >
+          {/* The placeholder names the thing and the action, because "Name
+              it, or just pick something below" did neither: "it" has no
+              referent on a screen where nothing exists yet, so a tester read
+              the field as decoration and never typed in it. This says what to
+              type and what typing does, and the word pairs with the button
+              beside it. */}
           <input
             ref={input}
             type="text"
             className="welcome-input"
-            placeholder="Name it, or just pick something below"
-            aria-label="Name for a new page"
+            placeholder="Type a name for your project to start"
+            aria-label="Name for your new project or page"
             spellCheck={false}
             value={name}
             onChange={(event) => setName(event.target.value)}

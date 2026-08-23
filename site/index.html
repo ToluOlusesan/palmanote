@@ -914,9 +914,49 @@ kbd {
   background: var(--lime);
 }
 
+/* ── Recent updates ────────────────────────────────────────────────────────*/
+/* Three, and a link to the rest. A changelog on a marketing page is read at
+   the top and abandoned by the fourth item, so this carries what shipped
+   lately — evidence the thing is alive — and leaves the history in the
+   repository, which is the one copy that cannot fall behind.                 */
+
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--faint);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--quick) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .link:hover { text-decoration-color: var(--ink); }
+}
+
+.updates { margin-top: 3rem; list-style: none; }
+.update {
+  display: grid;
+  gap: 0.375rem 2.5rem;
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--hairline);
+}
+.update:last-child { border-bottom: 1px solid var(--hairline); }
+/* The date sits beside the entry where there is room for a column and above it
+   where there is not — never wrapped underneath its own heading. */
+@media (min-width: 48rem) { .update { grid-template-columns: 10rem minmax(0, 1fr); } }
+.update time {
+  font-size: 0.8125rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.1875rem;
+}
+.update p { margin-top: 0.375rem; font-size: 0.9375rem; color: var(--muted); max-width: 38rem; }
+
 /* ── Download ──────────────────────────────────────────────────────────────*/
 
 .get { display: flex; flex-direction: column; gap: 1.75rem; align-items: flex-start; }
+/* What the button is about to hand over. Nobody wants an installer they cannot
+   size first, and the version lives in this line rather than in the link, so
+   the link never has to change. */
+.get-meta { font-size: 0.8125rem; color: var(--faint); }
 .keys { margin-top: 3.5rem; display: grid; gap: 0 3.5rem; }
 @media (min-width: 48rem) { .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .key-row {
@@ -941,6 +981,7 @@ kbd {
   font-size: 0.8125rem;
   color: var(--faint);
 }
+.foot .link { color: var(--muted); }
 
 /* ── Entrance ──────────────────────────────────────────────────────────────
    Anything that appears out of nothing rises four pixels while it fades, so it
@@ -1363,14 +1404,76 @@ kbd {
     </div>
   </section>
 
+  <!-- What shipped lately. Three entries: enough to show the app is being
+       worked on, few enough that the section is still read to the end. The
+       full history is a click away and never has to be copied here. -->
+  <section class="shell" id="updates">
+    <div class="section-head rise">
+      <h2>Recent updates.</h2>
+      <p class="body-text">
+        The last three things that shipped. The source is open, so
+        <a class="link" href="https://github.com/ToluOlusesan/palmanote/commits/main">every change is on GitHub</a>
+        with the reasoning attached.
+      </p>
+    </div>
+
+    <ol class="updates">
+      <li class="update rise">
+        <time datetime="2026-08-22">22 August 2026</time>
+        <div>
+          <h3>A first launch that shows you around</h3>
+          <p>
+            Five cards walk a new writer through the real window — the sidebar,
+            the tabs, the page, the notes rail, the guide — and then hand over
+            to <kbd>F1</kbd> for the rest. Word exports name themselves after
+            the page you are on rather than the whole library, in a field you
+            can correct before it saves.
+          </p>
+        </div>
+      </li>
+      <li class="update rise">
+        <time datetime="2026-08-21">21 August 2026</time>
+        <div>
+          <h3>Word export, fixed in the browser</h3>
+          <p>
+            Exporting a Word document from the browser build asked for
+            something only the desktop has, and died. One path now, the one
+            both have — and the test presses the button and opens the file
+            instead of reading the dialog, so it cannot break quietly again.
+            The notes switch moved into the page bar, beside bold and the
+            headings.
+          </p>
+        </div>
+      </li>
+      <li class="update rise">
+        <time datetime="2026-08-21">21 August 2026</time>
+        <div>
+          <h3>Comments in the selection bar, and a rail you can put away</h3>
+          <p>
+            The bar that comes to a selection now carries a comment, which
+            marks the words instead of replacing them. The rail of notes hides
+            and comes back with <kbd>Ctrl Shift Space</kbd>, a control at the
+            top of the rail, or the button in the top bar — which says how many
+            notes are waiting behind it.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
   <section class="waterline-band" id="get">
     <div class="shell band-inner">
       <div class="get rise">
         <h2>Get it and write something down.</h2>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#" id="download">Download for Windows</a>
-          <a class="btn btn-quiet" href="#top">Back to the top</a>
+          <a class="btn btn-primary" href="https://github.com/ToluOlusesan/palmanote/releases/latest/download/PalmaNote-Setup.exe" id="download">Download for Windows</a>
+          <a class="btn btn-quiet" href="https://github.com/ToluOlusesan/palmanote">Source on GitHub</a>
         </div>
+        <p class="get-meta">
+          Version 0.2.0 · Windows 10 and 11 · a 2.8&nbsp;MB installer, no
+          account to make. <a class="link" href="https://github.com/ToluOlusesan/palmanote/releases">Earlier
+          versions</a>.
+        </p>
       </div>
 
       <div class="keys rise">
@@ -1390,6 +1493,7 @@ kbd {
     <footer class="foot">
       <span>PalmaNote — a writing app for one person.</span>
       <span>This page loads no fonts, no scripts from anywhere, and no trackers. Same as the app.</span>
+      <a class="link" href="https://github.com/ToluOlusesan/palmanote">Source on GitHub</a>
     </footer>
   </div>
 
