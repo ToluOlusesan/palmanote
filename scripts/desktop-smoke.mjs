@@ -21,6 +21,9 @@ const SHOT = process.env.PROBE_OUT ?? 'desktop-smoke.png';
 
 const CANDIDATES = [
   process.env.PALMANOTE_EXE,
+  'src-tauri/target/release/PalmaNote.exe',
+  // The name it had before `mainBinaryName`; kept so an older build already
+  // sitting in target/ is still found, on a filesystem that cares about case.
   'src-tauri/target/release/palmanote.exe',
 ].filter(Boolean);
 

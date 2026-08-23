@@ -957,6 +957,37 @@ kbd {
    size first, and the version lives in this line rather than in the link, so
    the link never has to change. */
 .get-meta { font-size: 0.8125rem; color: var(--faint); }
+
+/* The arrow travels in the SVG's own units, so it stays proportional to a
+   glyph drawn at 17px. The whole effect is behind one query: a touch device
+   fires hover on tap, where a loop that plays after the press is noise, and
+   somebody who asked for less motion is asking for an icon not to animate at
+   them — the page's reduced-motion block cuts durations to 1ms, which would
+   turn this into a swap rather than a movement, so it is switched off here
+   instead of left to run instantly. */
+.dl-arrow {
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 140ms var(--ease-out);
+}
+/* The second arrow waits 60ms: without the beat both are on screen together a
+   third of the way through, and a glyph with two arrows in it reads as a
+   rendering fault rather than as one arrow being replaced. */
+.dl-arrow-next {
+  opacity: 0;
+  transform: translateY(-13px);
+  transition:
+    transform 260ms var(--ease-out) 60ms,
+    opacity 180ms var(--ease-out) 60ms;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  #download:hover .dl-arrow { opacity: 0; transform: translateY(13px); }
+  #download:hover .dl-arrow-next { opacity: 1; transform: translateY(0); }
+  /* A pixel of lift under the colour change, dropped again while the button is
+     held, because a press goes the other way. */
+  #download:hover:not(:active) { transform: translateY(-1px); }
+}
 .keys { margin-top: 3.5rem; display: grid; gap: 0 3.5rem; }
 @media (min-width: 48rem) { .keys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .key-row {
@@ -1466,7 +1497,23 @@ kbd {
       <div class="get rise">
         <h2>Get it and write something down.</h2>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/ToluOlusesan/palmanote/releases/latest/download/PalmaNote-Setup.exe" id="download">Download for Windows</a>
+          <!-- The arrow is drawn twice and the tray once: on hover the first
+               arrow leaves through the bottom and the second arrives from
+               above, so the button spends the hover showing what pressing it
+               does. Inline rather than a <use> of a symbol, because the shadow
+               tree a <use> makes cannot be reached by the selectors below.
+
+               Only this button gets it. The two above say "Download" and go to
+               this section instead — an arrow landing in a tray on a link that
+               only scrolls would be a promise the button does not keep. -->
+          <a class="btn btn-primary" href="https://github.com/ToluOlusesan/palmanote/releases/latest/download/PalmaNote-Setup.exe" id="download">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <path class="dl-arrow" d="M12 3v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path class="dl-arrow dl-arrow-next" d="M12 3v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Download for Windows
+          </a>
           <a class="btn btn-quiet" href="https://github.com/ToluOlusesan/palmanote">Source on GitHub</a>
         </div>
         <p class="get-meta">

@@ -26,7 +26,7 @@ import { existsSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 
 const PORT = 9611;
-const EXE = process.env.PALMANOTE_EXE ?? 'src-tauri/target/release/palmanote.exe';
+const EXE = process.env.PALMANOTE_EXE ?? 'src-tauri/target/release/PalmaNote.exe';
 const CHAPTERS = Number(process.env.SCALE_CHAPTERS ?? 60);
 const WORDS_EACH = Number(process.env.SCALE_WORDS ?? 2000);
 

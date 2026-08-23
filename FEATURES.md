@@ -37,6 +37,20 @@ happily onto an empty library. Electron pins `userData` to the old folder for
 the same reason — see the note at the top of [electron/main.ts](electron/main.ts).
 These are addresses, not titles.
 
+The other side of that rule: anything a person *reads* is spelled the way the
+product is. The Rust crate stays `palmanote` — a crate name is an address — but
+`mainBinaryName` in [tauri.conf.json](src-tauri/tauri.conf.json) renames the
+binary at bundle time, so what installs is `PalmaNote.exe` rather than a
+lower-case file inside a `PalmaNote` folder from a `PalmaNote` installer. The
+publisher is set for the same reason: left alone, Tauri takes it from the
+identifier's middle segment and Windows lists the app under `springboard`. It
+is **Spatial Foundry**, the same shelf Palma Canvas is on.
+
+One wrinkle worth knowing when testing an upgrade: Windows keeps the *existing*
+directory entry's spelling when a file is replaced in place, so installing over
+an older build can leave the old lower-case name on disk with the new bytes
+inside it. Uninstall first if you want to see what a new machine gets.
+
 The seam is [src/data/bridge.ts](src/data/bridge.ts) — twenty-odd methods,
 resolved once at load. Nothing above that file knows which shell it is in.
 [tauriBridge.ts](src/data/tauriBridge.ts) implements it over `invoke`;
