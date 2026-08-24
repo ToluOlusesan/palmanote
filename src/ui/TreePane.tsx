@@ -262,7 +262,10 @@ export function TreePane({
         />
       )}
 
-      <header className="tree-head">
+      {/* Draggable for the same reason the strip beside it is: it is the top
+          edge of a frameless window, and until now the widest part of it did
+          nothing. The two buttons inside are still buttons — see styles.css. */}
+      <header className="tree-head" data-tauri-drag-region="deep">
         {/* The mark is the way back to the launch screen. Every app whose logo
             sits in a corner has taught that pressing it goes home, and this one
             has a home — the four starting points and the week's writing — that

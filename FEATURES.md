@@ -1244,6 +1244,27 @@ IPC contract.
   ([WindowControls.tsx](src/ui/WindowControls.tsx)). The Rust side emits window
   state on resize/move, so snapping and double-clicking the drag region keep the
   buttons honest.
+- **The whole title bar drags** — the top strip and the sidebar's head, wherever
+  they are not a control. Two things about `data-tauri-drag-region` are worth
+  knowing before touching it, because both fail silently:
+  - The **bare** attribute means *only when this element is the topmost thing
+    under the pointer*. Tauri compares it against `composedPath()[0]`, so any
+    full-window overlay — the first-launch tour dims from an `inset: 0` panel —
+    turns it off. `deep` matches anywhere in the subtree and survives that.
+    Electron's `-webkit-app-region` is computed from the layout tree instead and
+    was never affected, which is how this stayed invisible on that side.
+  - A bare or `deep` attribute **ends the upward walk**. A child carrying the
+    bare attribute therefore *hides* a `deep` on its parent rather than adding to
+    it, which is worth remembering when the two are nested — and here they are.
+
+  Tauri stops the walk at the first `<button>`/`<a>`, so the tabs and the icons
+  keep their clicks with nothing declared. Electron subtracts nothing on its own,
+  so each one is named `no-drag` in [styles.css](src/app/styles.css).
+- **The reserved gap does not shrink.** `.drag-region` is `flex: 1 0 5rem` — a
+  floor, not a size. It used to be `flex: 1; min-width: 1rem`, and a gap is the
+  first thing a row of tabs eats: with three pages open the only way to move the
+  window was a ~35px sliver between two icons. `desktop:smoke` now asserts the
+  shrink factor, because that is the part a screenshot cannot show.
 - **Bounds are remembered**, including the un-maximised size and position, so
   unmaximising after a restart puts the window back where it was.
 - **Taskbar icon** is handed over explicitly at 32px, because Windows asks the

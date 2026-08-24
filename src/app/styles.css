@@ -265,7 +265,10 @@ button {
 
 .tree-handle {
   position: fixed;
-  inset: 0 auto 0 0;
+  /* Below the title bar, not through it. Full height, this sat on top of the
+     sidebar toggle and stole the first 18px of a frameless window's left
+     edge — which is title bar, and has to stay draggable. */
+  inset: var(--topbar) auto 0 0;
   width: 18px;
   z-index: 2;
   opacity: 0;
@@ -820,25 +823,49 @@ button {
 
 /* ------------------------------------------------------- window controls */
 
-.drag-region {
-  flex: 1;
-  align-self: stretch;
-  min-width: 1rem;
+/*
+  The window has no frame, so the title bar is something this app draws, and
+  the whole of it drags: the strip across the top and the sidebar's head
+  beside it, everywhere they are not a control. Tauri walks up from whatever
+  was pressed and stops at the first button, so the controls go on working
+  without being named here; Electron subtracts nothing on its own, so every
+  one of them is named below.
+
+  It was one flexible gap between the tabs and the icons, and a gap is the
+  first thing a row of tabs eats: with three pages open it was down to its
+  1rem floor and the only way to move the window was a sliver between two
+  icons. Reserve rather than remainder, and the reserve is no longer the only
+  place that works.
+*/
+.topstrip,
+.tree-head {
   -webkit-app-region: drag;
+}
+
+.topstrip .chrome-btn,
+.topstrip .tabstrip,
+.tree-head button,
+.wincontrols {
+  -webkit-app-region: no-drag;
+}
+
+/* Grows into what is spare and never gives it back: `0` shrink is the whole
+   point, and the basis is a floor rather than a size. Tabs overflow into
+   their own scroller instead, which is what that scroller is for. */
+.drag-region {
+  flex: 1 0 5rem;
+  align-self: stretch;
 }
 
 .topstrip.is-desktop {
   padding-right: 0;
 }
 
-.topstrip .chrome-btn,
-.topstrip .tabstrip,
-.wincontrols {
-  -webkit-app-region: no-drag;
-}
-
 .wincontrols {
   display: flex;
+  /* Platform metrics, held against a crowded strip: caption buttons are
+     46px wide on Windows and are not a place to find space. */
+  flex: none;
   align-self: stretch;
   margin-left: 0.35rem;
 }
@@ -846,6 +873,7 @@ button {
 .wincontrol {
   display: grid;
   place-items: center;
+  flex: none;
   width: 2.875rem;
   color: var(--muted);
   transition: background 90ms linear, color 90ms linear;
@@ -4642,7 +4670,9 @@ mark[data-tone='red'] {
    the window: a strip of nothing that answers a pointer. */
 .rail-handle {
   position: fixed;
-  inset: 0 0 0 auto;
+  /* Below the title bar, for the reason in .tree-handle — on that edge the
+     18px it was covering belonged to the close button. */
+  inset: var(--topbar) 0 0 auto;
   width: 18px;
   z-index: 2;
   opacity: 0;

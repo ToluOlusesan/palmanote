@@ -104,18 +104,36 @@ try {
 
   // ------------------------------------------------------------ the window
   section('the window');
-  const shell = await page.evaluate(() => ({
-    engine: navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] ?? 'unknown',
-    controls: document.querySelectorAll('.wincontrol').length,
-    dragRegions: document.querySelectorAll('.drag-region[data-tauri-drag-region]').length,
-    nodeInPage: typeof window.require !== 'undefined' || typeof window.process !== 'undefined',
-    desktop: document.querySelector('.topstrip')?.classList.contains('is-desktop') ?? false,
-  }));
+  const shell = await page.evaluate(() => {
+    const gap = document.querySelector('.drag-region');
+    const deep = (selector) =>
+      document.querySelector(selector)?.getAttribute('data-tauri-drag-region') ?? null;
+    return {
+      engine: navigator.userAgent.match(/Chrome\/[\d.]+/)?.[0] ?? 'unknown',
+      controls: document.querySelectorAll('.wincontrol').length,
+      dragRegions: document.querySelectorAll('.drag-region[data-tauri-drag-region]').length,
+      nodeInPage: typeof window.require !== 'undefined' || typeof window.process !== 'undefined',
+      desktop: document.querySelector('.topstrip')?.classList.contains('is-desktop') ?? false,
+      stripDrags: deep('.topstrip'),
+      headDrags: deep('.tree-head'),
+      // The gap between the tabs and the icons used to be the *only* way to
+      // move the window, and it was a flexible one: three open pages squeezed
+      // it to its floor. A shrink factor of 0 is what keeps it out of the
+      // negotiation, and is the thing worth watching, because a stray `flex:
+      // 1` puts it back without changing anything you can see in a screenshot.
+      gapShrink: gap ? getComputedStyle(gap).flexShrink : null,
+      gapWidth: gap ? Math.round(gap.getBoundingClientRect().width) : 0,
+    };
+  });
   console.log(`      ${exe}`);
   console.log(`      ${shell.engine}`);
   check('the renderer knows it is on the desktop', shell.desktop, true);
   check('Windows caption buttons are drawn', shell.controls, 3);
   check('the title bar has a drag region', shell.dragRegions, 1);
+  check('the whole strip drags, not just the gap', shell.stripDrags, 'deep');
+  check('the sidebar head drags too', shell.headDrags, 'deep');
+  check('the reserved gap cannot be squeezed away', shell.gapShrink, '0');
+  check('the reserved gap is wide enough to hit', shell.gapWidth >= 64, true);
   check('node is not reachable from the page', shell.nodeInPage, false);
 
   // --------------------------------------------------------------- storage

@@ -394,7 +394,14 @@ function Workspace() {
       />
 
       <div className="main">
-        <div className={`topstrip${isDesktop ? ' is-desktop' : ''}`}>
+        {/* The title bar of a window with no frame. `deep` means a press
+            anywhere in here drags, except where Tauri stops of its own accord:
+            it walks up from what was pressed and gives up at the first button,
+            so the tabs and the icons keep their clicks. See styles.css. */}
+        <div
+          className={`topstrip${isDesktop ? ' is-desktop' : ''}`}
+          data-tauri-drag-region="deep"
+        >
           <button
             type="button"
             className="chrome-btn"
@@ -408,9 +415,18 @@ function Workspace() {
 
           <TabStrip onPick={openedSomething} onNew={newPage} />
 
-          {/* The window's drag region: everything the tabs do not claim.
-              Tauri reads the attribute, Electron reads the CSS property. */}
-          <div className="drag-region" data-tauri-drag-region />
+          {/* Reserved title bar. The strip around it drags too; this is the
+              part kept clear on purpose, so there is always a stretch of bar
+              with nothing in it to take hold of.
+
+              `deep` rather than the bare attribute, and it matters: bare means
+              "only when this element is the topmost thing under the pointer",
+              which stops being true the moment anything is laid over the
+              window — the first-run tour dims from an `inset: 0` panel, and
+              under it the one part of the bar meant for dragging was the one
+              part that would not drag. Bare also *ends* the walk, so it
+              masked the `deep` on the strip behind it. */}
+          <div className="drag-region" data-tauri-drag-region="deep" />
 
           <button
             type="button"
