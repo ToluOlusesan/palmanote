@@ -60,6 +60,7 @@ interface StickyRow {
   document_id: string;
   text: string;
   colour: StickyNote['colour'];
+  anchor: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -143,6 +144,7 @@ CREATE TABLE IF NOT EXISTS sticky_notes (
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   text        TEXT    NOT NULL DEFAULT '',
   colour      TEXT    NOT NULL,
+  anchor      TEXT,
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL
 );
@@ -178,6 +180,16 @@ export class SqliteStore implements PalmaNoteStore {
     }
     if (!columns.includes('cover_offset')) {
       this.db.exec('ALTER TABLE documents ADD COLUMN cover_offset INTEGER NOT NULL DEFAULT 50');
+    }
+
+    // A library from before comments existed has stickies and no column to
+    // hang one on. Null is a sticky, which is what every row in it already is.
+    const stickyColumns = this.db
+      .prepare<[], { name: string }>('PRAGMA table_info(sticky_notes)')
+      .all()
+      .map((column) => column.name);
+    if (!stickyColumns.includes('anchor')) {
+      this.db.exec('ALTER TABLE sticky_notes ADD COLUMN anchor TEXT');
     }
   }
 
@@ -382,6 +394,7 @@ export class SqliteStore implements PalmaNoteStore {
         documentId: row.document_id,
         text: row.text,
         colour: row.colour,
+        anchor: row.anchor,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       }));
@@ -390,8 +403,8 @@ export class SqliteStore implements PalmaNoteStore {
   async putSticky(note: StickyNote): Promise<StickyNote> {
     this.db
       .prepare(
-        `INSERT INTO sticky_notes (id, document_id, text, colour, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO sticky_notes (id, document_id, text, colour, anchor, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              text = excluded.text, colour = excluded.colour, updated_at = excluded.updated_at`,
       )
@@ -400,6 +413,7 @@ export class SqliteStore implements PalmaNoteStore {
         note.documentId,
         note.text,
         note.colour,
+        note.anchor,
         note.createdAt,
         note.updatedAt,
       );

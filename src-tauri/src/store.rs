@@ -994,7 +994,14 @@ mod tests {
                updated_at INTEGER NOT NULL, archived_at INTEGER
              );
              INSERT INTO documents (id, position, title, created_at, updated_at)
-             VALUES ('old', 'a0', 'Written before covers', 0, 0);",
+             VALUES ('old', 'a0', 'Written before covers', 0, 0);
+             CREATE TABLE sticky_notes (
+               id TEXT PRIMARY KEY, document_id TEXT NOT NULL REFERENCES documents(id),
+               text TEXT NOT NULL DEFAULT '', colour TEXT NOT NULL,
+               created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+             );
+             INSERT INTO sticky_notes (id, document_id, text, colour, created_at, updated_at)
+             VALUES ('note', 'old', 'Written before comments', 'yellow', 0, 0);",
         )
         .expect("the old schema");
         file
@@ -1016,6 +1023,40 @@ mod tests {
         assert_eq!(updated.cover.as_deref(), Some("abc"));
         // Out of range is brought back into it rather than stored as given.
         assert_eq!(updated.cover_offset, 100);
+
+        let _ = fs::remove_file(&file);
+    }
+
+    #[test]
+    fn a_library_from_before_comments_still_opens() {
+        let file = old_library();
+        let store = Store::open(&file).expect("opens");
+
+        // The column is added rather than demanded, and a sticky written before
+        // comments existed reads as what it has always been: a note that points
+        // at nothing in particular.
+        let existing = store.list_stickies("old").expect("lists");
+        assert_eq!(existing.len(), 1);
+        assert_eq!(existing[0].anchor, None);
+
+        // And the same table now holds one that does point at something.
+        store
+            .put_sticky(StickyNote {
+                id: "comment".into(),
+                document_id: "old".into(),
+                text: "about those words".into(),
+                colour: "blue".into(),
+                anchor: Some("mark-1".into()),
+                created_at: 1,
+                updated_at: 1,
+            })
+            .expect("puts");
+
+        let both = store.list_stickies("old").expect("lists");
+        assert_eq!(both.len(), 2);
+        let anchors: Vec<Option<&str>> = both.iter().map(|n| n.anchor.as_deref()).collect();
+        assert!(anchors.contains(&None));
+        assert!(anchors.contains(&Some("mark-1")));
 
         let _ = fs::remove_file(&file);
     }

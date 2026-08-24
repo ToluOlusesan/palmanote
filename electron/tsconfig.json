@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    // DOM because this project spans both sides of the seam: `preload.ts`
+    // implements `PalmaNoteBridge`, so `include` reaches into `src/data`, and
+    // `bridge.ts` picks its shell at load — which means typechecking the Tauri
+    // one, and that reads `window`. The main process still has no DOM at
+    // runtime; nothing in `electron/` may touch it.
+    "lib": ["ES2022", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "strict": true,
