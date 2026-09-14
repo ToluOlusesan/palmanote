@@ -44,6 +44,8 @@ export interface RecordActivityInput {
   words: number;
   /** When the edit landed, epoch ms. */
   at: number;
+  /** The page this edit belongs to, so a date can lead back to the writing. */
+  documentId: string;
 }
 
 export interface SaveContentInput {

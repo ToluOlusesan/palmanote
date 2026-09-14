@@ -165,6 +165,8 @@ export interface ActivityDay {
    * is the gap since this one, so the row has to remember where it left off.
    */
   lastAt: number;
+  /** Pages touched on this day, in the order they first appeared. */
+  documentIds: string[];
 }
 
 /**

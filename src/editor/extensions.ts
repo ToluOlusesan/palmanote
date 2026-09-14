@@ -14,6 +14,7 @@ import { Gallery } from './Gallery.ts';
 import { Comment } from './Comment.ts';
 import { Highlight } from './Highlight.ts';
 import { Image } from './Image.ts';
+import { NestedList } from './NestedList.ts';
 import { PageLink } from './PageLink.ts';
 import { SceneBreak } from './SceneBreak.ts';
 import { Slash } from './slash.ts';
@@ -135,6 +136,7 @@ export const extensions = [
   PageLink,
   Sticker,
   Image,
+  NestedList,
   Gallery,
   /*
     A grid of prose, and nothing beyond that.

@@ -1,6 +1,6 @@
 [package]
 name = "palmanote"
-version = "0.2.1"
+version = "0.2.3"
 edition = "2021"
 description = "A writing app for one person."
 default-run = "palmanote"

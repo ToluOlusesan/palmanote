@@ -715,6 +715,10 @@ never a second copy of a title to fall out of step. Four routes in:
   the caret, so a parent reads as a table of contents you wrote by accident.
 - Right-click → **Copy link**, then `Ctrl+V` anywhere. Both the HTML flavour and
   the plain-text `springboard://page/<id>` form paste as a live link.
+- **Drag a page out of the sidebar and drop it into the prose.** The drag carries
+  a private page flavour for PalmaNote, HTML and `springboard://` flavours for
+  anywhere else; over the tree the same gesture remains a move, while over the
+  editor it inserts a live reference at the drop point.
 
 Clicking a link opens that page. A link to a page you later archive is left
 visible rather than removed — deleting the sentence that pointed at it would be
@@ -839,6 +843,10 @@ apart. It was already written and reachable only from `@` inside the prose.
   declined rather than attempted, because the sort would undo it anyway and a
   keypress that changes nothing reads as a dropped one. Middle-click to close.
 - **Reopen** the last 20 closed tabs, each back at the index it left from.
+- **A right-click menu** carries New, Pin/Unpin, Close, Close others, Close to
+  the right, Reopen and Close all. Relative closes leave pinned tabs alone;
+  Close all is literal and leaves the workbench empty until a page is opened or
+  a closed tab is restored.
 - **Session restore** — the whole set returns on launch, with per-tab scroll
   position, cursor **and undo history**.
 - A tab whose page has been archived stops existing.
@@ -1519,7 +1527,13 @@ and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
   morning's writing — putting the tally in the store would have counted all
   three. The call is not awaited: a square on a chart never stands between the
   words and the disk, and it swallows its own failure.
-- **Its own tiny table**, one row per day of four small values, never pruned.
+- **Click a written date to reopen the work behind it.** Each activity row keeps
+  the page ids touched that day and opens the surviving pages as permanent
+  tabs. Rows written by older versions fall back to document and revision
+  timestamps on demand, so the feature reaches back instead of beginning empty
+  on upgrade.
+- **Its own tiny table**, one row per day of four small values plus the handful
+  of page ids touched that day, never pruned.
   Derived from `revisions` it would have been wrong twice over — those are
   pruned, and they carry a copy of the prose, so counting a year out of them
   means reading a year of documents.

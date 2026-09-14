@@ -39,6 +39,9 @@ import type { Editor } from '@tiptap/react';
  */
 const ITEMS = new Set(['listItem', 'taskItem']);
 
+/** Identifies a gutter drag that needs list-aware drop targeting. */
+export const LIST_ITEM_DRAG_TYPE = 'application/x-palmanote-list-item';
+
 export interface BlockInfo {
   /** The position immediately before the block. */
   pos: number;
@@ -50,22 +53,17 @@ export interface BlockInfo {
 /**
  * Whether a block can be picked up and carried by pointer.
  *
- * List items cannot, and this is settled rather than pending. Dropping into a
- * list is a question with no good answer: ProseMirror resolves a point inside
- * an item to the gap *after* it, so the first item has no reachable slot above
- * it, and items sit flush against each other, so the indicator that says where
- * a block will land has nowhere to draw but across the text of the row above.
- * Both follow from a list being one node rather than a run of siblings, and
- * neither is fixable without replacing drop targeting wholesale.
- *
- * Nothing is lost that a writer had. `Alt+Shift` with an arrow moves an item
- * among its siblings, exactly and every time, and it is the same key that moves
- * a paragraph — so the honest offer is one gesture that works rather than two
- * where the interesting one misleads. The handle still opens the block menu on
- * a list item, and every verb in that menu still applies to it.
+ * The generic ProseMirror drop path cannot place a list item correctly, but
+ * the gutter supplies a list-aware one — see `moveListItem`. It moves among
+ * siblings in the same list rather than pretending a bullet can land anywhere
+ * in a document.
  */
 export function isCarryable(block: BlockInfo): boolean {
-  return !ITEMS.has(block.node.type.name);
+  return block.node.type.name !== 'table';
+}
+
+export function isListItem(block: BlockInfo): boolean {
+  return ITEMS.has(block.node.type.name);
 }
 
 /** The far side of a block. */
@@ -216,6 +214,42 @@ export function moveBlock(direction: -1 | 1): Command {
     const at = tr.mapping.map(landing);
     tr.insert(at, block.node);
     tr.setSelection(followBlock(state, tr.doc, from, at));
+    dispatch(tr.scrollIntoView());
+    return true;
+  };
+}
+
+/**
+ * Put one bullet immediately before or after another bullet in the same list.
+ *
+ * This is intentionally narrower than a general block drop. A list item's
+ * parent has a `listItem+` content rule, so moving it across list boundaries
+ * requires deciding whether to merge, split or convert lists. Reordering the
+ * siblings the writer can see needs none of those guesses and is exact for
+ * bullets, numbering and tasks alike.
+ */
+export function moveListItem(sourcePos: number, targetPos: number, after: boolean): Command {
+  return (state, dispatch) => {
+    const source = blockFrom(state, sourcePos);
+    const target = blockFrom(state, targetPos);
+    if (!source || !target || !isListItem(source) || !isListItem(target)) return false;
+    if (source.pos === target.pos) return false;
+
+    const sourceParent = state.doc.resolve(source.pos).parent;
+    const targetParent = state.doc.resolve(target.pos).parent;
+    if (sourceParent !== targetParent) return false;
+
+    const from = source.pos;
+    const to = endOf(source);
+    let insertAt = after ? endOf(target) : target.pos;
+    // Removing a sibling before the destination shifts its destination left.
+    if (from < insertAt) insertAt -= source.node.nodeSize;
+    // The item is already precisely where this drop asks it to be.
+    if (insertAt === from) return false;
+    if (!dispatch) return true;
+
+    const tr = state.tr.delete(from, to).insert(insertAt, source.node);
+    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(insertAt + 1, tr.doc.content.size))));
     dispatch(tr.scrollIntoView());
     return true;
   };

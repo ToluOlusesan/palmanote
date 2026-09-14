@@ -1,5 +1,5 @@
 import { CalendarBlank, PencilSimple, Question, TrendUp, X, type Icon } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { ActivityDay } from '../core/types.ts';
 import {
@@ -12,6 +12,9 @@ import {
   summarise,
 } from '../core/activity.ts';
 import { useActivity } from '../state/activity.ts';
+import { useLibrary } from '../state/library.tsx';
+import { useTabs } from '../state/tabs.tsx';
+import { store } from '../data/index.ts';
 import { MonthPicker } from './MonthPicker.tsx';
 import { MonthChart } from './WritingChart.tsx';
 
@@ -48,14 +51,25 @@ interface Stat {
  * asking to be made; the one line at the foot does the talking for the whole
  * panel, once, in a sentence.
  */
-export function ActivityDialog({ onClose }: { onClose: () => void }) {
+export function ActivityDialog({
+  onClose,
+  onOpenPages,
+}: {
+  onClose: () => void;
+  /** Lets the workspace put the greeting away and return focus to the page. */
+  onOpenPages?: () => void;
+}) {
   const { days, ready } = useActivity();
+  const library = useLibrary();
+  const tabs = useTabs();
   const today = dayKey(Date.now());
   const [month, setMonth] = useState(() => monthKey(today));
   // Collapsed. The method is worth being able to read and not worth reading
   // twice, so it is on demand and it floats rather than pushing the calendar
   // down every time the panel opens.
   const [explaining, setExplaining] = useState(false);
+  const [openingDay, setOpeningDay] = useState<string | null>(null);
+  const [dayNote, setDayNote] = useState<string | null>(null);
 
   const all = summarise(days, today);
   const inMonth = days.filter((day) => monthKey(day.day) === month);
@@ -65,6 +79,51 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
   // the same chart could not be compared, and comparing them is the only
   // reason to be able to change which one is shown.
   const busy = busyLevel(days);
+
+  const openDay = useCallback(
+    async (day: ActivityDay) => {
+      if (openingDay) return;
+      setOpeningDay(day.day);
+      setDayNote(null);
+
+      const live = library.docs.filter((doc) => doc.archivedAt === null);
+      const known = day.documentIds.filter((id) => library.byId.get(id)?.archivedAt === null);
+      const ids = new Set(known);
+
+      // Activity rows written before PalmaNote began recording page ids still
+      // deserve to lead somewhere. Revision history already knows which pages
+      // had a saved state that day, so pay that read cost only for one legacy
+      // date after it is deliberately clicked.
+      if (ids.size === 0) {
+        const matched = await Promise.all(
+          live.map(async (doc) => {
+            if (dayKey(doc.createdAt) === day.day || dayKey(doc.updatedAt) === day.day) return doc.id;
+            try {
+              const revisions = await store.listRevisions(doc.id);
+              return revisions.some((revision) => dayKey(revision.createdAt) === day.day)
+                ? doc.id
+                : null;
+            } catch {
+              // Another page can still answer this date.
+              return null;
+            }
+          }),
+        );
+        for (const id of matched) if (id) ids.add(id);
+      }
+
+      if (ids.size === 0) {
+        setOpeningDay(null);
+        setDayNote(`No pages from ${formatDayForNote(day.day)} are still in the library.`);
+        return;
+      }
+
+      for (const id of ids) tabs.open(id, 'permanent');
+      onClose();
+      onOpenPages?.();
+    },
+    [library.byId, library.docs, onClose, onOpenPages, openingDay, tabs],
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -85,13 +144,13 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
       key: 'words',
       glyph: PencilSimple,
       value: formatWords(scoped.words),
-      label: 'Words this month',
+      label: 'Words edited',
     },
     {
       key: 'days',
       glyph: CalendarBlank,
       value: `${scoped.days}`,
-      label: scoped.days === 1 ? 'Writing day' : 'Writing days',
+      label: scoped.days === 1 ? 'Day written' : 'Days written',
     },
   ];
 
@@ -101,7 +160,7 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
         className="dialog is-panel"
         role="dialog"
         aria-modal="true"
-        aria-label="Your writing"
+        aria-label="Writing activity"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <button type="button" className="panel-close" aria-label="Close" onClick={onClose}>
@@ -112,8 +171,8 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
           <div className="panel-title">
             <TrendUp size={20} weight="bold" />
             <div>
-              <h2>Your writing</h2>
-              <p>A quick look at your writing activity.</p>
+              <h2>Writing activity</h2>
+              <p>Your writing, month by month.</p>
             </div>
           </div>
 
@@ -126,8 +185,7 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
           <p className="dialog-body">Counting…</p>
         ) : all.days === 0 ? (
           <p className="dialog-body">
-            Nothing on it yet. Every square fills itself in as you write — there is nothing to
-            start and nothing to remember to press.
+            No activity yet. Your writing will appear here automatically.
           </p>
         ) : (
           <>
@@ -148,6 +206,10 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
               month={month}
               today={today}
               busy={busy}
+              onActivate={(cell) => {
+                const row = days.find((day) => day.day === cell.day);
+                if (row) void openDay(row);
+              }}
               aside={
                 <span className="panel-help">
                   <button
@@ -162,9 +224,8 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
 
                   {explaining && (
                     <span className="panel-explain" role="note">
-                      A day counts words <strong>touched</strong> — added and deleted both, so an
-                      afternoon spent cutting is not an empty square. The shade is set against
-                      your own busiest days rather than a target.
+                      Word totals include words added and deleted. Darker squares show your
+                      busiest writing days.
                     </span>
                   )}
                 </span>
@@ -172,7 +233,11 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
             />
 
             <div className="panel-foot">
-              <span className="panel-brag">{shape(inMonth, scoped, month)}</span>
+              <span className="panel-brag">
+                {openingDay
+                  ? `Opening pages from ${formatDayForNote(openingDay)}…`
+                  : (dayNote ?? shape(inMonth, scoped, month))}
+              </span>
               <button type="button" className="btn" onClick={onClose}>
                 Close
               </button>
@@ -185,21 +250,13 @@ export function ActivityDialog({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * The one line at the foot: what this month looked like.
- *
- * Describing rather than scoring, which is the whole brief for it — no target,
- * no comparison against last month, no "you are behind". And no number the
- * cards above already carry: the top of the panel says how many words and how
- * many days, so repeating either here would be the same sentence twice.
- *
- * What is left is shape — which part of the month the writing actually landed
- * in — and that is both true and the thing a person cannot read off a grid at
- * a glance.
+ * A short description of where this month's writing landed. The cards already
+ * carry the totals, so this adds shape rather than repeating numbers.
  */
 function shape(inMonth: ActivityDay[], scoped: { days: number }, month: string): string {
   const name = formatMonth(month).split(' ')[0] ?? 'this month';
-  if (scoped.days === 0) return `Nothing in ${name} yet. The first word is the hard one.`;
-  if (scoped.days === 1) return `One day so far in ${name}.`;
+  if (scoped.days === 0) return `No writing in ${name}.`;
+  if (scoped.days === 1) return `You wrote on one day in ${name}.`;
 
   // Which of the month's four-and-a-bit weeks carried the most.
   const byWeek = [0, 0, 0, 0, 0];
@@ -211,12 +268,21 @@ function shape(inMonth: ActivityDay[], scoped: { days: number }, month: string):
     byWeek[week] = (byWeek[week] ?? 0) + day.words;
     total += day.words;
   }
-  if (total === 0) return `Nothing in ${name} yet. The first word is the hard one.`;
+  if (total === 0) return `No writing in ${name}.`;
 
   const best = byWeek.indexOf(Math.max(...byWeek));
   const share = (byWeek[best] ?? 0) / total;
-  if (share < 0.4) return `${name} is spread fairly evenly across the month.`;
-  return `Most of ${name} landed in the ${ORDINALS[best] ?? 'first'} week.`;
+  if (share < 0.4) return `Writing was spread across ${name}.`;
+  return `Most writing was in the ${ORDINALS[best] ?? 'first'} week of ${name}.`;
 }
 
 const ORDINALS = ['first', 'second', 'third', 'fourth', 'last'];
+
+function formatDayForNote(day: string): string {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(year!, month! - 1, date!).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}

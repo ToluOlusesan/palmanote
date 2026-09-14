@@ -144,6 +144,10 @@ function boot(): Promise<DocumentMeta[]> {
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const initialUi = useRef(readUiState()).current;
+  // A new library chooses its first page once. After that, null is meaningful:
+  // it is the empty workbench left by “Close all tabs”, not a broken selection
+  // to repair behind the writer's back.
+  const initialSelectionSettled = useRef(Boolean(initialUi.selectedId));
   const [docs, setDocs] = useState<DocumentMeta[]>([]);
   const [ready, setReady] = useState(false);
   // Navigation history. The stack of visited page ids is ours; the browser's
@@ -274,10 +278,18 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [docs, liveIds],
   );
 
-  // Selection must always point at something reachable. Landing on an archived
-  // page corrects in place rather than pushing another history entry.
+  // The first launch chooses the first page. After that, a non-null selection
+  // must point at something reachable; null is allowed so all tabs can close.
+  // Landing on an archived page corrects in place rather than pushing another
+  // history entry.
   useEffect(() => {
-    if (!ready || (selectedId && liveIds.has(selectedId))) return;
+    if (!ready) return;
+    if (!initialSelectionSettled.current) {
+      initialSelectionSettled.current = true;
+      if (!selectedId) replaceSelection(tree[0]?.doc.id ?? null);
+      return;
+    }
+    if (!selectedId || liveIds.has(selectedId)) return;
     // Archiving the open page lands you on its nearest surviving ancestor,
     // which is where you were looking, not at the top of the sidebar.
     let ancestor: string | null = null;

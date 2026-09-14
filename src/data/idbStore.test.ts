@@ -197,6 +197,24 @@ test('pruning keeps recent detail, thins history, and never empties a document',
   assert.equal((await store.listRevisions(doc.id)).length, 1);
 });
 
+test('activity remembers every page touched on a day once', async () => {
+  const store = fresh();
+  const at = new Date(2026, 7, 31, 10).getTime();
+
+  await store.recordActivity({ day: '2026-08-31', words: 12, at, documentId: 'page-a' });
+  await store.recordActivity({ day: '2026-08-31', words: 8, at: at + 30_000, documentId: 'page-b' });
+  const row = await store.recordActivity({
+    day: '2026-08-31',
+    words: 3,
+    at: at + 60_000,
+    documentId: 'page-a',
+  });
+
+  assert.equal(row.words, 23);
+  assert.deepEqual(row.documentIds, ['page-a', 'page-b']);
+  assert.deepEqual((await store.listActivity('2026-08-31'))[0]?.documentIds, ['page-a', 'page-b']);
+});
+
 test('plain text survives a round trip through ProseMirror JSON', () => {
   const text = 'First paragraph.\n\nSecond paragraph,\nwith a line break.\n\nThird.';
   assert.equal(plainTextFromDoc(docFromPlainText(text)), text);

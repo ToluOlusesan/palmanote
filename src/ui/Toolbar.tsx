@@ -28,10 +28,10 @@ import { activeHighlight, HIGHLIGHT_LABELS, HIGHLIGHT_TONES } from '../editor/Hi
  * discoverable copy, not the primary route.
  */
 export interface RailControl {
-  visible: boolean;
-  /** Shown in the tooltip when it is put away, so nothing is silently waiting. */
+  /** Shown in the tooltip, so a rail with notes still says how much is there. */
   count: number;
-  toggle: () => void;
+  /** A page-level sticky: it opens the rail before putting a note in it. */
+  add: () => void;
 }
 
 export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailControl }) {
@@ -115,7 +115,7 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
         editor.chain().focus().toggleTaskList().run(),
       )}
 
-      {/* The rail of notes and comments, at the end of the row.
+      {/* A new sticky, at the end of the row.
           It sat in the window's top bar beside settings and the theme, which
           is where the *window's* switches live — and this is not one of those.
           It belongs with bold and the headings: it is about the page you are
@@ -125,18 +125,13 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
           <span className="tool-sep" />
           <button
             type="button"
-            className={`tool${rail.visible ? ' is-active' : ''}`}
-            aria-label={rail.visible ? 'Hide notes' : 'Show notes'}
-            aria-pressed={rail.visible}
-            title={
-              rail.visible
-                ? 'Hide notes — Ctrl+Shift+Space'
-                : `Show notes${rail.count > 0 ? ` (${rail.count})` : ''} — Ctrl+Shift+Space`
-            }
+            className="tool"
+            aria-label="New sticky note"
+            title={`New sticky note${rail.count > 0 ? ` (${rail.count} on this page)` : ''} — Ctrl+Space`}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={rail.toggle}
+            onClick={rail.add}
           >
-            <NoteBlank size={17} weight={rail.visible ? 'fill' : 'regular'} />
+            <NoteBlank size={17} />
           </button>
         </>
       )}

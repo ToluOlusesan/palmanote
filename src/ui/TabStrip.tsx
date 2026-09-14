@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { useLibrary } from '../state/library.tsx';
 import { DocumentIcon } from './IconPicker.tsx';
 import { useTabs } from '../state/tabs.tsx';
+import { RowMenu, type MenuItem } from './RowMenu.tsx';
 
 export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () => void }) {
   const { byId } = useLibrary();
@@ -18,6 +19,7 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
    */
   const dragFrom = useRef<number | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
+  const [menu, setMenu] = useState<{ docId: string | null; x: number; y: number } | null>(null);
 
   // Keep the active tab in view when it changes by keyboard.
   useEffect(() => {
@@ -64,7 +66,73 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
     </button>
   ) : null;
 
-  if (tabs.tabs.length === 0) return <div className="tabstrip">{newTab}</div>;
+  const menuItems = (docId: string | null): MenuItem[] => {
+    const at = docId ? tabs.tabs.findIndex((tab) => tab.docId === docId) : -1;
+    const tab = at >= 0 ? tabs.tabs[at] : undefined;
+    const closableOthers = docId
+      ? tabs.tabs.some((candidate) => candidate.docId !== docId && !candidate.pinned)
+      : false;
+    const closableRight =
+      at >= 0 && tabs.tabs.slice(at + 1).some((candidate) => !candidate.pinned);
+    const items: MenuItem[] = [];
+
+    if (onNew) items.push({ label: 'New tab', hint: 'Ctrl+T', onSelect: onNew });
+    if (tab) {
+      items.push(
+        {
+          label: tab.pinned ? 'Unpin tab' : 'Pin tab',
+          onSelect: () => tabs.togglePin(tab.docId),
+        },
+        { label: 'Close tab', hint: 'Ctrl+W', onSelect: () => tabs.close(tab.docId) },
+        {
+          label: 'Close other tabs',
+          disabled: !closableOthers,
+          onSelect: () => tabs.closeOthers(tab.docId),
+        },
+        {
+          label: 'Close tabs to the right',
+          disabled: !closableRight,
+          onSelect: () => tabs.closeToRight(tab.docId),
+        },
+      );
+    }
+    items.push(
+      {
+        label: 'Reopen closed tab',
+        hint: 'Ctrl+Shift+T',
+        disabled: !tabs.canReopen,
+        onSelect: tabs.reopenLast,
+      },
+      {
+        label: 'Close all tabs',
+        disabled: tabs.tabs.length === 0,
+        onSelect: tabs.closeAll,
+      },
+    );
+    return items;
+  };
+
+  if (tabs.tabs.length === 0) {
+    return (
+      <div
+        className="tabstrip"
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setMenu({ docId: null, x: event.clientX, y: event.clientY });
+        }}
+      >
+        {newTab}
+        {menu && (
+          <RowMenu
+            x={menu.x}
+            y={menu.y}
+            items={menuItems(null)}
+            onClose={() => setMenu(null)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -82,7 +150,19 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
         endDrag();
       }}
       onDragEnd={endDrag}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        setMenu({ docId: null, x: event.clientX, y: event.clientY });
+      }}
     >
+      {menu && (
+        <RowMenu
+          x={menu.x}
+          y={menu.y}
+          items={menuItems(menu.docId)}
+          onClose={() => setMenu(null)}
+        />
+      )}
       {tabs.tabs.map((tab, index) => {
         const doc = byId.get(tab.docId);
         if (!doc) return null;
@@ -138,6 +218,11 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
                 event.preventDefault();
                 tabs.close(tab.docId);
               }
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setMenu({ docId: tab.docId, x: event.clientX, y: event.clientY });
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {

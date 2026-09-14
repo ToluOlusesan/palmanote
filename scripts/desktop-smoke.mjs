@@ -92,6 +92,13 @@ try {
     await page.keyboard.press('Escape');
     await page.waitForSelector('.body', { timeout: 20000 });
     await page.waitForTimeout(200);
+    // An isolated desktop profile is also a first launch. The tour is covered
+    // by the browser suite; here it would stand over the native controls this
+    // runner is trying to exercise.
+    if (await page.locator('.tour').count()) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(250);
+    }
   };
   await dismissWelcome();
 

@@ -55,12 +55,12 @@ function load(): Promise<void> {
  * in the way of the words reaching the disk — so it swallows its own failure.
  * The tally is the least important thing in the app; the save is the most.
  */
-export async function noteWriting(words: number): Promise<void> {
+export async function noteWriting(documentId: string, words: number): Promise<void> {
   if (words <= 0) return;
   const at = Date.now();
   const day = dayKey(at);
   try {
-    const row = await store.recordActivity({ day, words, at });
+    const row = await store.recordActivity({ day, words, at, documentId });
     // The array is replaced rather than mutated: React is watching it.
     const rest = cache.filter((entry) => entry.day !== day);
     cache = [...rest, row].sort((a, b) => a.day.localeCompare(b.day));

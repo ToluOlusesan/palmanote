@@ -41,10 +41,11 @@ import type {
   is where the writing lives rather than what the app is called.
 */
 const DB_NAME = 'springboard';
-// 2 added `assets`, 3 added `activity`, 4 added `stickies`. `onupgradeneeded`
+// 2 added `assets`, 3 added `activity`, 4 added `stickies`, 5 adds the pages
+// touched to each activity row. `onupgradeneeded`
 // runs every intermediate version, so bumping this is additive rather than a
 // migration.
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const DOCUMENTS = 'documents';
 const CONTENTS = 'contents';
@@ -413,19 +414,22 @@ export class IdbStore implements PalmaNoteStore {
    * Read, add, write — inside one transaction, so two saves landing in the
    * same tick cannot both read 400 and both write 900.
    */
-  async recordActivity({ day, words, at }: RecordActivityInput): Promise<ActivityDay> {
+  async recordActivity({ day, words, at, documentId }: RecordActivityInput): Promise<ActivityDay> {
     const db = await this.db();
     const tx = db.transaction(ACTIVITY, 'readwrite');
     const store = tx.objectStore(ACTIVITY);
     const existing = await promisify<ActivityDay | undefined>(store.get(day));
+    const documentIds = existing?.documentIds ?? [];
+    const touched = documentIds.includes(documentId) ? documentIds : [...documentIds, documentId];
     const next: ActivityDay = existing
       ? {
           day,
           words: existing.words + words,
           seconds: existing.seconds + accrueSeconds(existing.lastAt, at),
           lastAt: at,
+          documentIds: touched,
         }
-      : { day, words, seconds: 0, lastAt: at };
+      : { day, words, seconds: 0, lastAt: at, documentIds: [documentId] };
     store.put(next);
     await txDone(tx);
     return next;
@@ -464,7 +468,9 @@ export class IdbStore implements PalmaNoteStore {
       db.transaction(ACTIVITY, 'readonly').objectStore(ACTIVITY),
       IDBKeyRange.lowerBound(sinceDay),
     );
-    return rows.sort((a, b) => a.day.localeCompare(b.day));
+    return rows
+      .map((row) => ({ ...row, documentIds: row.documentIds ?? [] }))
+      .sort((a, b) => a.day.localeCompare(b.day));
   }
 
   private async needsSnapshot(documentId: string, now: number): Promise<boolean> {

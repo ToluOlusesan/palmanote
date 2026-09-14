@@ -84,10 +84,11 @@ CREATE TABLE IF NOT EXISTS assets (
 );
 
 CREATE TABLE IF NOT EXISTS activity (
-  day      TEXT PRIMARY KEY,
-  words    INTEGER NOT NULL DEFAULT 0,
-  seconds  INTEGER NOT NULL DEFAULT 0,
-  last_at  INTEGER NOT NULL
+  day          TEXT PRIMARY KEY,
+  words        INTEGER NOT NULL DEFAULT 0,
+  seconds      INTEGER NOT NULL DEFAULT 0,
+  last_at      INTEGER NOT NULL,
+  document_ids TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS sticky_notes (
@@ -266,6 +267,16 @@ fn migrate(db: &Connection) -> rusqlite::Result<()> {
     if !sticky_columns.iter().any(|name| name == "anchor") {
         db.execute_batch("ALTER TABLE sticky_notes ADD COLUMN anchor TEXT")?;
     }
+
+    let mut activity = db.prepare("PRAGMA table_info(activity)")?;
+    let activity_columns: Vec<String> = activity
+        .query_map([], |row| row.get::<_, String>("name"))?
+        .collect::<rusqlite::Result<_>>()?;
+    if !activity_columns.iter().any(|name| name == "document_ids") {
+        db.execute_batch(
+            "ALTER TABLE activity ADD COLUMN document_ids TEXT NOT NULL DEFAULT '[]'",
+        )?;
+    }
     Ok(())
 }
 
@@ -327,32 +338,52 @@ impl Store {
         self.with(|db| {
             let existing = db
                 .query_row(
-                    "SELECT words, seconds, last_at FROM activity WHERE day = ?1",
+                    "SELECT words, seconds, last_at, document_ids FROM activity WHERE day = ?1",
                     params![input.day],
-                    |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?)),
+                    |row| {
+                        Ok((
+                            row.get::<_, i64>(0)?,
+                            row.get::<_, i64>(1)?,
+                            row.get::<_, i64>(2)?,
+                            row.get::<_, String>(3)?,
+                        ))
+                    },
                 )
                 .optional()?;
 
             let next = match existing {
-                Some((words, seconds, last_at)) => ActivityDay {
-                    day: input.day.clone(),
-                    words: words + input.words,
-                    seconds: seconds + accrue_seconds(last_at, input.at),
-                    last_at: input.at,
-                },
+                Some((words, seconds, last_at, raw_ids)) => {
+                    let mut document_ids: Vec<String> =
+                        serde_json::from_str(&raw_ids).unwrap_or_default();
+                    if !document_ids.contains(&input.document_id) {
+                        document_ids.push(input.document_id.clone());
+                    }
+                    ActivityDay {
+                        day: input.day.clone(),
+                        words: words + input.words,
+                        seconds: seconds + accrue_seconds(last_at, input.at),
+                        last_at: input.at,
+                        document_ids,
+                    }
+                }
                 None => ActivityDay {
                     day: input.day.clone(),
                     words: input.words,
                     seconds: 0,
                     last_at: input.at,
+                    document_ids: vec![input.document_id.clone()],
                 },
             };
 
+            let document_ids = serde_json::to_string(&next.document_ids)
+                .unwrap_or_else(|_| "[]".into());
+
             db.execute(
-                "INSERT INTO activity (day, words, seconds, last_at) VALUES (?1, ?2, ?3, ?4)
+                "INSERT INTO activity (day, words, seconds, last_at, document_ids) VALUES (?1, ?2, ?3, ?4, ?5)
                  ON CONFLICT(day) DO UPDATE SET
-                   words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at",
-                params![next.day, next.words, next.seconds, next.last_at],
+                   words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at,
+                   document_ids = excluded.document_ids",
+                params![next.day, next.words, next.seconds, next.last_at, document_ids],
             )?;
             Ok(next)
         })
@@ -411,7 +442,7 @@ impl Store {
     pub fn list_activity(&self, since_day: &str) -> Result<Vec<ActivityDay>> {
         self.with(|db| {
             let mut statement = db.prepare(
-                "SELECT day, words, seconds, last_at FROM activity WHERE day >= ?1 ORDER BY day",
+                "SELECT day, words, seconds, last_at, document_ids FROM activity WHERE day >= ?1 ORDER BY day",
             )?;
             let rows = statement.query_map(params![since_day], |row| {
                 Ok(ActivityDay {
@@ -419,6 +450,8 @@ impl Store {
                     words: row.get("words")?,
                     seconds: row.get("seconds")?,
                     last_at: row.get("last_at")?,
+                    document_ids: serde_json::from_str(&row.get::<_, String>("document_ids")?)
+                        .unwrap_or_default(),
                 })
             })?;
             rows.collect()
@@ -1057,6 +1090,33 @@ mod tests {
         let anchors: Vec<Option<&str>> = both.iter().map(|n| n.anchor.as_deref()).collect();
         assert!(anchors.contains(&None));
         assert!(anchors.contains(&Some("mark-1")));
+
+        let _ = fs::remove_file(&file);
+    }
+
+    #[test]
+    fn activity_keeps_the_pages_behind_each_day() {
+        let file = std::env::temp_dir().join(format!("palmanote-activity-{}.sqlite", new_id()));
+        let store = Store::open(&file).expect("a database");
+
+        for (document_id, words, at) in [
+            ("page-a", 12, 1_000),
+            ("page-b", 8, 31_000),
+            ("page-a", 3, 61_000),
+        ] {
+            store
+                .record_activity(RecordActivityInput {
+                    day: "2026-08-31".into(),
+                    words,
+                    at,
+                    document_id: document_id.into(),
+                })
+                .expect("recorded");
+        }
+
+        let rows = store.list_activity("2026-08-31").expect("listed");
+        assert_eq!(rows[0].words, 23);
+        assert_eq!(rows[0].document_ids, vec!["page-a", "page-b"]);
 
         let _ = fs::remove_file(&file);
     }

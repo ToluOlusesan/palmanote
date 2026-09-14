@@ -815,6 +815,43 @@ check(
 );
 check('rather than as the text of a URI', (await bodyText()).includes('springboard://'), false);
 
+await freshPage('Dragged link');
+const dragFlavours = await page.evaluate(() => {
+  const source = [...document.querySelectorAll('.tree-list .row')].find((row) =>
+    row.querySelector('.row-title')?.textContent?.includes('Renamed target'),
+  );
+  const target = document.querySelector('.body');
+  if (!source || !target) return [];
+  const dataTransfer = new DataTransfer();
+  source.dispatchEvent(
+    new DragEvent('dragstart', { dataTransfer, bubbles: true, cancelable: true }),
+  );
+  const box = target.getBoundingClientRect();
+  const init = {
+    dataTransfer,
+    bubbles: true,
+    cancelable: true,
+    clientX: box.left + Math.min(80, box.width / 2),
+    clientY: box.top + Math.min(30, box.height / 2),
+  };
+  target.dispatchEvent(new DragEvent('dragover', init));
+  target.dispatchEvent(new DragEvent('drop', init));
+  source.dispatchEvent(new DragEvent('dragend', { dataTransfer, bubbles: true }));
+  return [...dataTransfer.types];
+});
+await page.waitForTimeout(600);
+check(
+  'dragging a sidebar page carries an internal page reference',
+  dragFlavours.includes('application/x-palmanote-page'),
+  true,
+);
+check('and dropping it in the page inserts a live link', await page.locator('.body .page-link').count(), 1);
+check(
+  'without moving the source page out of the sidebar',
+  await page.locator('.tree-list .row', { hasText: 'Renamed target' }).count(),
+  1,
+);
+
 // ---------------------------------------------------------------- mentions
 section('mentions');
 await freshPage('Mentioning');
@@ -1105,6 +1142,33 @@ await page
 check('and lands ready to type', await page.evaluate(() => document.activeElement?.className.includes('body')), true);
 
 check('browsing the tree does not bury you in tabs', (await tabLabels()).length <= (await shapeOf()).length, true);
+
+await page.locator('.tab').first().click({ button: 'right' });
+await page.waitForSelector('.menu');
+const tabMenu = await page.locator('.menu-item').allInnerTexts();
+check(
+  'right-clicking a tab offers the usual tab controls',
+  ['New tab', 'Pin tab', 'Close tab', 'Close other tabs', 'Close tabs to the right', 'Reopen closed tab', 'Close all tabs']
+    .every((label) => tabMenu.some((item) => item.includes(label))),
+  true,
+);
+await page.locator('.menu-item', { hasText: 'Close all tabs' }).click();
+await page.waitForTimeout(300);
+check('close all tabs empties the strip', await page.locator('.tab').count(), 0);
+await page.locator('.tabstrip').click({ button: 'right', position: { x: 8, y: 10 } });
+await page.waitForSelector('.menu');
+await page.locator('.menu-item', { hasText: 'Reopen closed tab' }).click();
+await page.waitForTimeout(300);
+check('the empty strip can reopen the last one', await page.locator('.tab').count(), 1);
+
+await page.locator('.chrome-btn[aria-label="Your writing"]').click();
+await page.waitForSelector('.dialog.is-panel');
+const today = page.locator('.chart-month .chart-cell.is-now');
+check('a written tracker date says what it opens', await today.getAttribute('title'), 'Open the pages written that day');
+await today.click();
+await page.waitForSelector('.dialog.is-panel', { state: 'detached' });
+await page.waitForTimeout(400);
+check('clicking the date opens the pages written that day as tabs', (await page.locator('.tab').count()) > 1, true);
 
 // ------------------------------------------------------- undo across tabs
 section('undo');

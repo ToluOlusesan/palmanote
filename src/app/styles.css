@@ -44,8 +44,11 @@
   --canvas: #ffffff;
   --page: #ffffff;
   --ink: #0a0a0a;
-  --muted: rgb(10 10 10 / 58%);
-  --faint: rgb(10 10 10 / 40%);
+  /* Chrome is deliberately quieter than the prose, but it still has to be
+     readable at the small sizes used in the sidebar and window bars. The old
+     58/40% pair made secondary copy disappear against white displays. */
+  --muted: rgb(10 10 10 / 66%);
+  --faint: rgb(10 10 10 / 52%);
   --hairline: rgb(10 10 10 / 12%);
   --line: rgb(10 10 10 / 20%);
   --raise: rgb(10 10 10 / 6%);
@@ -1136,6 +1139,68 @@ button.crumb:hover {
 .body h3 {
   font-size: 1rem;
 }
+
+/* A named list owns its title and disclosure control. The control lives at
+   the far right of that title row, leaving the label and the editor gutter
+   completely independent. */
+.nested-list {
+  margin: 0.9em 0;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+}
+
+.nested-list-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.15rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.7rem;
+  background: var(--raise);
+  border-radius: 5px;
+}
+
+.nested-list-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0.12rem 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.nested-list-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  color: var(--muted);
+  border-radius: 4px;
+}
+
+.nested-list-toggle::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 0.28rem solid transparent;
+  border-bottom: 0.28rem solid transparent;
+  border-left: 0.36rem solid currentColor;
+  transform: rotate(90deg);
+  transition: transform var(--quick) var(--ease);
+}
+
+.nested-list-toggle:hover { color: var(--ink); background: var(--page); }
+.nested-list.is-collapsed .nested-list-toggle::before { transform: rotate(0deg); }
+
+.nested-list-body { padding: 0.7rem 0.9rem 0.85rem; }
+.nested-list.is-collapsed .nested-list-body { display: none; }
+.nested-list-body > :first-child { margin-top: 0; }
+.nested-list-body > :last-child { margin-bottom: 0; }
+
 
 .body blockquote {
   padding-left: 1.1rem;
@@ -3580,6 +3645,11 @@ mark[data-tone='red'] {
 .chart-month .chart-cell.is-heat-2 { color: var(--heat-text-2); }
 .chart-month .chart-cell.is-heat-3 { color: var(--heat-text-3); }
 .chart-month .chart-cell.is-heat-4 { color: var(--heat-text-4); }
+
+/* Written days lead back to the pages behind the total. */
+.chart-month .chart-cell:not(.is-heat-0):not(.is-ahead) {
+  cursor: pointer;
+}
 
 /* A day still to come is an outline, so its number wears the outline's grey
    rather than the fill's — there is no fill. */

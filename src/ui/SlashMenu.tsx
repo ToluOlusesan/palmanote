@@ -127,6 +127,14 @@ const BLOCKS: Entry[] = [
     run: (chain) => chain.toggleTaskList(),
   },
   {
+    id: 'nested-list',
+    label: 'Nested list',
+    group: 'Blocks',
+    keywords: 'collapsible toggle dropdown outline nested list',
+    glyph: ListBullets,
+    run: (chain) => chain.setNestedList(),
+  },
+  {
     id: 'quote',
     label: 'Quote',
     group: 'Blocks',

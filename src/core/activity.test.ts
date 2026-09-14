@@ -28,6 +28,7 @@ const day = (date: string, words: number, seconds = 0): ActivityDay => ({
   words,
   seconds,
   lastAt: 0,
+  documentIds: [],
 });
 
 test('a pause inside the window is writing; a break is not', () => {

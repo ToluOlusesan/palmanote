@@ -16,6 +16,8 @@ import {
   currentBlock,
   insertBlockAfter,
   isCarryable,
+  isListItem,
+  LIST_ITEM_DRAG_TYPE,
   runBlockCommand,
   selectBlock,
   type BlockInfo,
@@ -279,8 +281,6 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
 
   const block = spot ? blockFrom(editor.state, spot.pos) : null;
   const hidden = !spot || !block || (quiet && !menu);
-  // A list item is not carried by hand — see `isCarryable`. The handle stays,
-  // because everything else it does still applies; only the drag comes off.
   const carryable = block !== null && isCarryable(block);
 
   const press = (run: () => void) => (event: ReactMouseEvent) => {
@@ -359,10 +359,8 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
             dragging.current = true;
             setLifting(true);
             const view = editor.view;
-            // Held as an object first, so what leaves is the whole block and
-            // ProseMirror's own drop handler has a selection to remove when it
-            // lands. This is also what draws the block as chosen while it is in
-            // the air.
+            // Held as an object first, so the page makes clear which block has
+            // left it.
             runBlockCommand(editor, selectBlock(block));
             // After the selection, not before: holding a block is a transaction
             // too, and only steps that change the document replace this object.
@@ -382,6 +380,13 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
             // the card rather than on the editor's own element, whose class
             // list ProseMirror owns and rewrites.
             view.dom.closest('.editor-host')?.classList.add('is-lifting');
+            if (isListItem(block)) {
+              // List siblings need a precise before/after target. The editor's
+              // generic drop handler cannot describe that slot, so its own
+              // handleDrop reads this marker and performs the move directly.
+              event.dataTransfer.setData(LIST_ITEM_DRAG_TYPE, String(block.pos));
+              return;
+            }
             // The whole of the move: prosemirror-view's drop handler reads this
             // and does the rest, and prosemirror-dropcursor reads it to snap the
             // indicator to a position the block can actually go.

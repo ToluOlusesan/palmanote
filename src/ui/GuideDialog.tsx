@@ -65,6 +65,34 @@ export function GuideDialog({
     body.current?.querySelector(`[data-topic="${id}"]`)?.scrollIntoView({ block: 'start' });
   };
 
+  // The topic rail is a reading position as much as it is navigation. A click
+  // still jumps the body, but ordinary scrolling answers the inverse question:
+  // "which part of the guide am I in now?" The first section whose top has
+  // crossed the body's reading line is the active one.
+  useEffect(() => {
+    const host = body.current;
+    if (!host || searching) return;
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const top = host.getBoundingClientRect().top + 18;
+        let active = GUIDE[0]?.id ?? '';
+        for (const section of host.querySelectorAll<HTMLElement>('[data-topic]')) {
+          if (section.getBoundingClientRect().top <= top) active = section.dataset.topic ?? active;
+          else break;
+        }
+        setChosen((current) => (current === active ? current : active));
+      });
+    };
+    sync();
+    host.addEventListener('scroll', sync, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      host.removeEventListener('scroll', sync);
+    };
+  }, [searching]);
+
   return (
     <div className="scrim" onMouseDown={onClose}>
       <div

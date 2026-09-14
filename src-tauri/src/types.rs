@@ -84,6 +84,7 @@ pub struct ActivityDay {
     pub words: i64,
     pub seconds: i64,
     pub last_at: i64,
+    pub document_ids: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -94,6 +95,7 @@ pub struct RecordActivityInput {
     pub day: String,
     pub words: i64,
     pub at: i64,
+    pub document_id: String,
 }
 
 /// An image, keyed by the SHA-256 of its own bytes.

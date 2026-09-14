@@ -2,7 +2,12 @@ import { CaretRight, DotsThree, FilePlus, Star } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { findNode, isAncestor, siblingsOf, type TreeNode } from '../core/tree.ts';
-import { copyPageLink } from '../editor/pageLinkClipboard.ts';
+import {
+  copyPageLink,
+  pageLinkHtml,
+  pageUri,
+  PAGE_DRAG_TYPE,
+} from '../editor/pageLinkClipboard.ts';
 import { useLibrary } from '../state/library.tsx';
 import { useTabs } from '../state/tabs.tsx';
 import { DocumentIcon, IconPicker } from './IconPicker.tsx';
@@ -346,8 +351,13 @@ export function TreePane({
               draggable={renamingId !== row.doc.id}
               onDragStart={(event) => {
                 setDraggingId(row.doc.id);
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', row.doc.id);
+                // Inside the tree this is a move; over the page the private
+                // flavour becomes a live page link. The portable flavours are
+                // honest when the drag leaves PalmaNote altogether.
+                event.dataTransfer.effectAllowed = 'copyMove';
+                event.dataTransfer.setData(PAGE_DRAG_TYPE, row.doc.id);
+                event.dataTransfer.setData('text/plain', pageUri(row.doc.id));
+                event.dataTransfer.setData('text/html', pageLinkHtml(row.doc.id, row.doc.title));
               }}
               onDragEnd={() => {
                 setDraggingId(null);
@@ -367,7 +377,7 @@ export function TreePane({
               }}
               onDrop={(event) => {
                 event.preventDefault();
-                const id = event.dataTransfer.getData('text/plain') || draggingId;
+                const id = event.dataTransfer.getData(PAGE_DRAG_TYPE) || draggingId;
                 if (id && dropTarget) drop(id, dropTarget);
                 setDropTarget(null);
                 setDraggingId(null);

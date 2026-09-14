@@ -70,7 +70,8 @@ CREATE TABLE IF NOT EXISTS activity (
   day      TEXT PRIMARY KEY,           -- 'YYYY-MM-DD', local
   words    INTEGER NOT NULL DEFAULT 0, -- words touched: added and removed both
   seconds  INTEGER NOT NULL DEFAULT 0, -- active writing time
-  last_at  INTEGER NOT NULL            -- last edit, epoch ms; the gap anchor
+  last_at  INTEGER NOT NULL,           -- last edit, epoch ms; the gap anchor
+  document_ids TEXT NOT NULL DEFAULT '[]' -- pages touched that day, as JSON
 );
 
 -- Thoughts stuck to the side of a page. Not part of the document: they do not

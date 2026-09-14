@@ -244,6 +244,12 @@ function block(node: PMNode, out: DocxBlock[], manuscript: boolean, level: numbe
     case 'taskList':
       for (const item of node.content ?? []) listItem(node.type, item, out, manuscript, level);
       return;
+    case 'nestedList': {
+      const title = String(node.attrs?.title ?? 'Untitled list').trim() || 'Untitled list';
+      out.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(title)] }));
+      for (const child of node.content ?? []) block(child, out, manuscript, level);
+      return;
+    }
     case 'sceneBreak':
       out.push(
         new Paragraph({

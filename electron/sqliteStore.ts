@@ -70,6 +70,16 @@ interface ActivityRow {
   words: number;
   seconds: number;
   last_at: number;
+  document_ids: string;
+}
+
+function parseDocumentIds(raw: string): string[] {
+  try {
+    const value = JSON.parse(raw) as unknown;
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
 }
 
 function toMeta(row: DocumentRow): DocumentMeta {
@@ -133,10 +143,11 @@ CREATE TABLE IF NOT EXISTS assets (
 );
 
 CREATE TABLE IF NOT EXISTS activity (
-  day      TEXT PRIMARY KEY,
-  words    INTEGER NOT NULL DEFAULT 0,
-  seconds  INTEGER NOT NULL DEFAULT 0,
-  last_at  INTEGER NOT NULL
+  day          TEXT PRIMARY KEY,
+  words        INTEGER NOT NULL DEFAULT 0,
+  seconds      INTEGER NOT NULL DEFAULT 0,
+  last_at      INTEGER NOT NULL,
+  document_ids TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS sticky_notes (
@@ -190,6 +201,14 @@ export class SqliteStore implements PalmaNoteStore {
       .map((column) => column.name);
     if (!stickyColumns.includes('anchor')) {
       this.db.exec('ALTER TABLE sticky_notes ADD COLUMN anchor TEXT');
+    }
+
+    const activityColumns = this.db
+      .prepare<[], { name: string }>('PRAGMA table_info(activity)')
+      .all()
+      .map((column) => column.name);
+    if (!activityColumns.includes('document_ids')) {
+      this.db.exec("ALTER TABLE activity ADD COLUMN document_ids TEXT NOT NULL DEFAULT '[]'");
     }
   }
 
@@ -359,26 +378,32 @@ export class SqliteStore implements PalmaNoteStore {
    * read and a write costs nothing and keeps a single definition of what
    * counts as still writing.
    */
-  async recordActivity({ day, words, at }: RecordActivityInput): Promise<ActivityDay> {
+  async recordActivity({ day, words, at, documentId }: RecordActivityInput): Promise<ActivityDay> {
     return this.db.transaction(() => {
       const existing = this.db
         .prepare<[string], ActivityRow>('SELECT * FROM activity WHERE day = ?')
         .get(day);
+      const existingIds = existing ? parseDocumentIds(existing.document_ids) : [];
+      const documentIds = existingIds.includes(documentId)
+        ? existingIds
+        : [...existingIds, documentId];
       const next: ActivityDay = existing
         ? {
             day,
             words: existing.words + words,
             seconds: existing.seconds + accrueSeconds(existing.last_at, at),
             lastAt: at,
+            documentIds,
           }
-        : { day, words, seconds: 0, lastAt: at };
+        : { day, words, seconds: 0, lastAt: at, documentIds };
       this.db
         .prepare(
-          `INSERT INTO activity (day, words, seconds, last_at) VALUES (?, ?, ?, ?)
+          `INSERT INTO activity (day, words, seconds, last_at, document_ids) VALUES (?, ?, ?, ?, ?)
              ON CONFLICT(day) DO UPDATE SET
-               words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at`,
+               words = excluded.words, seconds = excluded.seconds, last_at = excluded.last_at,
+               document_ids = excluded.document_ids`,
         )
-        .run(next.day, next.words, next.seconds, next.lastAt);
+        .run(next.day, next.words, next.seconds, next.lastAt, JSON.stringify(next.documentIds));
       return next;
     })();
   }
@@ -433,6 +458,7 @@ export class SqliteStore implements PalmaNoteStore {
         words: row.words,
         seconds: row.seconds,
         lastAt: row.last_at,
+        documentIds: parseDocumentIds(row.document_ids),
       }));
   }
 

@@ -116,6 +116,7 @@ export function MonthChart({
   today,
   busy,
   aside,
+  onActivate,
 }: {
   days: ActivityDay[];
   /** `YYYY-MM`. */
@@ -125,6 +126,8 @@ export function MonthChart({
   busy: number;
   /** Goes at the end of the legend row — the panel's own "learn more". */
   aside?: React.ReactNode;
+  /** Opens the pages behind a written day. Silent and future days do nothing. */
+  onActivate?: (cell: Cell) => void;
 }) {
   const rows = monthOf(days, month, today, busy);
   const heads = weekdayHeads();
@@ -152,6 +155,14 @@ export function MonthChart({
   );
 
   const onKeyDown = (event: React.KeyboardEvent) => {
+    if ((event.key === 'Enter' || event.key === ' ') && onActivate) {
+      const cell = flat[at];
+      if (cell && cell.words > 0 && !cell.ahead) {
+        event.preventDefault();
+        onActivate(cell);
+      }
+      return;
+    }
     const steps: Record<string, number> = {
       ArrowLeft: -1,
       ArrowRight: 1,
@@ -200,6 +211,17 @@ export function MonthChart({
                   role="gridcell"
                   data-at={index}
                   tabIndex={at === index ? 0 : -1}
+                  aria-label={`${describe(cell)}${
+                    cell.words > 0 && !cell.ahead ? '. Open the pages written that day' : ''
+                  }`}
+                  title={
+                    cell.words > 0 && !cell.ahead
+                      ? 'Open the pages written that day'
+                      : undefined
+                  }
+                  onClick={() => {
+                    if (cell.words > 0 && !cell.ahead) onActivate?.(cell);
+                  }}
                   onMouseEnter={() => setShown(cell)}
                   onFocus={() => setShown(cell)}
                   onBlur={() => setShown(null)}

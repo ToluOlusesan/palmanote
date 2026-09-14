@@ -544,9 +544,11 @@ function Workspace() {
                 stickies.add();
               }}
               rail={{
-                visible: railVisible,
                 count: stickies.notes.length,
-                toggle: () => setRailVisible(!railVisible),
+                add: () => {
+                  setRailVisible(true);
+                  stickies.add();
+                },
               }}
             />
           )}
@@ -573,7 +575,12 @@ function Workspace() {
           }}
         />
       )}
-      {activityOpen && <ActivityDialog onClose={() => setActivityOpen(false)} />}
+      {activityOpen && (
+        <ActivityDialog
+          onClose={() => setActivityOpen(false)}
+          onOpenPages={openedSomething}
+        />
+      )}
       {paletteOpen && (
         <Palette
           onClose={() => {

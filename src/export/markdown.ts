@@ -67,6 +67,11 @@ function block(node: PMNode, indent: number, prefix: string): string {
       return listItems(node, indent, prefix, (_index, item) =>
         item.attrs?.checked ? '- [x] ' : '- [ ] ',
       );
+    case 'nestedList': {
+      const title = String(node.attrs?.title ?? 'Untitled list').trim() || 'Untitled list';
+      const body = (node.content ?? []).map((child) => block(child, indent, prefix)).join('\n\n');
+      return `### ${title}\n\n${body}`;
+    }
     case 'table':
       return pipeTable(node, pad, prefix);
     case 'sceneBreak':

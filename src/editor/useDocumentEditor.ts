@@ -8,8 +8,9 @@ import type { PMDoc, PMNode } from '../core/types.ts';
 import { store } from '../data/index.ts';
 import { openLink } from '../data/links.ts';
 import { ACCEPTED, preloadAssets, storeImage } from './assets.ts';
-import { idFromPageUri } from './pageLinkClipboard.ts';
+import { idFromPageUri, PAGE_DRAG_TYPE } from './pageLinkClipboard.ts';
 import { cleanPastedHTML } from './pastedHtml.ts';
+import { blockAt, LIST_ITEM_DRAG_TYPE, moveListItem } from './blocks.ts';
 import { useLibrary } from '../state/library.tsx';
 import { noteWriting } from '../state/activity.ts';
 import { clearPending, stashPending } from '../state/pending.ts';
@@ -113,7 +114,12 @@ function takeImages(view: EditorView, items: DataTransferItem[], at: number | nu
  * somewhere that does not carry HTML. Without it a page link pasted the wrong
  * way lands as a URI nobody can click.
  */
-function takePageUri(view: EditorView, text: string, titleOf: (id: string) => string): boolean {
+function takePageUri(
+  view: EditorView,
+  text: string,
+  titleOf: (id: string) => string,
+  at: number | null = null,
+): boolean {
   const id = idFromPageUri(text);
   if (!id) return false;
   // The label is written once, here, and never read by the app again — the
@@ -122,7 +128,10 @@ function takePageUri(view: EditorView, text: string, titleOf: (id: string) => st
   // a string. See PageLink.
   const node = view.state.schema.nodes.pageLink?.create({ id, label: titleOf(id) });
   if (!node) return false;
-  view.dispatch(view.state.tr.replaceSelectionWith(node, false).scrollIntoView());
+  const tr = at === null
+    ? view.state.tr.replaceSelectionWith(node, false)
+    : view.state.tr.replaceRangeWith(at, at, node);
+  view.dispatch(tr.scrollIntoView());
   return true;
 }
 
@@ -231,7 +240,33 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
         */
         if (view.dragging) return false;
         const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        return takeImages(view, [...(event.dataTransfer?.items ?? [])], at?.pos ?? null);
+        const draggedListItem = event.dataTransfer?.getData(LIST_ITEM_DRAG_TYPE) ?? '';
+        if (draggedListItem) {
+          event.preventDefault();
+          const sourcePos = Number(draggedListItem);
+          const target = at ? blockAt(view.state, at.pos) : null;
+          if (!Number.isInteger(sourcePos) || !target) return true;
+          const targetDom = view.nodeDOM(target.pos);
+          const box = targetDom instanceof HTMLElement ? targetDom.getBoundingClientRect() : null;
+          const after = box ? event.clientY > box.top + box.height / 2 : false;
+          view.focus();
+          moveListItem(sourcePos, target.pos, after)(view.state, view.dispatch, view);
+          return true;
+        }
+        if (takeImages(view, [...(event.dataTransfer?.items ?? [])], at?.pos ?? null)) return true;
+
+        // A sidebar page is a reference, not prose containing its internal id.
+        // The private flavour distinguishes it from a tab reorder and lets the
+        // tree keep using text/plain as a portable fallback outside the app.
+        const draggedId = event.dataTransfer?.getData(PAGE_DRAG_TYPE) ?? '';
+        if (!draggedId) return false;
+        event.preventDefault();
+        return takePageUri(
+          view,
+          `springboard://page/${draggedId}`,
+          (id) => linkContext.current.byId.get(id)?.title ?? '',
+          at?.pos ?? null,
+        );
       },
       // A web link goes to the machine's browser, never to this window: the
       // page is the app, and navigating it away would close the library.
@@ -277,7 +312,7 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     current.current.words = words;
     // Not awaited: a square on a chart never stands between the words and the
     // disk.
-    void noteWriting(moved);
+    void noteWriting(id, moved);
 
     const meta = await store.saveContent({ id, content, wordCount: words, snapshot });
     applyMetaRef.current(meta);

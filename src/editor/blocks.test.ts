@@ -15,6 +15,7 @@ import {
   deleteBlock,
   duplicateBlock,
   insertBlockAfter,
+  moveListItem,
   moveBlock,
 } from './blocks.ts';
 
@@ -85,6 +86,19 @@ function itemsOf(state: EditorState): string[] {
     return true;
   });
   return out;
+}
+
+function itemPosition(document: PMNode, text: string): number {
+  let found = -1;
+  document.descendants((node, pos) => {
+    if (node.type.name === 'listItem' && node.textContent === text) {
+      found = pos;
+      return false;
+    }
+    return true;
+  });
+  if (found < 0) throw new Error(`no list item reading “${text}”`);
+  return found;
 }
 
 // ------------------------------------------------------------------ what a block is
@@ -240,6 +254,28 @@ test('a bullet moves among its own bullets', () => {
 test('the last bullet does not climb out of its list', () => {
   const state = stateWith(doc(bullets('a', 'b'), p('after')), 'b');
   assert.equal(apply(state, moveBlock(1)), null);
+});
+
+test('a list item can be dropped before a visible sibling', () => {
+  const document = doc(bullets('a', 'b', 'c'));
+  const state = stateWith(document, 'a');
+  const moved = apply(state, moveListItem(itemPosition(document, 'c'), itemPosition(document, 'a'), false));
+  assert.deepEqual(itemsOf(moved!), ['c', 'a', 'b']);
+});
+
+test('a list item can be dropped after a visible sibling', () => {
+  const document = doc(bullets('a', 'b', 'c'));
+  const state = stateWith(document, 'a');
+  const moved = apply(state, moveListItem(itemPosition(document, 'a'), itemPosition(document, 'c'), true));
+  assert.deepEqual(itemsOf(moved!), ['b', 'c', 'a']);
+});
+
+test('a list drop refuses to cross into another list', () => {
+  const first = bullets('a', 'b');
+  const second = bullets('c', 'd');
+  const document = doc(first, second);
+  const state = stateWith(document, 'a');
+  assert.equal(apply(state, moveListItem(itemPosition(document, 'a'), itemPosition(document, 'c'), false)), null);
 });
 
 test('a quote moves as one thing, paragraphs and all', () => {

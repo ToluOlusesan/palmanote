@@ -22,6 +22,9 @@
  */
 
 export const PAGE_URI = 'springboard://page/';
+/** Private drag flavour used inside PalmaNote. The plain and HTML flavours
+    travel beside it so dropping outside the app still produces a useful link. */
+export const PAGE_DRAG_TYPE = 'application/x-palmanote-page';
 
 export function pageUri(id: string): string {
   return `${PAGE_URI}${id}`;

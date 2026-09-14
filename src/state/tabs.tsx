@@ -48,7 +48,12 @@ export interface TabsApi {
   /** Editing a previewed document is what makes it worth keeping. */
   promote(docId: string): void;
   close(docId: string): void;
+  /** Browser-style group closes. Pinned tabs survive the relative variants. */
+  closeOthers(docId: string): void;
+  closeToRight(docId: string): void;
+  closeAll(): void;
   closeActive(): void;
+  canReopen: boolean;
   reopenLast(): void;
   cycle(direction: 1 | -1): void;
   jump(position: number): void;
@@ -80,6 +85,7 @@ export function TabsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const closed = useRef<{ docId: string; index: number }[]>([]);
+  const [closedCount, setClosedCount] = useState(0);
   const pinnedCloseArmed = useRef<string | null>(null);
 
   // Selection is the single source of truth for which document is open; the
@@ -136,6 +142,7 @@ export function TabsProvider({ children }: { children: ReactNode }) {
       const index = current.findIndex((tab) => tab.docId === docId);
       if (index === -1) return;
       closed.current = [{ docId, index }, ...closed.current].slice(0, REOPEN_LIMIT);
+      setClosedCount(closed.current.length);
       const next = current.filter((tab) => tab.docId !== docId);
       commit(next);
       if (docId === selectedId) {
@@ -145,6 +152,58 @@ export function TabsProvider({ children }: { children: ReactNode }) {
     },
     [commit, select, selectedId],
   );
+
+  /**
+   * Closes a set as one operation and chooses the nearest tab that survived.
+   * Keeping this here, rather than having the menu call `close` in a loop,
+   * avoids walking selection through every intermediate tab and keeps the
+   * closed-tab stack in the same visual order the strip had.
+   */
+  const closeWhere = useCallback(
+    (shouldClose: (tab: Tab, index: number) => boolean) => {
+      const current = tabsRef.current;
+      const removed = current
+        .map((tab, index) => ({ tab, index }))
+        .filter(({ tab, index }) => shouldClose(tab, index));
+      if (removed.length === 0) return;
+
+      closed.current = [
+        ...[...removed].reverse().map(({ tab, index }) => ({ docId: tab.docId, index })),
+        ...closed.current,
+      ].slice(0, REOPEN_LIMIT);
+      setClosedCount(closed.current.length);
+      const removedIds = new Set(removed.map(({ tab }) => tab.docId));
+      const next = current.filter((tab) => !removedIds.has(tab.docId));
+      const activeAt = current.findIndex((tab) => tab.docId === selectedId);
+      commit(next);
+      if (selectedId && removedIds.has(selectedId)) {
+        const neighbour = next[Math.min(Math.max(activeAt, 0), next.length - 1)];
+        select(neighbour?.docId ?? null);
+      }
+    },
+    [commit, select, selectedId],
+  );
+
+  const closeOthers = useCallback(
+    (docId: string) => closeWhere((tab) => tab.docId !== docId && !tab.pinned),
+    [closeWhere],
+  );
+
+  const closeToRight = useCallback(
+    (docId: string) => {
+      const at = tabsRef.current.findIndex((tab) => tab.docId === docId);
+      if (at === -1) return;
+      closeWhere((tab, index) => index > at && !tab.pinned);
+    },
+    [closeWhere],
+  );
+
+  const closeAll = useCallback(() => {
+    closeWhere(() => true);
+    // Also covers the narrow race where navigation changed selection before
+    // its preview tab was rendered: “all” must still leave no page selected.
+    select(null);
+  }, [closeWhere, select]);
 
   const closeActive = useCallback(() => {
     if (!selectedId) return;
@@ -165,6 +224,7 @@ export function TabsProvider({ children }: { children: ReactNode }) {
     const last = closed.current[0];
     if (!last) return;
     closed.current = closed.current.slice(1);
+    setClosedCount(closed.current.length);
     if (byId.get(last.docId)?.archivedAt !== null) return;
     const current = tabsRef.current;
     if (!current.some((tab) => tab.docId === last.docId)) {
@@ -252,7 +312,11 @@ export function TabsProvider({ children }: { children: ReactNode }) {
       open,
       promote,
       close,
+      closeOthers,
+      closeToRight,
+      closeAll,
       closeActive,
+      canReopen: closedCount > 0,
       reopenLast,
       cycle,
       jump,
@@ -262,10 +326,14 @@ export function TabsProvider({ children }: { children: ReactNode }) {
     }),
     [
       tabs,
+      closedCount,
       selectedId,
       open,
       promote,
       close,
+      closeOthers,
+      closeToRight,
+      closeAll,
       closeActive,
       reopenLast,
       cycle,
