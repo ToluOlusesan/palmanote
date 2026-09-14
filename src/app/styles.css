@@ -544,26 +544,66 @@ button {
   gap: 0.45rem;
   margin: 0.15rem 0.6rem 0.6rem;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--page);
+  border: 1px solid var(--accent);
+  border-radius: 0.7rem;
+  background: var(--accent);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--ink);
-  transition: background 130ms var(--ease), border-color 130ms var(--ease);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  transition: background 130ms var(--ease), border-color 130ms var(--ease), box-shadow 130ms var(--ease), translate 130ms var(--ease);
 }
 
 .add-row svg {
-  color: var(--muted);
+  color: #fff;
 }
 
 .add-row:hover {
-  background: var(--raise);
-  border-color: var(--faint);
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--accent) 88%, #000);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 16%);
+  translate: 0 -1px;
 }
 
 .add-row:hover svg {
+  color: #fff;
+}
+
+.tree-foot .ghost {
+  padding: 0.28rem 0.48rem;
+  border-radius: 0.5rem;
+}
+
+.tree-foot .ghost:hover {
+  background: var(--raise);
+}
+
+.tree-trash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: calc(100% - 1.2rem);
+  margin: 0 0.6rem 0.6rem;
+  padding: 0.5rem 0.6rem !important;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem !important;
   color: var(--ink);
+  font-weight: 600;
+}
+
+.tree-trash svg {
+  color: #cf3f3f;
+}
+
+.tree-trash:hover {
+  color: #111113;
+  background: rgb(207 63 63 / 9%) !important;
+}
+
+:root[data-theme='dark'] .tree-trash:hover {
+  color: #fff;
+  background: rgb(255 104 104 / 13%) !important;
 }
 
 .rename {
@@ -578,12 +618,8 @@ button {
 }
 
 .tree-foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.55rem 0.95rem;
-  border-top: 1px solid var(--line);
+  display: block;
+  padding: 0;
   white-space: nowrap;
 }
 
@@ -645,7 +681,7 @@ button {
   flex: none;
   width: 1.85rem;
   height: 1.85rem;
-  border-radius: 5px;
+  border-radius: 0.55rem;
   color: var(--muted);
   transition: background 120ms var(--ease), color 120ms var(--ease);
 }
@@ -684,7 +720,7 @@ button {
   font-size: 0.75rem;
   color: var(--muted);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 0.65rem;
   cursor: default;
   user-select: none;
   white-space: nowrap;
@@ -727,7 +763,7 @@ button {
   place-items: center;
   width: 1.25rem;
   height: 1.25rem;
-  border-radius: 3px;
+  border-radius: 0.45rem;
   color: var(--faint);
   opacity: 0;
 }
@@ -807,7 +843,7 @@ button {
   flex: none;
   width: 1.6rem;
   height: 1.6rem;
-  border-radius: 3px;
+  border-radius: 0.5rem;
   color: var(--muted);
   font-size: 1rem;
   line-height: 1;
@@ -1146,7 +1182,7 @@ button.crumb:hover {
 .nested-list {
   margin: 0.9em 0;
   border: 1px solid var(--hairline);
-  border-radius: 6px;
+  border-radius: 0.65rem;
 }
 
 .nested-list-head {
@@ -1156,7 +1192,7 @@ button.crumb:hover {
   min-height: 2.15rem;
   padding: 0.35rem 0.45rem 0.35rem 0.7rem;
   background: var(--raise);
-  border-radius: 5px;
+  border-radius: 0.55rem;
 }
 
 .nested-list-title {
@@ -1888,7 +1924,8 @@ button.crumb:hover {
   display: grid;
   place-items: center;
   padding: 2rem 1rem;
-  background: rgb(20 20 22 / 28%);
+  background: rgb(20 20 22 / 24%);
+  backdrop-filter: blur(2px);
   overflow-y: auto;
 }
 
@@ -1901,6 +1938,20 @@ button.crumb:hover {
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 12%);
+  animation: overlay-in var(--settle) var(--ease) both;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    translate: 0 5px;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    translate: 0;
+    scale: 1;
+  }
 }
 
 .dialog-title {
@@ -2592,12 +2643,65 @@ button.crumb:hover {
   flex: none;
 }
 
+/* The writing bar has one immediate layer (marks plus a fresh note) and one
+   deliberate layer for changing a block's shape. */
+.toolbar-more {
+  position: relative;
+}
+
+.toolbar-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 24;
+  display: grid;
+  min-width: 13.25rem;
+  padding: 0.28rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 8%), 0 18px 42px rgb(0 0 0 / 15%);
+  transform-origin: top right;
+  animation: overlay-in var(--settle) var(--ease) both;
+}
+
+.toolbar-menu-item {
+  display: grid;
+  grid-template-columns: 1.3rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.5rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.toolbar-menu-item:hover,
+.toolbar-menu-item:focus-visible {
+  background: var(--raise);
+  outline: none;
+}
+
+.toolbar-menu-item kbd {
+  color: var(--faint);
+  font: 0.6875rem var(--mono);
+}
+
+.toolbar-menu-sep {
+  height: 1px;
+  margin: 0.25rem 0.35rem;
+  background: var(--hairline);
+}
+
 .tool {
   display: grid;
   place-items: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 5px;
+  border-radius: 0.55rem;
   color: var(--muted);
   transition: background 110ms var(--ease), color 110ms var(--ease);
 }
@@ -4181,6 +4285,62 @@ mark[data-tone='red'] {
   pointer-events: none;
 }
 
+/* A note is part of the room, not an element laid on top of the page. On a
+   roomy window it earns a real column, so long notes cannot cover prose. */
+.main.has-rail {
+  grid-template-columns: minmax(0, 1fr) 13.5rem;
+}
+
+.main.has-rail .topstrip {
+  grid-column: 1 / -1;
+}
+
+.main.has-rail .editor-host {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.main.has-rail .stickies {
+  position: relative;
+  inset: auto;
+  grid-column: 2;
+  grid-row: 2;
+  width: auto;
+  padding: 0.75rem 0.8rem calc(var(--status) + 0.75rem) 0.1rem;
+}
+
+.main.has-rail .stickies-rail {
+  padding-top: 0.2rem;
+}
+
+@media (max-width: 64rem) {
+  .main.has-rail {
+    grid-template-columns: minmax(0, 1fr) 11.25rem;
+  }
+
+  .main.has-rail .stickies {
+    padding-right: 0.45rem;
+  }
+}
+
+@media (max-width: 51rem) {
+  .main.has-rail {
+    grid-template-columns: minmax(0, 1fr) 9.5rem;
+  }
+
+  .main.has-rail .sheet {
+    padding-right: 1.15rem;
+  }
+
+  .sticky {
+    padding: 0.65rem 0.65rem 0.45rem;
+  }
+
+  .sticky-text {
+    font-size: 0.875rem;
+  }
+}
+
 .stickies-rail {
   display: flex;
   flex-direction: column;
@@ -4718,7 +4878,7 @@ mark[data-tone='red'] {
   width: 1.15rem;
   height: 1.15rem;
   margin: 0 0 -0.15rem auto;
-  border-radius: 4px;
+  border-radius: 0.5rem;
   color: var(--faint);
   opacity: 0;
   transition:

@@ -1,7 +1,7 @@
-import { CaretRight, DotsThree, FilePlus, Star } from '@phosphor-icons/react';
+import { CaretRight, DotsThree, FilePlus, Star, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { findNode, isAncestor, siblingsOf, type TreeNode } from '../core/tree.ts';
+import { findNode, isAncestor, siblingsOf } from '../core/tree.ts';
 import {
   copyPageLink,
   pageLinkHtml,
@@ -50,7 +50,6 @@ export function TreePane({
   const [confirming, setConfirming] = useState<string | null>(null);
   const [picking, setPicking] = useState<{ id: string; x: number; y: number } | null>(null);
 
-  const counts = useMemo(() => subtreeCounts(tree), [tree]);
   const index = useMemo(
     () => visible.findIndex((row) => row.doc.id === selectedId),
     [visible, selectedId],
@@ -490,9 +489,6 @@ export function TreePane({
               >
                 <DotsThree size={17} weight="bold" />
               </button>
-              <span className="row-count">
-                {(counts.get(row.doc.id) ?? 0) > 0 ? formatCount(counts.get(row.doc.id) ?? 0) : ''}
-              </span>
             </div>
           );
         })}
@@ -500,19 +496,19 @@ export function TreePane({
 
       <button type="button" className="add-row" title="New page — Ctrl+N" onClick={() => newDocument(false)}>
         <FilePlus size={18} />
-        Add page
+        New page
       </button>
 
       <footer className="tree-foot">
         <button
           type="button"
-          className="ghost"
+          className="ghost tree-trash"
           aria-expanded={showArchive}
           onClick={() => setShowArchive((open) => !open)}
         >
-          Archive{library.archived.length > 0 ? ` (${library.archived.length})` : ''}
+          <Trash size={14} weight="bold" aria-hidden="true" />
+          Trash{library.archived.length > 0 ? ` (${library.archived.length})` : ''}
         </button>
-        <span className="total">{formatCount(library.totalWords)} words</span>
       </footer>
 
       {showArchive && (
@@ -593,20 +589,6 @@ function RenameField({
       }}
     />
   );
-}
-
-/** One bottom-up pass: each node reuses its children's totals. */
-function subtreeCounts(tree: TreeNode[]): Map<string, number> {
-  const counts = new Map<string, number>();
-  const walk = (nodes: TreeNode[]) => {
-    for (const node of nodes) {
-      walk(node.children);
-      const total = node.children.reduce((sum, child) => sum + (counts.get(child.doc.id) ?? 0), 0);
-      counts.set(node.doc.id, node.doc.wordCount + total);
-    }
-  };
-  walk(tree);
-  return counts;
 }
 
 export function formatCount(count: number): string {

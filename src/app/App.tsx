@@ -393,7 +393,7 @@ function Workspace() {
         onClick={() => setTreeVisible(true)}
       />
 
-      <div className="main">
+      <div className={`main${railVisible ? ' has-rail' : ''}`}>
         {/* The title bar of a window with no frame. `deep` means a press
             anywhere in here drags, except where Tauri stops of its own accord:
             it walks up from what was pressed and gives up at the first button,
@@ -545,6 +545,8 @@ function Workspace() {
               }}
               rail={{
                 count: stickies.notes.length,
+                visible: railVisible,
+                show: () => setRailVisible(true),
                 add: () => {
                   setRailVisible(true);
                   stickies.add();
@@ -558,7 +560,9 @@ function Workspace() {
       {/* Last in the tree so it is over everything, and only once there is
           something to point at: it teaches the writing surface, and the
           greeting is still covering it until it is answered. */}
-      {touring && ready && !greeting && !pdf && <Tutorial onDone={() => setTouring(false)} />}
+      {touring && ready && !greeting && !pdf && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && !railVisible && (
+        <Tutorial onDone={() => setTouring(false)} />
+      )}
 
       {settingsOpen && (
         <SettingsDialog
@@ -594,7 +598,9 @@ function Workspace() {
       {/* Where the work is kept — said once, in the build where the answer is
           not "a file you could point at". Not while the tour is up: two things
           introducing themselves at once is neither of them being read. */}
-      {!isDesktop && ready && !touring && <StorageNote onExport={() => setExporting(true)} />}
+      {!isDesktop && ready && !touring && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && (
+        <StorageNote onExport={() => setExporting(true)} />
+      )}
 
       {importing && (
         <ImportDialog

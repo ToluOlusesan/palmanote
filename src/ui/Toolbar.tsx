@@ -1,6 +1,7 @@
 import {
   Highlighter,
   ListBullets,
+  DotsThree,
   NoteBlank,
   ListChecks,
   ListNumbers,
@@ -30,6 +31,10 @@ import { activeHighlight, HIGHLIGHT_LABELS, HIGHLIGHT_TONES } from '../editor/Hi
 export interface RailControl {
   /** Shown in the tooltip, so a rail with notes still says how much is there. */
   count: number;
+  /** Whether the rail is already occupying its column beside the page. */
+  visible: boolean;
+  /** Restores existing notes without making another one. */
+  show: () => void;
   /** A page-level sticky: it opens the rail before putting a note in it. */
   add: () => void;
 }
@@ -38,6 +43,8 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
   // Marks toggle per keystroke, so the row has to re-render on every
   // transaction to keep its pressed states honest.
   const [, bump] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const more = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!editor) return;
     const refresh = () => bump((n) => n + 1);
@@ -46,6 +53,22 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
       editor.off('transaction', refresh);
     };
   }, [editor]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const dismiss = (event: MouseEvent) => {
+      if (!more.current?.contains(event.target as Node)) setMoreOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false);
+    };
+    window.addEventListener('mousedown', dismiss);
+    window.addEventListener('keydown', escape);
+    return () => {
+      window.removeEventListener('mousedown', dismiss);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [moreOpen]);
 
   if (!editor) return null;
 
@@ -93,27 +116,30 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
 
       <span className="tool-sep" />
 
-      {button('Heading', 'Ctrl+Alt+1', editor.isActive('heading', { level: 1 }), TextHOne, () =>
-        editor.chain().focus().toggleHeading({ level: 1 }).run(),
-      )}
-      {button('Subheading', 'Ctrl+Alt+2', editor.isActive('heading', { level: 2 }), TextHTwo, () =>
-        editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      )}
-      {button('Small heading', 'Ctrl+Alt+3', editor.isActive('heading', { level: 3 }), TextHThree, () =>
-        editor.chain().focus().toggleHeading({ level: 3 }).run(),
-      )}
-
-      <span className="tool-sep" />
-
-      {button('Bullet list', '- ', editor.isActive('bulletList'), ListBullets, () =>
-        editor.chain().focus().toggleBulletList().run(),
-      )}
-      {button('Numbered list', '1. ', editor.isActive('orderedList'), ListNumbers, () =>
-        editor.chain().focus().toggleOrderedList().run(),
-      )}
-      {button('Task list', '[] ', editor.isActive('taskList'), ListChecks, () =>
-        editor.chain().focus().toggleTaskList().run(),
-      )}
+      <div className="toolbar-more" ref={more}>
+        <button
+          type="button"
+          className={`tool${moreOpen ? ' is-active' : ''}`}
+          aria-label="More block styles"
+          aria-expanded={moreOpen}
+          title="More block styles"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setMoreOpen((open) => !open)}
+        >
+          <DotsThree size={18} weight="bold" />
+        </button>
+        {moreOpen && (
+          <div className="toolbar-menu" role="menu" aria-label="Block styles">
+            <ToolbarMenuItem icon={TextHOne} label="Heading" hint="Ctrl+Alt+1" onSelect={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setMoreOpen(false); }} />
+            <ToolbarMenuItem icon={TextHTwo} label="Subheading" hint="Ctrl+Alt+2" onSelect={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setMoreOpen(false); }} />
+            <ToolbarMenuItem icon={TextHThree} label="Small heading" hint="Ctrl+Alt+3" onSelect={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setMoreOpen(false); }} />
+            <span className="toolbar-menu-sep" />
+            <ToolbarMenuItem icon={ListBullets} label="Bullet list" hint="-" onSelect={() => { editor.chain().focus().toggleBulletList().run(); setMoreOpen(false); }} />
+            <ToolbarMenuItem icon={ListNumbers} label="Numbered list" hint="1." onSelect={() => { editor.chain().focus().toggleOrderedList().run(); setMoreOpen(false); }} />
+            <ToolbarMenuItem icon={ListChecks} label="Task list" hint="[]" onSelect={() => { editor.chain().focus().toggleTaskList().run(); setMoreOpen(false); }} />
+          </div>
+        )}
+      </div>
 
       {/* A new sticky, at the end of the row.
           It sat in the window's top bar beside settings and the theme, which
@@ -126,10 +152,12 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
           <button
             type="button"
             className="tool"
-            aria-label="New sticky note"
-            title={`New sticky note${rail.count > 0 ? ` (${rail.count} on this page)` : ''} — Ctrl+Space`}
+            aria-label={rail.count > 0 && !rail.visible ? 'Show notes' : 'New sticky note'}
+            title={rail.count > 0 && !rail.visible
+              ? `Show ${rail.count} note${rail.count === 1 ? '' : 's'} — Ctrl+Shift+Space`
+              : `New sticky note${rail.count > 0 ? ` (${rail.count} on this page)` : ''} — Ctrl+Space`}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={rail.add}
+            onClick={() => (rail.count > 0 && !rail.visible ? rail.show() : rail.add())}
           >
             <NoteBlank size={17} />
           </button>
@@ -152,6 +180,16 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
         </>
       )}
     </div>
+  );
+}
+
+function ToolbarMenuItem({ icon: Glyph, label, hint, onSelect }: { icon: Icon; label: string; hint: string; onSelect: () => void }) {
+  return (
+    <button type="button" role="menuitem" className="toolbar-menu-item" onMouseDown={(event) => event.preventDefault()} onClick={onSelect}>
+      <Glyph size={16} />
+      <span>{label}</span>
+      <kbd>{hint}</kbd>
+    </button>
   );
 }
 
