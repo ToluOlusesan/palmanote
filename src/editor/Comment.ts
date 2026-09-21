@@ -1,6 +1,7 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
+import type { StickyColour } from '../core/types.ts';
 
 /**
  * The words a comment is about.
@@ -38,6 +39,11 @@ export const Comment = Mark.create({
         parseHTML: (element) => element.getAttribute('data-comment'),
         renderHTML: (attributes) =>
           attributes.id ? { 'data-comment': attributes.id as string } : {},
+      },
+      colour: {
+        default: 'lime',
+        parseHTML: (element) => element.getAttribute('data-comment-colour') ?? 'lime',
+        renderHTML: (attributes) => ({ 'data-comment-colour': attributes.colour as string }),
       },
     };
   },
@@ -78,6 +84,19 @@ export function clearComment(editor: Editor, id: string): void {
   if (!type || ranges.length === 0) return;
   const tr = editor.state.tr;
   for (const range of ranges) tr.removeMark(range.from, range.to, type);
+  editor.view.dispatch(tr);
+}
+
+/** Keeps the tiny in-text bubble in the same paper colour as its note. */
+export function setCommentColour(editor: Editor, id: string, colour: StickyColour): void {
+  const type = editor.state.schema.marks.comment;
+  const ranges = rangesOf(editor, id);
+  if (!type || ranges.length === 0) return;
+  let tr = editor.state.tr;
+  for (const range of ranges) {
+    tr = tr.removeMark(range.from, range.to, type);
+    tr = tr.addMark(range.from, range.to, type.create({ id, colour }));
+  }
   editor.view.dispatch(tr);
 }
 

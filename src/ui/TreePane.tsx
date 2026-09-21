@@ -31,11 +31,13 @@ export function TreePane({
   onPreview,
   onImport,
   onHome,
+  onOpenTrash,
 }: {
   onOpen: () => void;
   onPreview: () => void;
   onImport: () => void;
   onHome: () => void;
+  onOpenTrash: () => void;
 }) {
   const library = useLibrary();
   const tabs = useTabs();
@@ -44,10 +46,7 @@ export function TreePane({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [showArchive, setShowArchive] = useState(false);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
-  // Permanent deletion asks once, inline, rather than in a modal.
-  const [confirming, setConfirming] = useState<string | null>(null);
   const [picking, setPicking] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const index = useMemo(
@@ -503,60 +502,13 @@ export function TreePane({
         <button
           type="button"
           className="ghost tree-trash"
-          aria-expanded={showArchive}
-          onClick={() => setShowArchive((open) => !open)}
+          onClick={onOpenTrash}
         >
           <Trash size={14} weight="bold" aria-hidden="true" />
           Trash{library.archived.length > 0 ? ` (${library.archived.length})` : ''}
         </button>
       </footer>
 
-      {showArchive && (
-        <div className="archive">
-          {library.archived.length === 0 ? (
-            <p className="archive-empty">
-              Deleted pages leave the sidebar and wait here. Nothing goes for good until you say so.
-            </p>
-          ) : (
-            library.archived.map((doc) => (
-              <div className="archive-row" key={doc.id}>
-                <span className="row-title">{doc.title || <span className="untitled">Untitled</span>}</span>
-                {confirming === doc.id ? (
-                  <>
-                    <button
-                      type="button"
-                      className="ghost is-destructive"
-                      onClick={() => {
-                        setConfirming(null);
-                        void library.destroy(doc.id);
-                      }}
-                    >
-                      Delete for good
-                    </button>
-                    <button type="button" className="ghost" onClick={() => setConfirming(null)}>
-                      Keep
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" className="ghost" onClick={() => void library.restore(doc.id)}>
-                      Restore
-                    </button>
-                    <button
-                      type="button"
-                      className="ghost is-destructive"
-                      title="Delete permanently, with everything inside it"
-                      onClick={() => setConfirming(doc.id)}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
     </nav>
   );
 }

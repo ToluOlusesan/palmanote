@@ -1,5 +1,5 @@
 import { Plus, PushPin, X } from '@phosphor-icons/react';
-import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 
 import { useLibrary } from '../state/library.tsx';
 import { DocumentIcon } from './IconPicker.tsx';
@@ -19,6 +19,7 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
    */
   const dragFrom = useRef<number | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
+  const [dragWidth, setDragWidth] = useState(0);
   const [menu, setMenu] = useState<{ docId: string | null; x: number; y: number } | null>(null);
 
   // Keep the active tab in view when it changes by keyboard.
@@ -45,6 +46,7 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
   const endDrag = () => {
     dragFrom.current = null;
     setDropAt(null);
+    setDragWidth(0);
   };
 
   /**
@@ -168,6 +170,8 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
         if (!doc) return null;
         const active = tab.docId === tabs.activeId;
         const label = doc.title || 'Untitled';
+        const shiftingLeft = dragFrom.current !== null && dropAt !== null && dragFrom.current < dropAt && index > dragFrom.current && index < dropAt;
+        const shiftingRight = dragFrom.current !== null && dropAt !== null && dragFrom.current > dropAt && index >= dropAt && index < dragFrom.current;
         return (
           <div
             key={tab.docId}
@@ -181,23 +185,27 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
               active && 'is-active',
               tab.preview && 'is-preview',
               tab.pinned && 'is-pinned',
-              dropAt === index && 'is-drop',
+              dragFrom.current === index && 'is-dragging',
+              shiftingLeft && 'is-shifting-left',
+              shiftingRight && 'is-shifting-right',
             ]
               .filter(Boolean)
               .join(' ')}
+            style={{ '--tab-drag-width': `${dragWidth}px` } as CSSProperties}
             draggable
             onDragStart={(event) => {
               dragFrom.current = index;
+              setDragWidth(event.currentTarget.getBoundingClientRect().width);
               event.dataTransfer.effectAllowed = 'move';
               // Firefox starts no drag at all without payload, and the id is
               // the honest thing to carry.
               event.dataTransfer.setData('text/plain', tab.docId);
             }}
-            onDragEnter={(event) => {
-              if (allowDrop(event)) setDropAt(index);
-            }}
+            onDragEnter={(event) => { if (allowDrop(event)) setDropAt(event.clientX < event.currentTarget.getBoundingClientRect().left + event.currentTarget.getBoundingClientRect().width / 2 ? index : index + 1); }}
             onDragOver={(event) => {
-              if (allowDrop(event)) setDropAt(index);
+              if (!allowDrop(event)) return;
+              const box = event.currentTarget.getBoundingClientRect();
+              setDropAt(event.clientX < box.left + box.width / 2 ? index : index + 1);
             }}
             onDragEnd={endDrag}
             onDrop={(event) => {
@@ -205,7 +213,9 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
               // The strip below would otherwise also take this drop and send
               // the tab to the end.
               event.stopPropagation();
-              tabs.moveTab(dragFrom.current!, index);
+              const box = event.currentTarget.getBoundingClientRect();
+              const target = event.clientX < box.left + box.width / 2 ? index : index + 1;
+              tabs.moveTab(dragFrom.current!, target > dragFrom.current! ? target - 1 : target);
               endDrag();
             }}
             onClick={() => {
@@ -254,6 +264,7 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
           </div>
         );
       })}
+
 
       {newTab}
     </div>

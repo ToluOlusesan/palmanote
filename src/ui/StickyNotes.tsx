@@ -23,6 +23,7 @@ export function StickyNotes({
   stickies,
   onGoToAnchor,
   onHide,
+  onCommentColourChange,
 }: {
   stickies: Stickies;
   /** Puts the whole rail away. The notes are kept; the column is not. */
@@ -35,6 +36,7 @@ export function StickyNotes({
    * to keep a badge honest.
    */
   onGoToAnchor: (anchor: string) => boolean;
+  onCommentColourChange?: (anchor: string, colour: StickyColour) => void;
 }) {
   if (stickies.notes.length === 0) return null;
   return (
@@ -52,7 +54,7 @@ export function StickyNotes({
           <CaretRight size={12} weight="bold" />
         </button>
         {stickies.notes.map((note) => (
-          <Sticky key={note.id} note={note} stickies={stickies} onGoToAnchor={onGoToAnchor} />
+          <Sticky key={note.id} note={note} stickies={stickies} onGoToAnchor={onGoToAnchor} onCommentColourChange={onCommentColourChange} />
         ))}
         <button
           type="button"
@@ -72,10 +74,12 @@ function Sticky({
   note,
   stickies,
   onGoToAnchor,
+  onCommentColourChange,
 }: {
   note: StickyNote;
   stickies: Stickies;
   onGoToAnchor: (anchor: string) => boolean;
+  onCommentColourChange?: (anchor: string, colour: StickyColour) => void;
 }) {
   const text = useRef<HTMLTextAreaElement>(null);
   const [orphaned, setOrphaned] = useState(false);
@@ -157,7 +161,10 @@ function Sticky({
               className={`sticky-swatch is-${colour}${note.colour === colour ? ' is-on' : ''}`}
               aria-label={NAMES[colour]}
               aria-pressed={note.colour === colour}
-              onClick={() => stickies.patch(note.id, { colour })}
+              onClick={() => {
+                stickies.patch(note.id, { colour });
+                if (note.anchor) onCommentColourChange?.(note.anchor, colour);
+              }}
             />
           ))}
         </div>

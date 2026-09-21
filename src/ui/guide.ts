@@ -148,11 +148,11 @@ export const GUIDE: GuideSection[] = [
       { keys: 'Tab  /  Shift + Tab', what: 'Move a page in or out one level' },
       { keys: 'Alt + ↑ / ↓', what: 'Move a page up or down among its siblings' },
       { keys: 'Ctrl + D', what: 'Favourite — favourites get their own section at the top' },
-      { keys: 'Backspace', what: 'Archive. Nothing is deleted; it moves to the archive at the foot of the sidebar' },
-      { keys: 'Right-click', what: 'Rename, add a page inside, copy a link, change the icon, favourite, archive' },
+      { keys: 'Backspace', what: 'Move to Trash. Nothing is deleted; open Trash from the sidebar whenever you need it' },
+      { keys: 'Right-click', what: 'Rename, add a page inside, copy a link, change the icon, favourite, move to Trash' },
     ],
     aside:
-      'Archiving is not deleting. Deleting for good is only reachable from inside the archive, asks once, and takes everything beneath the page with it — which is the only operation in this app that cannot be undone.',
+      'Moving something to Trash is not deleting. Deleting for good is only reachable from the Trash modal, asks once, and takes everything beneath the page with it — which is the only operation in this app that cannot be undone.',
   },
   {
     id: 'links',

@@ -2,6 +2,7 @@ import {
   CircleHalf,
   ClockCounterClockwise,
   Export,
+  FileArrowDown,
   Gear,
   GridFour,
   Moon,
@@ -13,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Editor } from '@tiptap/react';
 
-import { clearComment, selectComment } from '../editor/Comment.ts';
+import { clearComment, selectComment, setCommentColour } from '../editor/Comment.ts';
 import { isDesktop } from '../data/bridge.ts';
 import { ActivityDialog } from '../ui/ActivityDialog.tsx';
 import { LibraryProvider, useLibrary } from '../state/library.tsx';
@@ -31,6 +32,7 @@ import { SettingsDialog } from '../ui/SettingsDialog.tsx';
 import { StickyNotes } from '../ui/StickyNotes.tsx';
 import { TabStrip } from '../ui/TabStrip.tsx';
 import { TreePane } from '../ui/TreePane.tsx';
+import { TrashPane } from '../ui/TrashPane.tsx';
 import { Tutorial, tourSeen } from '../ui/Tutorial.tsx';
 import { Palette } from '../ui/Palette.tsx';
 import { Welcome } from '../ui/Welcome.tsx';
@@ -90,6 +92,7 @@ function Workspace() {
   // and the greeting is the door.
   const [touring, setTouring] = useState(() => !tourSeen());
   const [pdf, setPdf] = useState<OpenPdf | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
   const theme = useTheme();
   // Owned here rather than in the editor pane: the rail is a fixed column
   // beside the paper, not something inside it, so it has to live outside the
@@ -124,8 +127,8 @@ function Workspace() {
   const commentOnSelection = useCallback(
     (editor: Editor) => {
       const id = crypto.randomUUID();
-      editor.chain().focus().setMark('comment', { id }).run();
-      stickies.add(id);
+      const note = stickies.add(id);
+      editor.chain().focus().setMark('comment', { id, colour: note?.colour ?? 'lime' }).run();
     },
     [stickies],
   );
@@ -197,6 +200,7 @@ function Workspace() {
   // sidebar is browsing, and browsing keeps the focus in the sidebar so the
   // arrow keys still work; the greeting goes away all the same.
   const openedSomething = useCallback(() => {
+    setTrashOpen(false);
     leaveGreeting();
     window.setTimeout(focusEditor, 30);
   }, [focusEditor, leaveGreeting]);
@@ -382,6 +386,7 @@ function Workspace() {
         onPreview={leaveGreeting}
         onImport={() => setImporting(true)}
         onHome={goHome}
+        onOpenTrash={() => { setTrashOpen(true); leaveGreeting(); }}
       />
 
       {/* A quiet strip at the window edge brings the sidebar back without a shortcut. */}
@@ -427,6 +432,27 @@ function Workspace() {
               part that would not drag. Bare also *ends* the walk, so it
               masked the `deep` on the strip behind it. */}
           <div className="drag-region" data-tauri-drag-region="deep" />
+
+          <div className="file-actions" aria-label="Import and export">
+            <button
+              type="button"
+              className="chrome-action"
+              title="Import — Ctrl+Shift+I"
+              onClick={() => setImporting(true)}
+            >
+              <FileArrowDown size={16} />
+              <span>Import</span>
+            </button>
+            <button
+              type="button"
+              className="chrome-action"
+              title="Export — Ctrl+Shift+E"
+              onClick={() => setExporting(true)}
+            >
+              <Export size={16} />
+              <span>Export</span>
+            </button>
+          </div>
 
           <button
             type="button"
@@ -476,15 +502,6 @@ function Workspace() {
           <button
             type="button"
             className="chrome-btn"
-            aria-label="Export"
-            title="Export — Ctrl+Shift+E"
-            onClick={() => setExporting(true)}
-          >
-            <Export size={18} />
-          </button>
-          <button
-            type="button"
-            className="chrome-btn"
             aria-label={`Theme: ${theme.choice}`}
             title={`Theme: ${theme.choice} — click to change`}
             onClick={theme.cycle}
@@ -509,6 +526,9 @@ function Workspace() {
             onGoToAnchor={(anchor) =>
               editorRef.current ? selectComment(editorRef.current, anchor) : false
             }
+            onCommentColourChange={(anchor, colour) => {
+              if (editorRef.current) setCommentColour(editorRef.current, anchor, colour);
+            }}
           />
         )}
 
@@ -560,7 +580,7 @@ function Workspace() {
       {/* Last in the tree so it is over everything, and only once there is
           something to point at: it teaches the writing surface, and the
           greeting is still covering it until it is answered. */}
-      {touring && ready && !greeting && !pdf && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && !railVisible && (
+      {touring && ready && !greeting && !pdf && !trashOpen && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && !railVisible && (
         <Tutorial onDone={() => setTouring(false)} />
       )}
 
@@ -585,6 +605,8 @@ function Workspace() {
           onOpenPages={openedSomething}
         />
       )}
+
+      {trashOpen && <TrashPane onClose={() => setTrashOpen(false)} />}
       {paletteOpen && (
         <Palette
           onClose={() => {

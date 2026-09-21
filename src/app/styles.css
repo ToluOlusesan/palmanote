@@ -174,7 +174,7 @@
   /* Cobalt itself only reaches 3.4:1 on the dark card — under the line for
      anything carrying a word — so dark runs a tint of it, the brand hue mixed
      a third of the way to white. Amber needs no such help. */
-  --accent: #6c97ff;
+  --accent: #1d5fff;
   /* Lifted rather than inverted: the same tenth over a dark card would be
      invisible, so the wash carries more of the lighter accent. */
   --held: rgb(108 151 255 / 16%);
@@ -691,6 +691,37 @@ button {
   color: var(--ink);
 }
 
+/* Import and export are routes a person actively seeks out, not ambient
+   chrome settings. Keep them as named actions at the window edge, where they
+   are visible without requiring the Guide or a hover tooltip. */
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-right: 0.2rem;
+  border-right: 1px solid var(--line);
+}
+
+.chrome-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.85rem;
+  padding: 0 0.55rem;
+  border-radius: 0.6rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  transition: background var(--quick) var(--ease), color var(--quick) var(--ease), scale var(--quick) var(--ease);
+}
+
+.chrome-action:hover {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--ink);
+}
+
+.chrome-action:active { scale: 0.97; }
+
 .tabstrip {
   display: flex;
   align-items: center;
@@ -731,9 +762,10 @@ button {
 }
 
 .tab.is-active {
-  background: var(--page);
-  border-color: var(--line);
+  background: color-mix(in srgb, var(--accent) 8%, var(--page));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
   color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
 }
 
 .tab.is-preview .tab-label {
@@ -744,9 +776,23 @@ button {
   padding: 0 0.5rem;
 }
 
-.tab.is-drop {
-  box-shadow: inset 2px 0 0 var(--accent);
+.tab.is-dragging {
+  opacity: 0.38;
 }
+
+.tab.is-shifting-left,
+.tab.is-shifting-right {
+  transition: transform var(--settle) var(--glide), background 120ms var(--ease), color 120ms var(--ease);
+}
+
+.tab.is-shifting-left {
+  transform: translateX(calc(-1 * var(--tab-drag-width) - 0.15rem));
+}
+
+.tab.is-shifting-right {
+  transform: translateX(calc(var(--tab-drag-width) + 0.15rem));
+}
+
 
 .tab-label {
   min-width: 0;
@@ -4939,6 +4985,73 @@ mark[data-tone='red'] {
   text-underline-offset: 0.22em;
   text-decoration-thickness: 1.5px;
 }
+
+/* The dot-and-tail makes a comment visible while staying out of the line's
+   rhythm. It is a paint-only cue: the comment remains a mark, not content. */
+.commented::after {
+  content: '';
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 0.14em;
+  vertical-align: 0.04em;
+  background: var(--accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M2 3.5A2.5 2.5 0 0 1 4.5 1h7A2.5 2.5 0 0 1 14 3.5v5a2.5 2.5 0 0 1-2.5 2.5H7l-3.6 3.1A.5.5 0 0 1 2.5 13v-2.28A2.5 2.5 0 0 1 2 8.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M2 3.5A2.5 2.5 0 0 1 4.5 1h7A2.5 2.5 0 0 1 14 3.5v5a2.5 2.5 0 0 1-2.5 2.5H7l-3.6 3.1A.5.5 0 0 1 2.5 13v-2.28A2.5 2.5 0 0 1 2 8.5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.commented[data-comment-colour='lime']::after { background: #afc900; }
+.commented[data-comment-colour='orange']::after { background: #e77b00; }
+.commented[data-comment-colour='blue']::after { background: #128eb8; }
+.commented[data-comment-colour='pink']::after { background: #df246f; }
+
+/* Feedback only: a press confirms the click without making navigation itself
+   move. The state change is still immediate for frequent keyboard work. */
+.tool,
+.chrome-btn,
+.add-row,
+.tree-trash,
+.trash-actions button {
+  transition-property: background, border-color, box-shadow, color, translate, scale;
+}
+
+.tool:active,
+.chrome-btn:active,
+.add-row:active,
+.tree-trash:active,
+.trash-actions button:active {
+  scale: 0.97;
+}
+
+.dialog.trash-view {
+  width: min(46rem, 100%);
+  margin: 0;
+}
+
+.trash-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.trash-head h1 { margin: 0 0 0.3rem; font-size: 2rem; letter-spacing: -0.045em; }
+.trash-head p { margin: 0; color: var(--muted); }
+.trash-close { width: 2rem; height: 2rem; border-radius: 0.55rem; color: var(--muted); }
+.trash-close:hover { background: var(--raise); color: var(--ink); }
+.trash-list { margin: 1rem 0; padding: 0; list-style: none; border-top: 1px solid var(--hairline); }
+.trash-item { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: 0.65rem; padding: 0.75rem 0.35rem; border-bottom: 1px solid var(--hairline); }
+.trash-icon { color: var(--muted); }
+.trash-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-actions { display: flex; align-items: center; gap: 0.4rem; }
+.trash-actions button { padding: 0.38rem 0.55rem; border-radius: 0.5rem; font: inherit; font-size: 0.75rem; }
+.trash-restore { color: var(--accent); }
+.trash-restore:hover { background: var(--held); }
+.trash-delete { color: #c43b3b; }
+.trash-delete:hover { background: rgb(207 63 63 / 9%); }
+.trash-keep { color: var(--muted); }
+.trash-empty { display: grid; place-items: center; gap: 0.55rem; min-height: 16rem; color: var(--faint); }
 
 /* The line at the top of a comment, saying it is attached to something and
    offering to take you there. Quiet: the note's text is the point, and this
