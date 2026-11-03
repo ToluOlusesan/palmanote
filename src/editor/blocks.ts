@@ -39,8 +39,11 @@ import type { Editor } from '@tiptap/react';
  */
 const ITEMS = new Set(['listItem', 'taskItem']);
 
-/** Identifies a gutter drag that needs list-aware drop targeting. */
-export const LIST_ITEM_DRAG_TYPE = 'application/x-palmanote-list-item';
+/** The nodes that hold items. */
+const LISTS = new Set(['bulletList', 'orderedList', 'taskList']);
+
+/** Lists nest this deep and no deeper — by Tab, and by drag. */
+export const MAX_LIST_DEPTH = 3;
 
 export interface BlockInfo {
   /** The position immediately before the block. */
@@ -54,9 +57,9 @@ export interface BlockInfo {
  * Whether a block can be picked up and carried by pointer.
  *
  * The generic ProseMirror drop path cannot place a list item correctly, but
- * the gutter supplies a list-aware one — see `moveListItem`. It moves among
- * siblings in the same list rather than pretending a bullet can land anywhere
- * in a document.
+ * the gutter supplies a list-aware one — see `listSlots`. A bullet can land
+ * anywhere in the list tree it came from, at any depth that tree allows, rather
+ * than pretending it can land anywhere in the document.
  */
 export function isCarryable(block: BlockInfo): boolean {
   return block.node.type.name !== 'table';
@@ -220,36 +223,120 @@ export function moveBlock(direction: -1 | 1): Command {
 }
 
 /**
- * Put one bullet immediately before or after another bullet in the same list.
- *
- * This is intentionally narrower than a general block drop. A list item's
- * parent has a `listItem+` content rule, so moving it across list boundaries
- * requires deciding whether to merge, split or convert lists. Reordering the
- * siblings the writer can see needs none of those guesses and is exact for
- * bullets, numbering and tasks alike.
+ * A place a dragged list item could land: in front of child `index` of the
+ * list that starts at `listPos`.
  */
-export function moveListItem(sourcePos: number, targetPos: number, after: boolean): Command {
+export interface ListSlot {
+  /** The position immediately before the list node. */
+  listPos: number;
+  index: number;
+  /** The item this slot sits in front of, or null at the end of the list. */
+  beforePos: number | null;
+  /** How many lists deep the slot is; 1 is the outermost. */
+  level: number;
+}
+
+/** How many lists deep a node's own contents go, not counting the node itself. */
+function listsInside(node: PMNode): number {
+  let deepest = 0;
+  node.forEach((child) => {
+    const own = LISTS.has(child.type.name) ? 1 : 0;
+    deepest = Math.max(deepest, own + listsInside(child));
+  });
+  return deepest;
+}
+
+/**
+ * Every slot a list item could be dropped into.
+ *
+ * The tree is the outermost list the item belongs to — every bullet a writer
+ * reads as "this list", at any depth — and nothing outside it. Dropping a
+ * bullet into a paragraph or into the next list down the page would mean
+ * deciding whether to merge, split or convert lists, and the drag would be
+ * guessing; inside its own tree each slot is a plain insertion.
+ *
+ * Left out, and each for a reason a drop would otherwise get wrong:
+ * - slots inside the item itself, which would put it inside its own children;
+ * - the two slots either side of where it already is, which move nothing and
+ *   would read as a dropped gesture;
+ * - lists of the other kind — a bullet is not a task, and the schema says so;
+ * - slots deep enough that the item's own sub-bullets would pass the nesting
+ *   limit Tab keeps to.
+ */
+export function listSlots(state: EditorState, sourcePos: number): ListSlot[] {
+  const source = blockFrom(state, sourcePos);
+  if (!source || !isListItem(source)) return [];
+
+  const $source = state.doc.resolve(source.pos);
+  let root: { pos: number; node: PMNode } | null = null;
+  for (let depth = $source.depth; depth >= 1; depth--) {
+    const node = $source.node(depth);
+    if (LISTS.has(node.type.name)) root = { pos: $source.before(depth), node };
+    else if (!ITEMS.has(node.type.name)) break;
+  }
+  if (!root) return [];
+
+  const sourceEnd = endOf(source);
+  const sourceIndex = $source.index();
+  const sourceParentPos = $source.before();
+  const carried = listsInside(source.node);
+  const slots: ListSlot[] = [];
+
+  const visit = (list: PMNode, listPos: number, level: number) => {
+    const inside = listPos > source.pos && listPos < sourceEnd;
+    const fits = list.type.contentMatch.matchType(source.node.type) !== null
+      && level + carried <= MAX_LIST_DEPTH;
+    let offset = listPos + 1;
+    for (let index = 0; index <= list.childCount; index++) {
+      const child = index < list.childCount ? list.child(index) : null;
+      const still = listPos === sourceParentPos && (index === sourceIndex || index === sourceIndex + 1);
+      if (!inside && fits && !still) {
+        slots.push({ listPos, index, beforePos: child ? offset : null, level });
+      }
+      if (!child) break;
+      // An item's own sub-lists are slots too, one level further in.
+      let inner = offset + 1;
+      child.forEach((grand) => {
+        if (LISTS.has(grand.type.name)) visit(grand, inner, level + 1);
+        inner += grand.nodeSize;
+      });
+      offset += child.nodeSize;
+    }
+  };
+  visit(root.node, root.pos, 1);
+  return slots;
+}
+
+/**
+ * Carry a list item to a slot from `listSlots`, sub-bullets and all.
+ *
+ * Declines anything `listSlots` would not have offered, so a stale slot from a
+ * drag that outlived a keystroke moves nothing rather than the wrong thing.
+ */
+export function moveListItemTo(sourcePos: number, listPos: number, index: number): Command {
   return (state, dispatch) => {
     const source = blockFrom(state, sourcePos);
-    const target = blockFrom(state, targetPos);
-    if (!source || !target || !isListItem(source) || !isListItem(target)) return false;
-    if (source.pos === target.pos) return false;
-
-    const sourceParent = state.doc.resolve(source.pos).parent;
-    const targetParent = state.doc.resolve(target.pos).parent;
-    if (sourceParent !== targetParent) return false;
-
-    const from = source.pos;
-    const to = endOf(source);
-    let insertAt = after ? endOf(target) : target.pos;
-    // Removing a sibling before the destination shifts its destination left.
-    if (from < insertAt) insertAt -= source.node.nodeSize;
-    // The item is already precisely where this drop asks it to be.
-    if (insertAt === from) return false;
+    if (!source || !isListItem(source)) return false;
+    const slot = listSlots(state, sourcePos).find((s) => s.listPos === listPos && s.index === index);
+    const list = state.doc.nodeAt(listPos);
+    if (!slot || !list) return false;
     if (!dispatch) return true;
 
-    const tr = state.tr.delete(from, to).insert(insertAt, source.node);
-    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(insertAt + 1, tr.doc.content.size))));
+    let insertAt = listPos + 1;
+    for (let i = 0; i < index; i++) insertAt += list.child(i).nodeSize;
+
+    // An item that was the only one in its list takes the list with it: a list
+    // with nothing in it is not a node the schema allows.
+    const $source = state.doc.resolve(source.pos);
+    const lone = $source.parent.childCount === 1;
+    const cutFrom = lone ? $source.before() : source.pos;
+    const cutTo = lone ? $source.after() : endOf(source);
+
+    const tr = state.tr.delete(cutFrom, cutTo);
+    const at = tr.mapping.map(insertAt);
+    tr.insert(at, source.node);
+    // Held when it lands, the way every other dropped block is.
+    tr.setSelection(NodeSelection.create(tr.doc, at));
     dispatch(tr.scrollIntoView());
     return true;
   };

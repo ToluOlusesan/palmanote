@@ -60,9 +60,21 @@ export function GuideDialog({
     return { ...section, rows: itself ? section.rows : rows };
   }).filter((section): section is (typeof GUIDE)[number] => section !== null);
 
+  /*
+    The topic that was clicked, held until the reader scrolls by hand.
+
+    Without it the scroll-spy below overruled the click: a topic near the end
+    cannot scroll to the top of the panel, so after the jump the spy read
+    whichever heading was highest and lit the one *above* the one chosen.
+  */
+  const pinned = useRef<string | null>(null);
+
   const jump = (id: string) => {
+    pinned.current = id;
     setChosen(id);
-    body.current?.querySelector(`[data-topic="${id}"]`)?.scrollIntoView({ block: 'start' });
+    body.current
+      ?.querySelector(`[data-topic="${id}"]`)
+      ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
   // The topic rail is a reading position as much as it is navigation. A click
@@ -74,6 +86,7 @@ export function GuideDialog({
     if (!host || searching) return;
     let frame = 0;
     const sync = () => {
+      if (pinned.current) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const top = host.getBoundingClientRect().top + 18;
@@ -85,11 +98,21 @@ export function GuideDialog({
         setChosen((current) => (current === active ? current : active));
       });
     };
+    // A hand on the panel is the reader taking over from the jump.
+    const release = () => {
+      pinned.current = null;
+    };
     sync();
     host.addEventListener('scroll', sync, { passive: true });
+    host.addEventListener('wheel', release, { passive: true });
+    host.addEventListener('pointerdown', release);
+    host.addEventListener('keydown', release);
     return () => {
       cancelAnimationFrame(frame);
       host.removeEventListener('scroll', sync);
+      host.removeEventListener('wheel', release);
+      host.removeEventListener('pointerdown', release);
+      host.removeEventListener('keydown', release);
     };
   }, [searching]);
 

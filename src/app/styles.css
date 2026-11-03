@@ -126,6 +126,45 @@
   --radius: 0.6rem;
 
   /*
+    Corners, as a scale rather than a number per rule.
+
+    There were twenty-five radii in this file — 4px, 5px, 0.55rem, 0.6rem,
+    0.65rem, 0.7rem, 7px, 8px and so on, each right where it was written and
+    together the reason the interface looked faintly assembled. Four steps now,
+    by what the thing is rather than how big it happens to be. The steps nest:
+    a popover is padded by 4px, so an item inside it is the popover's corner
+    minus that, and the two curves run parallel instead of pinching.
+
+    Controls and fields are pills (November 2026): a button is a thing you
+    press, not a box, and the rounder the edge the more it reads as one. An
+    icon button, being square, becomes a circle. Rows and items stay rounded
+    rectangles — a list of pills reads as a list of buttons, and a menu row is
+    a line of a list.
+  */
+  --r-pill: 999px;
+  --r-item: 10px;
+  --r-control: var(--r-pill);
+  --r-field: var(--r-pill);
+  --r-pop: 14px;
+  --r-panel: 22px;
+
+  /*
+    Elevation, two steps. A hairline ring so the edge is drawn by the shadow
+    rather than by a border fighting it, a tight contact shadow, and a wide soft
+    one with a negative spread so the darkness pools under the middle of the
+    thing instead of outlining it — which is most of what makes a popover look
+    like it is floating rather than stuck on.
+  */
+  --shadow-pop:
+    0 0 0 0.5px rgb(0 0 0 / 5%),
+    0 2px 4px -1px rgb(0 0 0 / 6%),
+    0 12px 28px -6px rgb(0 0 0 / 16%);
+  --shadow-float:
+    0 0 0 0.5px rgb(0 0 0 / 5%),
+    0 4px 10px -2px rgb(0 0 0 / 6%),
+    0 28px 64px -14px rgb(0 0 0 / 24%);
+
+  /*
     Motion, as a vocabulary rather than a number picked per rule.
 
     --ease is the one this app already had: a long tail that decelerates almost
@@ -133,22 +172,31 @@
     arrived. --glide is the same idea with less bite, for the small things a
     pointer touches.
 
-    **Ease-out only. No spring.** There was a --spring here that overshot by a
-    hair and came back, used on menus, the selection bar and the dialog, and
-    the argument for it was that the overshoot separates "this opened" from
-    "this was always there and you just noticed". The Palmaboard motion spec
-    rules it out across the family, and the family winning that argument is the
-    point of having a spec — a bounce that appears in one app of three is a
-    bounce that reads as a bug in the other two. What did the work in those
-    cases was the four-pixel rise, and that stays.
+    --spring is back, on the owner's word (November 2026), and PalmaNote now
+    parts from the Palmaboard family spec on it. The reference is
+    get-spatial.com: a 0.4s spring with a bounce of 0.2, which overshoots by
+    about one and a half percent — enough to read as a thing arriving under its
+    own weight, not enough to wobble. It is a real damped spring sampled into
+    `linear()` (ζ 0.8), not a cubic with a bump, so it decelerates the way a
+    spring does. It is for *where things are* — translate, scale, size — and
+    never for opacity or colour, which have no momentum to overshoot with.
+    --spring-time is how long it takes to come to rest.
 
-    Three durations, and almost nothing outside them. --quick is a hover: fast
-    enough that the pointer never waits on it. --settle is something arriving.
-    --unfold is the longest thing here and is still under a third of a second,
-    because this is a writing app and nothing should ever be worth watching.
+    --press is how far a control gives under a pointer. Small, because a
+    toolbar of buttons that each sink a tenth reads as rubber.
+
+    Three durations besides, and almost nothing outside them. --quick is a
+    hover: fast enough that the pointer never waits on it. --settle is
+    something arriving. --unfold is the longest fade here and is still under a
+    third of a second, because nothing should ever be worth watching.
   */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --glide: cubic-bezier(0.25, 0.8, 0.3, 1);
+  --spring: linear(0, 0.028, 0.099, 0.194, 0.3, 0.407, 0.511, 0.605, 0.689, 0.761, 0.822, 0.872,
+      0.912, 0.943, 0.967, 0.984, 0.997, 1.005, 1.011, 1.014, 1.015, 1.015, 1.014, 1.013, 1.011,
+      1.01, 1.008, 1.007, 1.005, 1.004, 1.003, 1.002, 1);
+  --spring-time: 400ms;
+  --press: 0.96;
   --quick: 120ms;
   --settle: 190ms;
   --unfold: 280ms;
@@ -178,6 +226,17 @@
   /* Lifted rather than inverted: the same tenth over a dark card would be
      invisible, so the wash carries more of the lighter accent. */
   --held: rgb(108 151 255 / 16%);
+
+  /* A shadow on near-black has to be much darker to be seen at all, and the
+     ring does more of the work: it is the edge. */
+  --shadow-pop:
+    0 0 0 0.5px rgb(255 255 255 / 8%),
+    0 2px 6px rgb(0 0 0 / 40%),
+    0 16px 36px -8px rgb(0 0 0 / 50%);
+  --shadow-float:
+    0 0 0 0.5px rgb(255 255 255 / 8%),
+    0 4px 12px rgb(0 0 0 / 40%),
+    0 32px 72px -12px rgb(0 0 0 / 60%);
 
   /* The ramp is re-stepped rather than flipped. Light to dark becomes dark to
      light because the anchor moved: in light, a quiet day sits nearly on the
@@ -215,9 +274,6 @@
   color: #43434a;
 }
 
-:root[data-theme='dark'] .dialog {
-  box-shadow: 0 2px 6px rgb(0 0 0 / 40%), 0 14px 40px rgb(0 0 0 / 35%);
-}
 
 * {
   box-sizing: border-box;
@@ -259,7 +315,7 @@ button {
   display: grid;
   grid-template-columns: var(--rail) 1fr;
   height: 100%;
-  transition: grid-template-columns 220ms var(--ease);
+  transition: grid-template-columns var(--spring-time) var(--spring);
 }
 
 .workspace.tree-hidden {
@@ -334,7 +390,7 @@ button {
   place-items: center;
   padding: 0.25rem;
   margin: -0.25rem;
-  border-radius: 0.4rem;
+  border-radius: var(--r-control);
   opacity: 0.9;
   transition:
     opacity var(--quick) var(--ease),
@@ -346,9 +402,6 @@ button {
   opacity: 1;
 }
 
-.tree-home:active {
-  scale: 0.93;
-}
 
 /* Present to a screen reader, absent to everyone else. */
 .visually-hidden {
@@ -430,14 +483,24 @@ button {
   outline: none;
 }
 
+/* Children come out from under the row that holds them when it opens,
+   rather than the rows below jumping down to make room in one frame. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
 .row {
+  animation: row-in var(--spring-time) var(--spring) both;
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.25rem;
   padding-right: 0.55rem;
   min-height: 1.75rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   margin: 0 0.45rem;
   white-space: nowrap;
   cursor: default;
@@ -537,37 +600,42 @@ button {
 
 /* The "Add page" affordance that sits under the list, not in the header. It
    is the most-used control in the sidebar, so it is drawn like one. */
+/*
+  New page. Primary, and soft about it: the accent at a tenth with the accent's
+  own ink, which is how the eye still finds it first, rather than a saturated
+  slab that out-shouted every page title in the sidebar above it. It fills in
+  under the pointer — the commitment arrives with the hand.
+*/
 .add-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  margin: 0.15rem 0.6rem 0.6rem;
+  margin: 0.1rem 0.6rem 0.6rem;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--accent);
-  border-radius: 0.7rem;
-  background: var(--accent);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
-  transition: background 130ms var(--ease), border-color 130ms var(--ease), box-shadow 130ms var(--ease), translate 130ms var(--ease);
+  border: 0;
+  border-radius: var(--r-control);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--accent);
 }
 
 .add-row svg {
-  color: #fff;
+  color: currentColor;
 }
 
 .add-row:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #000);
-  border-color: color-mix(in srgb, var(--accent) 88%, #000);
-  box-shadow: 0 3px 8px rgb(0 0 0 / 16%);
-  translate: 0 -1px;
-}
-
-.add-row:hover svg {
+  background: var(--accent);
   color: #fff;
 }
+
+/* Cobalt is 3.4:1 on the dark card, under the line for a word; the label runs
+   the lifted tint the dark palette uses for the same reason. */
+:root[data-theme='dark'] .add-row:not(:hover) {
+  color: #8fb0ff;
+}
+
 
 .tree-foot .ghost {
   padding: 0.28rem 0.48rem;
@@ -585,25 +653,25 @@ button {
   gap: 0.35rem;
   width: calc(100% - 1.2rem);
   margin: 0 0.6rem 0.6rem;
-  padding: 0.5rem 0.6rem !important;
-  border: 1px solid var(--line);
-  border-radius: 0.7rem !important;
-  color: var(--ink);
-  font-weight: 600;
+  padding: 0.4rem 0.6rem !important;
+  border: 0;
+  border-radius: var(--r-control) !important;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .tree-trash svg {
-  color: #cf3f3f;
+  color: currentColor;
 }
 
 .tree-trash:hover {
-  color: #111113;
-  background: rgb(207 63 63 / 9%) !important;
+  color: var(--ink);
+  background: var(--raise) !important;
 }
 
 :root[data-theme='dark'] .tree-trash:hover {
-  color: #fff;
-  background: rgb(255 104 104 / 13%) !important;
+  color: var(--ink);
+  background: var(--raise) !important;
 }
 
 .rename {
@@ -658,13 +726,30 @@ button {
 
 /* ------------------------------------------------------------------ tabs */
 
+/*
+  Two columns always, the second one closed until the notes rail is in it.
+  Always two so the rail can *open*: a column that appears from nowhere took
+  the page with it in one frame, a jump sideways under the reader's eye. Now
+  the page glides aside on the spring and glides back when the rail goes.
+*/
 .main {
   position: relative;
   display: grid;
   grid-template-rows: var(--topbar) 1fr;
+  grid-template-columns: minmax(0, 1fr) 0rem;
   min-width: 0;
   min-height: 0;
   padding: 0 var(--inset) var(--inset);
+  transition: grid-template-columns var(--spring-time) var(--spring);
+}
+
+.main > .topstrip {
+  grid-column: 1 / -1;
+}
+
+.main > .editor-host {
+  grid-column: 1;
+  grid-row: 2;
 }
 
 .topstrip {
@@ -681,7 +766,7 @@ button {
   flex: none;
   width: 1.85rem;
   height: 1.85rem;
-  border-radius: 0.55rem;
+  border-radius: var(--r-control);
   color: var(--muted);
   transition: background 120ms var(--ease), color 120ms var(--ease);
 }
@@ -708,7 +793,7 @@ button {
   gap: 0.35rem;
   height: 1.85rem;
   padding: 0 0.55rem;
-  border-radius: 0.6rem;
+  border-radius: var(--r-control);
   color: var(--muted);
   font-size: 0.7rem;
   font-weight: 600;
@@ -720,9 +805,11 @@ button {
   color: var(--ink);
 }
 
-.chrome-action:active { scale: 0.97; }
 
 .tabstrip {
+  /* Positioned so each tab's offsetLeft is measured from here — see
+     dropIndexAt in TabStrip.tsx. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.15rem;
@@ -751,7 +838,7 @@ button {
   font-size: 0.75rem;
   color: var(--muted);
   border: 1px solid transparent;
-  border-radius: 0.65rem;
+  border-radius: var(--r-control);
   cursor: default;
   user-select: none;
   white-space: nowrap;
@@ -761,11 +848,12 @@ button {
   background: rgb(0 0 0 / 4%);
 }
 
+/* The tab you are in is a soft grey pill, not a second blue thing in the
+   strip: the accent is for what acts, and a tab is where you are. */
 .tab.is-active {
-  background: color-mix(in srgb, var(--accent) 8%, var(--page));
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  background: var(--raise);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  font-weight: 500;
 }
 
 .tab.is-preview .tab-label {
@@ -780,9 +868,32 @@ button {
   opacity: 0.38;
 }
 
-.tab.is-shifting-left,
-.tab.is-shifting-right {
-  transition: transform var(--settle) var(--glide), background 120ms var(--ease), color 120ms var(--ease);
+/*
+  Neighbours step aside on the spring while a tab is in the air, and slide home
+  on it if the drag is let go of nowhere. Not on a drop: by then the shifted
+  tabs are already drawn where the new order puts them, and animating the
+  transform away would make them leap and slide back into the place they were
+  standing in.
+*/
+/* A tab that was not there a moment ago grows into the strip from its own
+   middle, on the spring, so opening a page is a thing you see happen. */
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    scale: 0.88;
+  }
+}
+
+.tab {
+  animation: tab-in var(--spring-time) var(--spring) both;
+}
+
+.tabstrip.is-dragging .tab,
+.tabstrip.is-returning .tab {
+  transition:
+    transform var(--spring-time) var(--spring),
+    background var(--quick) var(--ease),
+    color var(--quick) var(--ease);
 }
 
 .tab.is-shifting-left {
@@ -809,7 +920,7 @@ button {
   place-items: center;
   width: 1.25rem;
   height: 1.25rem;
-  border-radius: 0.45rem;
+  border-radius: var(--r-control);
   color: var(--faint);
   opacity: 0;
 }
@@ -835,7 +946,7 @@ button {
   width: 1.6rem;
   height: 1.6rem;
   margin-left: 0.15rem;
-  border-radius: 5px;
+  border-radius: var(--r-control);
   color: var(--faint);
   transition:
     background-color var(--quick) var(--ease),
@@ -847,9 +958,6 @@ button {
   color: var(--ink);
 }
 
-.tab-new:active {
-  scale: 0.93;
-}
 
 /* --------------------------------------------------------------- surface */
 
@@ -889,7 +997,7 @@ button {
   flex: none;
   width: 1.6rem;
   height: 1.6rem;
-  border-radius: 0.5rem;
+  border-radius: var(--r-control);
   color: var(--muted);
   font-size: 1rem;
   line-height: 1;
@@ -999,7 +1107,7 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0.15rem 0.3rem;
-  border-radius: 3px;
+  border-radius: var(--r-item);
   color: var(--muted);
   transition: background 120ms var(--ease), color 120ms var(--ease);
 }
@@ -1102,7 +1210,7 @@ button.crumb:hover {
   color: var(--ink);
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--r-control);
   box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 }
 
@@ -1609,7 +1717,7 @@ button.crumb:hover {
   font-size: 0.7rem;
   line-height: 1.4;
   color: var(--muted);
-  border-radius: 4px;
+  border-radius: var(--r-control);
 }
 
 .gallery-button:hover {
@@ -1682,19 +1790,13 @@ button.crumb:hover {
   padding: 0.3rem;
   background: var(--page);
   border: 1px solid var(--hairline);
-  border-radius: 0.8rem;
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 5%),
-    0 4px 10px rgb(0 0 0 / 6%),
-    0 14px 34px rgb(0 0 0 / 10%);
-  animation: bubble-in var(--settle) var(--ease) both;
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-pop);
+  animation: bubble-in var(--spring-time) var(--spring) both;
 }
 
 :root[data-theme='dark'] .bubble {
   border-color: var(--line);
-  box-shadow:
-    0 2px 6px rgb(0 0 0 / 40%),
-    0 16px 40px rgb(0 0 0 / 38%);
 }
 
 /*
@@ -1707,7 +1809,7 @@ button.crumb:hover {
   because the gaps are part of the shape arriving.
 */
 .bubble > * {
-  animation: bubble-part var(--unfold) var(--ease) both;
+  animation: bubble-part var(--spring-time) var(--spring) both;
   animation-delay: calc(40ms + var(--turn, 0) * 22ms);
 }
 
@@ -1782,7 +1884,7 @@ button.crumb:hover {
   height: 1.9rem;
   min-width: 1.9rem;
   padding: 0 0.32rem;
-  border-radius: 0.55rem;
+  border-radius: var(--r-control);
   color: var(--muted);
 }
 
@@ -1844,6 +1946,45 @@ button.crumb:hover {
   transition: background var(--quick) var(--glide);
 }
 
+/* The letter's pen: the bar under the A wears the colour it paints. */
+.bubble-colour-bar {
+  width: 1rem;
+  height: 0.15rem;
+  border-radius: 1px;
+  background: var(--pen, var(--line));
+  transition: background var(--quick) var(--glide);
+}
+
+.bubble-colour:not(.is-on) .bubble-colour-bar {
+  background: var(--line);
+}
+
+.colour-swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  flex: none;
+  background: var(--swatch);
+}
+
+/* The size reads as a number, set like one: tabular, so 9 and 48 sit in the
+   same box, and a hair smaller than the glyphs beside it. */
+.bubble-size-num {
+  min-width: 1.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* Underline in the prose: the same weight as the text, offset clear of the
+   descenders so it reads as a line under words rather than through them. */
+.body u {
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+
 /* The colour under the pen is the state, so this one control says what it is
    holding without also going dark the way a pressed button does. */
 .bubble-tone.is-on:not(:hover):not(.is-open) {
@@ -1860,9 +2001,9 @@ button.crumb:hover {
   padding: 0.25rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.55rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
-  animation: rise var(--settle) var(--glide) both;
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
+  animation: rise var(--spring-time) var(--spring) both;
 }
 
 /* The last control in the row opens against its own edge rather than off the
@@ -1878,13 +2019,13 @@ button.crumb:hover {
   gap: 0.5rem;
   width: 100%;
   padding: 0.28rem 0.4rem;
-  border-radius: 0.35rem;
+  border-radius: var(--r-item);
   font-size: 0.8125rem;
   color: var(--ink);
   text-align: left;
   white-space: nowrap;
   /* The list arrives the way the bar did, a beat per row. */
-  animation: bubble-part var(--settle) var(--ease) both;
+  animation: bubble-part var(--spring-time) var(--spring) both;
   animation-delay: calc(var(--turn, 0) * 18ms);
 }
 
@@ -1970,8 +2111,10 @@ button.crumb:hover {
   display: grid;
   place-items: center;
   padding: 2rem 1rem;
-  background: rgb(20 20 22 / 24%);
-  backdrop-filter: blur(2px);
+  /* Frosted more than dimmed: the page behind stays legible as the page you
+     came from, and the dialog's own shadow separates it. */
+  background: rgb(20 20 22 / 16%);
+  backdrop-filter: blur(6px) saturate(120%);
   overflow-y: auto;
 }
 
@@ -1982,16 +2125,16 @@ button.crumb:hover {
   padding: 1.25rem 1.35rem 1rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.7rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 12%);
-  animation: overlay-in var(--settle) var(--ease) both;
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-float);
+  animation: overlay-in var(--spring-time) var(--spring) both;
 }
 
 @keyframes overlay-in {
   from {
     opacity: 0;
-    translate: 0 5px;
-    scale: 0.985;
+    translate: 0 6px;
+    scale: 0.965;
   }
   to {
     opacity: 1;
@@ -2032,6 +2175,16 @@ button.crumb:hover {
 
 .choice input {
   accent-color: var(--accent);
+  margin: 0;
+}
+
+/* An on/off choice in a dialog is the same switch as in Settings; it sits on
+   the label's centre line rather than its baseline, being a shape not a glyph. */
+.choice:has(input[type='checkbox']) {
+  align-items: center;
+}
+
+.choice input[type='checkbox'] {
   margin: 0;
 }
 
@@ -2080,8 +2233,8 @@ button.crumb:hover {
   color: var(--ink);
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0.28rem 0.4rem;
+  border-radius: var(--r-field);
+  padding: 0.34rem 0.8rem;
   transition:
     border-color var(--quick) var(--glide),
     box-shadow var(--quick) var(--glide);
@@ -2101,8 +2254,8 @@ button.crumb:hover {
   color: var(--ink);
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 0.28rem 0.4rem;
+  border-radius: var(--r-field);
+  padding: 0.34rem 0.8rem;
   resize: vertical;
   transition:
     border-color var(--quick) var(--glide),
@@ -2112,6 +2265,11 @@ button.crumb:hover {
 /* Colour appears in focus rings, the highlights and the drop indicators, and
    this is the first of those. `focus-visible` rather than `focus`, so clicking
    into the field does not ring it — only arriving by keyboard does. */
+.text-field textarea {
+  border-radius: var(--r-pop);
+  padding: 0.5rem 0.75rem;
+}
+
 .text-field input:focus-visible,
 .text-field textarea:focus-visible {
   outline: none;
@@ -2143,7 +2301,7 @@ button.crumb:hover {
   color: var(--ink);
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--r-control);
 }
 
 .btn:hover {
@@ -2304,8 +2462,8 @@ button.crumb:hover {
   padding: 0.25rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
   outline: none;
 }
 
@@ -2316,7 +2474,7 @@ button.crumb:hover {
   gap: 1.5rem;
   width: 100%;
   padding: 0.28rem 0.45rem;
-  border-radius: 4px;
+  border-radius: var(--r-item);
   font-size: 0.8125rem;
   color: var(--ink);
   text-align: left;
@@ -2388,8 +2546,8 @@ button.crumb:hover {
   padding: 0.25rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
 }
 
 .slash-group {
@@ -2406,7 +2564,7 @@ button.crumb:hover {
   gap: 0.5rem;
   width: 100%;
   padding: 0.24rem 0.45rem;
-  border-radius: 4px;
+  border-radius: var(--r-item);
   font-size: 0.8125rem;
   color: var(--ink);
   text-align: left;
@@ -2515,7 +2673,7 @@ button.crumb:hover {
   place-items: center;
   width: 1.15rem;
   height: 1.5rem;
-  border-radius: 4px;
+  border-radius: var(--r-control);
   color: var(--faint);
 }
 
@@ -2612,6 +2770,54 @@ button.crumb:hover {
   box-shadow: 0 0 0 2px var(--held);
 }
 
+/*
+  Where a carried bullet would land — see listDrop.ts. The same line as the
+  drop cursor above, drawn by us because that one cannot name a slot between
+  two bullets. It glides from gap to gap on the spring rather than jumping, so
+  the hand can see the slot it is choosing change.
+
+  ProseMirror's own caret is put away while a bullet is in the air: two
+  indicators, one of them wrong, is how this used to look.
+*/
+.list-drop-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--held);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform var(--spring-time) var(--spring),
+    width var(--spring-time) var(--spring),
+    opacity var(--quick) var(--ease);
+}
+
+.list-drop-line.is-shown {
+  opacity: 1;
+}
+
+/* A dot at the start, so the line says which column it belongs to. */
+.list-drop-line::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.is-carrying-item .ProseMirror-dropcursor,
+.is-carrying-item .prosemirror-dropcursor-block,
+.is-carrying-item .prosemirror-dropcursor-inline {
+  display: none;
+}
+
 /* -------------------------------------------------------------- block menu */
 
 .block-menu {
@@ -2705,10 +2911,10 @@ button.crumb:hover {
   padding: 0.28rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  box-shadow: 0 3px 10px rgb(0 0 0 / 8%), 0 18px 42px rgb(0 0 0 / 15%);
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
   transform-origin: top right;
-  animation: overlay-in var(--settle) var(--ease) both;
+  animation: overlay-in var(--spring-time) var(--spring) both;
 }
 
 .toolbar-menu-item {
@@ -2747,7 +2953,7 @@ button.crumb:hover {
   place-items: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 0.55rem;
+  border-radius: var(--r-control);
   color: var(--muted);
   transition: background 110ms var(--ease), color 110ms var(--ease);
 }
@@ -2782,8 +2988,8 @@ button.crumb:hover {
   padding: 0.25rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
 }
 
 .tone {
@@ -2792,7 +2998,7 @@ button.crumb:hover {
   gap: 0.45rem;
   width: 100%;
   padding: 0.26rem 0.4rem;
-  border-radius: 4px;
+  border-radius: var(--r-item);
   font-size: 0.8125rem;
   color: var(--ink);
   text-align: left;
@@ -2956,8 +3162,8 @@ mark[data-tone='red'] {
   width: min(34rem, 100%);
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.7rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 14%);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-float);
   overflow: hidden;
 }
 
@@ -3003,7 +3209,7 @@ mark[data-tone='red'] {
   gap: 0.45rem;
   width: 100%;
   padding: 0.42rem 0.55rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   font-family: var(--ui);
   font-size: 0.87rem;
   color: var(--ink);
@@ -3082,7 +3288,7 @@ mark[data-tone='red'] {
   width: 100%;
   margin-left: -0.5rem;
   padding: 0.4rem 0.5rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   font-family: var(--ui);
   text-align: left;
   transition: background 120ms var(--ease);
@@ -3143,7 +3349,7 @@ mark[data-tone='red'] {
   place-items: center;
   width: 1.15rem;
   height: 1.15rem;
-  border-radius: 4px;
+  border-radius: var(--r-control);
 }
 
 .row-icon:hover {
@@ -3163,8 +3369,8 @@ mark[data-tone='red'] {
   flex-direction: column;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 14px 36px rgb(0 0 0 / 12%);
+  border-radius: var(--r-pop);
+  box-shadow: var(--shadow-pop);
   overflow: hidden;
 }
 
@@ -3184,8 +3390,8 @@ mark[data-tone='red'] {
   color: var(--ink);
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 0.24rem 0.45rem;
+  border-radius: var(--r-field);
+  padding: 0.3rem 0.75rem;
 }
 
 .picker-body {
@@ -3208,7 +3414,7 @@ mark[data-tone='red'] {
 
 .picker-choice {
   height: 2.25rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   font-size: 1.2rem;
   line-height: 1;
   font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
@@ -3257,11 +3463,6 @@ mark[data-tone='red'] {
 
 /* ---------------------------------------------------------------- import */
 
-.tree-import {
-  margin-left: auto;
-  font-size: 0.6875rem;
-}
-
 .dialog.is-narrow {
   width: min(27rem, 100%);
 }
@@ -3289,7 +3490,7 @@ mark[data-tone='red'] {
   color: var(--ink);
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--r-control);
   padding: 0.24rem 0.45rem;
 }
 
@@ -3312,7 +3513,7 @@ mark[data-tone='red'] {
   display: block;
   width: 100%;
   padding: 0.3rem 0.45rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   font-size: 0.8125rem;
   color: var(--muted);
   text-align: left;
@@ -3422,7 +3623,7 @@ mark[data-tone='red'] {
   width: 100%;
   text-align: left;
   padding: 0.35rem 0.45rem;
-  border-radius: 5px;
+  border-radius: var(--r-control);
 }
 
 .setting-action:hover {
@@ -3459,7 +3660,7 @@ mark[data-tone='red'] {
   gap: 0.1rem;
   width: 100%;
   padding: 0.35rem 0.45rem;
-  border-radius: 5px;
+  border-radius: var(--r-item);
   text-align: left;
 }
 
@@ -3591,10 +3792,10 @@ mark[data-tone='red'] {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.4rem 0.4rem 0.85rem;
+  padding: 0.4rem 0.4rem 0.4rem 1.1rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.65rem;
+  border-radius: var(--r-field);
   box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
   transition: border-color 140ms var(--ease);
 }
@@ -3629,7 +3830,7 @@ mark[data-tone='red'] {
   font-size: 0.8125rem;
   color: #ffffff;
   background: var(--accent);
-  border-radius: 5px;
+  border-radius: var(--r-control);
 }
 
 .welcome-go:disabled {
@@ -3654,7 +3855,7 @@ mark[data-tone='red'] {
   color: var(--ink);
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.55rem;
+  border-radius: var(--r-control);
   text-align: left;
   transition: background 130ms var(--ease), border-color 130ms var(--ease);
 }
@@ -4020,7 +4221,7 @@ mark[data-tone='red'] {
   border-radius: 7px;
   box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 12px 32px rgb(0 0 0 / 12%);
   outline: none;
-  animation: rise var(--quick) var(--glide) both;
+  animation: rise var(--spring-time) var(--spring) both;
 }
 
 .monthpick-option {
@@ -4163,7 +4364,7 @@ mark[data-tone='red'] {
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 14px 34px rgb(0 0 0 / 12%);
-  animation: rise var(--quick) var(--glide) both;
+  animation: rise var(--spring-time) var(--spring) both;
 }
 
 .panel-explain strong {
@@ -4337,15 +4538,6 @@ mark[data-tone='red'] {
   grid-template-columns: minmax(0, 1fr) 13.5rem;
 }
 
-.main.has-rail .topstrip {
-  grid-column: 1 / -1;
-}
-
-.main.has-rail .editor-host {
-  grid-column: 1;
-  grid-row: 2;
-}
-
 .main.has-rail .stickies {
   position: relative;
   inset: auto;
@@ -4418,7 +4610,7 @@ mark[data-tone='red'] {
   box-shadow:
     0 1px 1px rgb(0 0 0 / 12%),
     0 10px 18px -10px rgb(0 0 0 / 34%);
-  animation: sticky-in var(--settle) var(--ease) both;
+  animation: sticky-in var(--spring-time) var(--spring) both;
 }
 
 /*
@@ -4576,7 +4768,8 @@ mark[data-tone='red'] {
 
 /*
   A note is placed, not dropped in. It comes up from under the paper it is
-  being stuck to and settles — ease-out, no overshoot, like everything else.
+  being stuck to and settles on the spring, the last hair of it overshooting
+  the way paper does when it is pressed down.
 */
 @keyframes sticky-in {
   from {
@@ -4602,11 +4795,54 @@ mark[data-tone='red'] {
   cursor: pointer;
 }
 
-.setting input {
-  margin: 0.15rem 0 0;
-  accent-color: var(--accent);
-  width: 0.95rem;
-  height: 0.95rem;
+/*
+  A switch, drawn here rather than by Windows. A setting is on or off, and a
+  checkbox says "include this" — the switch says what the control actually
+  is. The knob travels on the spring; the track's colour fades on ease-out,
+  because a colour has nothing to overshoot with.
+*/
+.setting input,
+.choice input[type='checkbox'] {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 1.9rem;
+  height: 1.1rem;
+  margin: 0.05rem 0 0;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background var(--quick) var(--ease);
+}
+
+.setting input::after,
+.choice input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 22%);
+  transition: translate var(--spring-time) var(--spring), scale var(--spring-time) var(--spring);
+}
+
+.setting input:checked,
+.choice input[type='checkbox']:checked {
+  background: var(--accent);
+}
+
+.setting input:checked::after,
+.choice input[type='checkbox']:checked::after {
+  translate: 0.8rem 0;
+}
+
+/* A press squashes the knob a little wider, the way a finger would. */
+.setting input:active::after,
+.choice input[type='checkbox']:active::after {
+  scale: 1.15 0.95;
 }
 
 .setting-label {
@@ -4818,6 +5054,11 @@ mark[data-tone='red'] {
 .chart-cell,
 .chart,
 .chart-detail,
+.chrome-action,
+.tab-new,
+.tree-home,
+.tree-trash,
+.trash-actions button,
 .block-btn {
   transition:
     background-color var(--quick) var(--glide),
@@ -4825,7 +5066,7 @@ mark[data-tone='red'] {
     box-shadow var(--quick) var(--glide),
     color var(--quick) var(--glide),
     opacity var(--quick) var(--glide),
-    scale var(--quick) var(--glide);
+    scale var(--spring-time) var(--spring);
 }
 
 /*
@@ -4833,8 +5074,15 @@ mark[data-tone='red'] {
   lag rather than as feedback. Scale rather than a colour change: colour is
   already saying whether the thing is active, and a control that dents is
   legible even when it is the same colour pressed as unpressed.
+
+  In fast and out on the spring — the squish get-spatial.com is the reference
+  for. Going down is 70ms of ease-out, because a press waits for nothing; coming
+  back up is the spring in the rule above, which is what makes a click feel
+  like it had give in it rather than like a repaint. One depth for every
+  control, --press, so a toolbar does not have three different hardnesses.
 */
 .chrome-btn:active,
+.chrome-action:active,
 .navbtn:active:not(:disabled),
 .tool:active,
 .bubble-btn:active,
@@ -4844,11 +5092,16 @@ mark[data-tone='red'] {
 .gallery-button:active,
 .row-icon:active,
 .tab-close:active,
+.tab-new:active,
+.tree-home:active,
+.tree-trash:active,
+.trash-actions button:active,
 .welcome-start:active,
 .wincontrol:active,
 .block-btn:active {
-  scale: 0.93;
-  transition-duration: 60ms;
+  scale: var(--press);
+  transition-duration: 70ms;
+  transition-timing-function: var(--ease);
 }
 
 /*
@@ -4895,7 +5148,8 @@ mark[data-tone='red'] {
 .menu-item:active,
 .picker-choice:active {
   scale: 0.985;
-  transition-duration: 60ms;
+  transition-duration: 70ms;
+  transition-timing-function: var(--ease);
 }
 
 /* The disclosure triangle turns rather than being swapped for another glyph.
@@ -5005,23 +5259,6 @@ mark[data-tone='red'] {
 .commented[data-comment-colour='blue']::after { background: #128eb8; }
 .commented[data-comment-colour='pink']::after { background: #df246f; }
 
-/* Feedback only: a press confirms the click without making navigation itself
-   move. The state change is still immediate for frequent keyboard work. */
-.tool,
-.chrome-btn,
-.add-row,
-.tree-trash,
-.trash-actions button {
-  transition-property: background, border-color, box-shadow, color, translate, scale;
-}
-
-.tool:active,
-.chrome-btn:active,
-.add-row:active,
-.tree-trash:active,
-.trash-actions button:active {
-  scale: 0.97;
-}
 
 .dialog.trash-view {
   width: min(46rem, 100%);
@@ -5038,14 +5275,14 @@ mark[data-tone='red'] {
 
 .trash-head h1 { margin: 0 0 0.3rem; font-size: 2rem; letter-spacing: -0.045em; }
 .trash-head p { margin: 0; color: var(--muted); }
-.trash-close { width: 2rem; height: 2rem; border-radius: 0.55rem; color: var(--muted); }
+.trash-close { width: 2rem; height: 2rem; border-radius: var(--r-control); color: var(--muted); }
 .trash-close:hover { background: var(--raise); color: var(--ink); }
 .trash-list { margin: 1rem 0; padding: 0; list-style: none; border-top: 1px solid var(--hairline); }
 .trash-item { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: 0.65rem; padding: 0.75rem 0.35rem; border-bottom: 1px solid var(--hairline); }
 .trash-icon { color: var(--muted); }
 .trash-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trash-actions { display: flex; align-items: center; gap: 0.4rem; }
-.trash-actions button { padding: 0.38rem 0.55rem; border-radius: 0.5rem; font: inherit; font-size: 0.75rem; }
+.trash-actions button { padding: 0.38rem 0.55rem; border-radius: var(--r-control); font: inherit; font-size: 0.75rem; }
 .trash-restore { color: var(--accent); }
 .trash-restore:hover { background: var(--held); }
 .trash-delete { color: #c43b3b; }
@@ -5224,8 +5461,8 @@ mark[data-tone='red'] {
   padding: 0.7rem 0.85rem;
   background: var(--page);
   border: 1px solid var(--line);
-  border-radius: 0.7rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%), 0 16px 44px rgb(0 0 0 / 12%);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-float);
 }
 
 .webnote-text {
@@ -5239,15 +5476,17 @@ mark[data-tone='red'] {
 /*
   Anything that was not there a moment ago.
 
-  The rise is 4 pixels and the scale is a hair under 1: enough that the eye
-  catches a direction, not enough to look like a card being dealt. Menus and
-  dialogs share it, because they are the same event — something opened.
+  The rise is 4 pixels and the scale is three percent under 1: enough that
+  the eye catches a direction, not enough to look like a card being dealt.
+  Menus and dialogs share it, because they are the same event — something
+  opened. On the spring, and opacity rides it too: values past 1 are clamped,
+  so the fade simply lands while the movement settles.
 */
 @keyframes rise {
   from {
     opacity: 0;
     translate: 0 4px;
-    scale: 0.985;
+    scale: 0.97;
   }
   to {
     opacity: 1;
@@ -5273,7 +5512,7 @@ mark[data-tone='red'] {
 .dialog,
 .standing-card,
 .webnote {
-  animation: rise var(--settle) var(--glide) both;
+  animation: rise var(--spring-time) var(--spring) both;
 }
 
 /* The reader fills the card rather than floating over it, and a full-bleed
@@ -5282,12 +5521,10 @@ mark[data-tone='red'] {
   animation: fade var(--quick) linear both;
 }
 
-/* The dialog takes the longest of the three durations: it is the largest
-   thing that ever appears, and the extra beat of settling reads as weight
-   rather than as delay. It used to take the spring for the same reason — the
-   duration carries it now. */
+/* The dialog is the largest thing that ever appears, so it travels a little
+   further on the same spring — weight, not delay. */
 .dialog {
-  animation-duration: var(--unfold);
+  animation-name: overlay-in;
 }
 
 .scrim,
@@ -5299,6 +5536,200 @@ mark[data-tone='red'] {
 .gallery-chrome,
 .cover-actions {
   transition: opacity var(--settle) var(--glide);
+}
+
+/*
+  Page view — see usePageView in EditorPane.tsx.
+
+  The page is US Letter at true size: 96 CSS pixels to the inch, so 8.5in is
+  the width Word's own page is drawn at 100%, and the inch of padding is
+  Word's default margin. The desk around it is a step off the page so the
+  sheet reads as paper lying on something. Every 11 inches a band of the desk
+  shows through: that is where the page ends in the .docx and in the PDF.
+  Drawn, not paginated — the text runs on through it, and the band says where
+  the cut will fall.
+*/
+.editor.is-page-view {
+  --desk: #f2f2f3;
+  --page-length: 11in;
+  background: var(--desk);
+}
+
+:root[data-theme='dark'] .editor.is-page-view {
+  --desk: #0d0d0e;
+}
+
+.editor.is-page-view .sheet {
+  flex: none;
+  width: calc(100% - 3rem);
+  max-width: 8.5in;
+  min-height: var(--page-length);
+  margin: 1.25rem auto 3rem;
+  padding: 1in;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--page) 0,
+    var(--page) calc(var(--page-length) - 12px),
+    var(--desk) calc(var(--page-length) - 12px),
+    var(--desk) var(--page-length)
+  );
+  box-shadow: var(--shadow-pop);
+  transition:
+    max-width var(--spring-time) var(--spring),
+    padding var(--spring-time) var(--spring);
+}
+
+.page-view-toggle {
+  margin-left: 0.15rem;
+}
+
+/*
+  A segmented choice — the theme in Settings. A pill track with a pill thumb
+  that slides to the chosen segment on the spring, so changing it is a thing
+  you watch move rather than a highlight that jumps.
+*/
+.segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 3px;
+  margin-top: 0.15rem;
+  border-radius: var(--r-pill);
+  background: var(--raise);
+}
+
+.segmented::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  border-radius: var(--r-pill);
+  background: var(--page);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%), 0 0 0 0.5px rgb(0 0 0 / 5%);
+  translate: calc(var(--at, 0) * 100%) 0;
+  transition: translate var(--spring-time) var(--spring);
+}
+
+.segment {
+  position: relative;
+  padding: 0.38rem 0.5rem;
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  transition: color var(--quick) var(--ease);
+}
+
+.segment:hover {
+  color: var(--ink);
+}
+
+.segment.is-on {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* File: a word, because a menu of words is what it opens. */
+.file-button {
+  gap: 0.3rem;
+  padding: 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.file-button.is-open {
+  background: var(--raise);
+  color: var(--ink);
+}
+
+/*
+  Notices: one line at the foot of the window — "Saved to Plan.docx" — that
+  rises in on the spring and fades out. A pill, ink on paper inverted, so it
+  reads as the app speaking rather than as part of the page.
+*/
+.notices {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--status) + 1rem);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.notice {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--page);
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow-pop);
+  animation: rise var(--spring-time) var(--spring) both;
+  transition: opacity 180ms var(--ease), translate 180ms var(--ease);
+}
+
+.notice.is-leaving {
+  opacity: 0;
+  translate: 0 4px;
+}
+
+/*
+  The print root — see export/pdf.ts. Never on screen. While a PDF is being
+  written it is the only thing the print stylesheet lets through: the rest of
+  the window is the app, and the PDF is the pages.
+*/
+.print-root {
+  display: none;
+}
+
+@media print {
+  html.is-printing body > :not(.print-root) {
+    display: none !important;
+  }
+
+  html.is-printing .print-root {
+    display: block;
+    color: #000;
+  }
+
+  .print-page + .print-page {
+    break-before: page;
+  }
+
+  .print-title {
+    margin: 0 0 1.2rem;
+    font-size: 1.9rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  h2.print-title {
+    font-size: 1.45rem;
+  }
+}
+
+/*
+  Every surface that floats has its edge drawn by --shadow-pop's ring, so its
+  border steps down to a hairline. A full --line on top of the ring was two
+  edges a pixel apart, which is the hard outline that made menus look pasted
+  on.
+*/
+.menu,
+.slash,
+.picker,
+.tones,
+.bubble,
+.bubble-menu,
+.toolbar-menu,
+.dialog,
+.palette,
+.webnote {
+  border-color: var(--hairline);
 }
 
 /*

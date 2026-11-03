@@ -10,7 +10,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-import type { PalmaNoteBridge, WindowState, WriteExportRequest } from './bridge.ts';
+import type { OpenedDocument, PalmaNoteBridge, WindowState, WriteExportRequest } from './bridge.ts';
 
 /** Tauri injects this before any of our code runs. */
 export function isTauri(): boolean {
@@ -53,6 +53,25 @@ export function createTauriBridge(): PalmaNoteBridge {
     pickImport: (folder) => invoke('pick_import', { folder }),
     restoreSnapshot: () => invoke('restore_snapshot'),
     pickPdf: () => invoke('pick_pdf'),
+    printPdf: (fileName: string) => invoke('print_pdf', { fileName }),
+    openDocument: () => invoke<OpenedDocument | null>('open_document'),
+    launchDocuments: () => invoke<string[]>('launch_documents'),
+    readDocument: (path: string) => invoke<OpenedDocument>('read_document', { path }),
+    saveDocument: (path: string, bytes: string) => invoke<void>('save_document', { path, bytes }),
+    saveDocumentAs: (fileName: string, bytes: string) =>
+      invoke<string | null>('save_document_as', { fileName, bytes }),
+    onOpenDocuments: (listener) => {
+      let stop: (() => void) | null = null;
+      let cancelled = false;
+      void listen<string[]>('documents:open', (event) => listener(event.payload)).then((unlisten) => {
+        if (cancelled) unlisten();
+        else stop = unlisten;
+      });
+      return () => {
+        cancelled = true;
+        stop?.();
+      };
+    },
 
     openExternal: (url) => invoke('open_external', { url }),
 

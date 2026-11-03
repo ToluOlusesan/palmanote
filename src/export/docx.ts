@@ -37,6 +37,7 @@ import {
 } from 'docx';
 
 import { toneOf, type HighlightTone } from '../editor/Highlight.ts';
+import { pointsOf } from '../editor/textFormat.ts';
 import type { PMDoc, PMNode } from '../core/types.ts';
 import type { Walk, WalkedDocument } from './walk.ts';
 
@@ -51,7 +52,14 @@ import type { Walk, WalkedDocument } from './walk.ts';
  */
 type DocxBlock = Paragraph | Table;
 
-export type DocxPreset = 'reading' | 'manuscript';
+/**
+ * `file` is a page being saved back over the Word document it was opened
+ * from. Only the body goes in: no title heading and no page-number footer,
+ * because neither was in the file, and a save that added them would add them
+ * again on the next open and the next save, until the document was mostly
+ * furniture.
+ */
+export type DocxPreset = 'reading' | 'manuscript' | 'file';
 
 export interface ManuscriptDetails {
   /** Runs in the header as `Surname / TITLE / page`. */
@@ -117,6 +125,7 @@ export async function docxFromWalk(
   assets: Map<string, ExportAsset> = new Map(),
 ): Promise<Uint8Array> {
   const manuscript = preset === 'manuscript';
+  const asFile = preset === 'file';
   const children: DocxBlock[] = [];
   // The walk is depth-first and synchronous all the way down; threading a map
   // through nine functions to reach one `case` would cost more than it says.
@@ -125,7 +134,8 @@ export async function docxFromWalk(
   if (manuscript) children.push(...titlePage(details, walk.totalWords));
 
   walk.documents.forEach((entry, index) => {
-    children.push(...documentParagraphs(entry, manuscript, index === 0 && !manuscript));
+    if (asFile) children.push(...bodyParagraphs(entry.content, false));
+    else children.push(...documentParagraphs(entry, manuscript, index === 0 && !manuscript));
   });
 
   const document = new Document({
@@ -154,7 +164,7 @@ export async function docxFromWalk(
           titlePage: manuscript,
         },
         headers: manuscript ? { default: runningHeader(details) } : undefined,
-        footers: manuscript ? undefined : { default: pageFooter() },
+        footers: manuscript || asFile ? undefined : { default: pageFooter() },
         children,
       },
     ],
@@ -211,6 +221,27 @@ function bodyParagraphs(doc: PMDoc | null, manuscript: boolean): DocxBlock[] {
   return out;
 }
 
+type DocxAlignment = (typeof AlignmentType)[keyof typeof AlignmentType];
+
+/**
+ * A paragraph's alignment as Word spells it, or nothing for the default.
+ *
+ * Left is never written: a paragraph with no `w:jc` follows its style, and
+ * writing an explicit left would pin it there against a template that centres.
+ */
+function alignmentOf(node: PMNode): DocxAlignment | undefined {
+  switch (node.attrs?.textAlign) {
+    case 'center':
+      return AlignmentType.CENTER;
+    case 'right':
+      return AlignmentType.RIGHT;
+    case 'justify':
+      return AlignmentType.JUSTIFIED;
+    default:
+      return undefined;
+  }
+}
+
 function block(node: PMNode, out: DocxBlock[], manuscript: boolean, level: number): void {
   switch (node.type) {
     case 'heading': {
@@ -223,6 +254,7 @@ function block(node: PMNode, out: DocxBlock[], manuscript: boolean, level: numbe
               : value === 2
                 ? HeadingLevel.HEADING_2
                 : HeadingLevel.HEADING_3,
+          alignment: alignmentOf(node),
           children: inlineRuns(node),
         }),
       );
@@ -310,7 +342,10 @@ function block(node: PMNode, out: DocxBlock[], manuscript: boolean, level: numbe
     case 'paragraph':
       out.push(
         new Paragraph({
-          indent: manuscript ? { firstLine: convertInchesToTwip(0.5) } : undefined,
+          // A centred line is not indented: the indent would push it half an
+          // inch off the centre it was put on.
+          indent: manuscript && !alignmentOf(node) ? { firstLine: convertInchesToTwip(0.5) } : undefined,
+          alignment: alignmentOf(node),
           children: inlineRuns(node),
         }),
       );
@@ -400,6 +435,7 @@ function listItem(
               ? { reference: BULLETS, level }
               : undefined,
         indent: listType === 'taskList' ? { left: convertInchesToTwip(0.25 + level * 0.25) } : undefined,
+        alignment: alignmentOf(child),
         children: [...marker, ...inlineRuns(child)],
       }),
     );
@@ -440,6 +476,14 @@ function inlineRuns(node: PMNode): InlineChild[] {
     if (marks.includes('italic')) format.italics = true;
     // The one that silently disappears if you forget it.
     if (marks.includes('strike')) format.strike = true;
+    if (marks.includes('underline')) format.underline = {};
+    // Colour as the hex it is drawn in, without the hash Word does not take;
+    // size in the half-points Word counts in.
+    const style = child.marks?.find((mark) => mark.type === 'textStyle')?.attrs;
+    const colour = typeof style?.color === 'string' ? /^#?([0-9a-f]{6})$/i.exec(style.color.trim())?.[1] : undefined;
+    if (colour) format.color = colour.toUpperCase();
+    const points = pointsOf(style?.fontSize);
+    if (points) format.size = Math.round(points * 2);
     // Word's own character style for code, plus the font, because the style
     // alone is not present in every template this file might be opened with.
     if (marks.includes('code')) {
@@ -475,6 +519,9 @@ interface RunFormat {
   bold?: true;
   italics?: true;
   strike?: true;
+  underline?: Record<string, never>;
+  color?: string;
+  size?: number;
   highlight?: DocxHighlight;
   style?: string;
   font?: string;

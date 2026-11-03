@@ -23,6 +23,8 @@ a browser.
 | Files out | native save/folder dialogs | File System Access API, else one zip |
 | Files in | native picker, whole folders walked in Rust | `<input type="file">`, `webkitRelativePath` |
 | PDF reading | yes, WebView2's own viewer | no |
+| PDF export | yes, written by WebView2, no print dialog | no |
+| Files on disk | open .docx / .pdf / .md, `Ctrl+S` saves back to the .docx, Explorer opens files in it | `Ctrl+O` is the import dialog |
 | Backups | nightly `VACUUM INTO` Documents, last 30 kept | none — the note at the foot of the window says so |
 | Snapshot restore | yes | no |
 | Two of it at once | one window, and the question does not arise | the second tab is declined |
@@ -115,30 +117,39 @@ before any of this existed.
 
 ### Motion
 
-One vocabulary, at the end of [styles.css](src/app/styles.css) — two ease-out
-curves (`--ease`, `--glide`) and three durations (`--quick` 120ms, `--settle`
-190ms, `--unfold` 280ms), and almost nothing outside them. Gathered
-in one block rather than spread through the file, because the difference between
-an interface that feels considered and one that feels assembled is not how much
-it animates but whether everything animates the same.
+One vocabulary, at the top and foot of [styles.css](src/app/styles.css): two
+ease-out curves (`--ease`, `--glide`), one spring (`--spring`, run for
+`--spring-time`), three durations (`--quick` 120ms, `--settle` 190ms,
+`--unfold` 280ms) and one press depth (`--press`). Almost nothing is timed
+outside them, because the difference between an interface that feels
+considered and one that feels assembled is not how much it animates but
+whether everything animates the same.
+
+**The spring is back, and PalmaNote now parts from the Palmaboard family spec
+on it** — the owner's call, November 2026, with get-spatial.com as the
+reference. It is a real damped spring (ζ 0.8, a 0.4s feel) sampled into CSS
+`linear()`, so it overshoots by about one and a half percent: enough to read
+as weight, not enough to wobble. It drives *where things are* — entrances,
+the sidebar and notes-rail columns, tabs stepping aside for a dragged tab, a
+tab or a tree row arriving, the drop line for a carried bullet, the settings
+switches, a page arriving when tabs change — and never opacity or colour.
 
 Three rules cover the surface: anything a pointer can touch answers at
-`--quick`; anything that appears out of nothing rises four pixels while it
-fades, so it reads as having come from somewhere; anything pressed dents by 7%
-and comes back faster than it went. The selection bar is the one thing that goes
-further — its controls arrive in sequence rather than together, which is what
-makes it read as a thing that came to you.
+`--quick`; anything that appears out of nothing rises a few pixels on the
+spring while it fades, so it reads as having come from somewhere; anything
+pressed sinks to `--press` in 70ms and comes back up on the spring. The
+selection bar is the one thing that goes further — its controls arrive in
+sequence rather than together, which is what makes it read as a thing that
+came to you.
 
-**Ease-out only, no spring.** There was a `--spring` here that overshot by a
-hair and came back, on menus, the selection bar and the dialog. The Palmaboard
-motion spec rules it out across the family and the family wins — a bounce in one
-app of three reads as a bug in the other two. What did the work in those cases
-was the four-pixel rise, and that stays.
+Nothing loops, and one media query at the foot of the file turns all of it off
+under `prefers-reduced-motion` — durations rather than `animation: none`, so
+anything animating *into* its resting state still ends up there.
 
-Nothing loops, nothing runs longer than 280ms, and one media query at the foot
-of the file turns all of it off under `prefers-reduced-motion` — durations
-rather than `animation: none`, so anything animating *into* its resting state
-still ends up there.
+**Corners and elevation are scales too**: `--r-item`, `--r-control`, `--r-pop`
+and `--r-panel` (8, 9, 12, 16px, nesting so a menu item's curve runs parallel
+to its menu's), and `--shadow-pop` / `--shadow-float`, each with a dark-theme
+counterpart. There were twenty-five radii and a shadow recipe per component.
 
 ### Brand
 
@@ -314,6 +325,36 @@ are the first one where that mattered enough to need an answer of its own — se
   cannot outrank it. Doing that at `.body p` instead is what used to leave two
   paragraphs, a quote after a sentence and a list after its lead-in all running
   flush together while headings alone kept their air.
+
+### Word formatting
+
+Underline, text colour, text size and alignment — the half of Word a document
+loses most visibly on the way in, and which section 21 used to rule out. In the
+selection bar (size reads as the number it is; colour as an A wearing it),
+underline and alignment in the page bar too. Short lists on purpose, in
+[textFormat.ts](src/editor/textFormat.ts): seven colours, Word's own size
+steps, four alignments. Colours are stored as the hex drawn and sizes in
+points, because that is what a .docx holds. 12pt and left are the defaults and
+are never stored.
+
+| | |
+|---|---|
+| `Ctrl+U` | underline |
+| `Ctrl+Shift+L` / `E` / `R` / `J` | align left, centre, right, justify (Google Docs' chords) |
+
+They survive every way out: Word gets `w:u`, `w:color`, `w:sz` and `w:jc`;
+markdown gets `<u>` and `<span style>`, which the reader takes back; the PDF is
+set from the same schema.
+
+### Page view
+
+`Ctrl+Alt+P` (Word's chord for Print Layout) or the page button at the end of
+the page bar. The page becomes US Letter at true size — 8.5in at 96px to the
+inch, an inch of margin — lying on a desk, with a band of desk every 11in where
+a page will end. It draws where pages fall rather than paginating: live
+pagination in an editable surface is a typesetter, and what the mode is for is
+knowing what the .docx and the PDF will look like. Remembered per machine
+(`palmanote:page-view`). See `usePageView` in [EditorPane.tsx](src/ui/EditorPane.tsx).
 
 ### Tables
 
@@ -499,30 +540,33 @@ block under it: a `+` and a drag handle.
 | `Alt+Shift+↑` / `↓` | move the block the caret is in |
 | `Alt+Shift+D` | duplicate it, caret in the copy |
 
-### List items are not dragged
+### List items are carried by a drop of their own
 
-`isCarryable` in [blocks.ts](src/editor/blocks.ts). A bullet is a block by every
-other measure — it has a handle, a menu, and all six verbs — but it cannot be
-picked up by the pointer, and that is a decision rather than a gap.
+A bullet can be picked up and dropped anywhere in the list tree it belongs to —
+before any item, at the end of any sub-list, at any depth the nesting limit
+allows — and nowhere outside it. Dropping a bullet into a paragraph or into
+the next list down the page would mean deciding whether to merge, split or
+convert lists, and the drag would be guessing.
 
-Dropping *into* a list has no target worth offering. ProseMirror resolves a
-point inside an item to the gap after it, so the first item of a list has no
-reachable slot above it however carefully you aim; and items sit flush against
-one another, so the two-pixel line that says where a block will land has nowhere
-to draw but across the text of the row above, where it reads as a strikethrough.
-Both fall out of a list being one node holding items rather than a run of
-siblings, and neither is reachable without replacing drop targeting wholesale.
+It does not go through ProseMirror's drop. That resolves a point between two
+bullets to the *list* rather than to either of them, so a bullet dropped above
+its neighbour went quietly nowhere — and then the block menu opened, as though
+the drag had been a click. Two halves instead:
+`listSlots` / `moveListItemTo` in [blocks.ts](src/editor/blocks.ts) offer every
+legal slot and do the move (unit-tested, sub-bullets travel with their item,
+a list left empty goes with it), and [listDrop.ts](src/ui/listDrop.ts)
+measures those slots on screen, picks the nearest by height — by how far right
+the hand has reached where two slots share a height — and draws its own line,
+which glides between slots on the spring. ProseMirror's caret is hidden while
+a bullet is in the air.
 
-`Alt+Shift+↑`/`↓` moves an item among its siblings, exactly, every time, and it
-is the same chord that moves a paragraph. One gesture that works is a better
-offer than two where the more inviting one misleads. The handle stops saying
-otherwise: on an item it is not `draggable`, and the cursor stays an arrow
-rather than promising a grab.
+Reaching for an item's handle holds on to that item: left of a block's text —
+its bullet, its checkbox, the margin — the gutter lets go only when the
+pointer leaves the block's own rows. Without that, crossing a to-do's checkbox
+moved the handle to the task above, and the wrong task came up in the hand.
 
-The menu is four verbs — duplicate, move up, move down, delete — and then the
-nine block types a block can be turned into. Move up and move down are greyed
-at the ends rather than hidden, because a menu whose items move between
-openings is a menu you have to read every time.
+A real carry that lands nowhere no longer opens the block menu; only a press
+that barely moved does.
 
 ### What counts as one block
 
@@ -993,7 +1037,7 @@ creates one blank page rather than showing an empty room.
 | Reads | Via |
 |---|---|
 | `.md`, `.markdown`, `.txt` | own parser, front matter honoured (`title`, `kind`, `icon`) |
-| `.docx` | `mammoth` → HTML → the same schema filter a paste goes through |
+| `.docx` | read straight out of Word's XML by [import/docx.ts](src/import/docx.ts) — formatting, lists, tables, tasks, pictures |
 | `palmanote-export.json` | our own bundle format, parent relationships rebuilt |
 | `.png` `.jpg` `.gif` `.webp` | not pages — assets, for the markdown that points at them |
 | a whole folder | nested directories become nested pages |
@@ -1070,7 +1114,7 @@ nothing.
 ## 15. Export
 
 [src/export/](src/export/), [ExportDialog.tsx](src/ui/ExportDialog.tsx).
-`Ctrl+Shift+E`. Every format takes a scope: this page, this page and everything
+`Ctrl+Shift+S` (Save As, as Word has it). Every format takes a scope: this page, this page and everything
 inside it, or everything.
 
 **Word (.docx)**, two presets, both using Word's *named styles* throughout —
@@ -1089,12 +1133,12 @@ Images are embedded and scaled to the 6.5" text block (never blown up). Emoji ge
 their own run with an explicit `Segoe UI Emoji` font, or Word substitutes a box.
 Highlights map to Word's named highlight colours.
 
-**PDF is not here.** It was the print stylesheet handed to the platform's own
-print dialog, and it is out of the app entirely while it is rebuilt — the
-format, the branch in the dialog and `printToPDF` on the bridge, in both
-shells. The stylesheet stays, because that is what it will be rebuilt on and
-because Ctrl+P is a thing a browser does whether or not this app has an
-opinion about it.
+**PDF**, desktop only, and without a print dialog. The pages are laid out in a
+print root of their own from their saved content (so a subtree prints every
+page, not only the open one), with the prose's own class, and WebView2 writes
+the file through `ICoreWebView2_7::PrintToPdf` — see
+[export/pdf.ts](src/export/pdf.ts) and [pdf.rs](src-tauri/src/pdf.rs). The
+old note said Tauri exposed no route to it; `with_webview` is the route.
 
 **Markdown** as one file in tree order, or as a folder mirroring the tree — one
 numbered file per page (`01 …`, so the directory reads in tree order rather than
@@ -1156,7 +1200,8 @@ run property written as `w:val="false"` that would override a paragraph style.
 Desktop only. [PdfReader.tsx](src/ui/PdfReader.tsx), `pick_pdf` in
 [main.rs](src-tauri/src/main.rs).
 
-Open a PDF in the main window to read beside the writing. The viewer is the one
+Open a PDF in the main window to read beside the writing — from Import, with
+`Ctrl+O`, or by opening a .pdf from Explorer (see [Files on disk](#files-on-disk)). The viewer is the one
 already inside WebView2 (`mspdf.dll`), so zoom, search, print, page navigation
 and thumbnails all come free — bundling pdf.js would have been about half the
 size of the whole application.
@@ -1167,12 +1212,48 @@ exactly the one file that was picked, by the person who picked it.
 
 ---
 
+### Files on disk
+
+Desktop only: [documents.rs](src-tauri/src/documents.rs),
+[diskFiles.ts](src/state/diskFiles.ts).
+
+- **`Ctrl+O`** opens a .docx, .pdf or .md. A Word or markdown file becomes a
+  page; a PDF opens in the reader. A file that already has a page opens that
+  page, with whatever was written in it since, rather than being read over it.
+- **`Ctrl+S`** writes the open page back over the .docx it came from — body
+  only, through the `file` preset, so no title heading or page-number footer is
+  added that the next open would read as content. A page with no file asks
+  where to save it (Save As), and is that file's page from then on. Written
+  beside and renamed over, so a save that dies halfway leaves the document as
+  it was. In the browser, `Ctrl+S` says there was nothing to do.
+- **Explorer** opens .docx, .pdf and .md in PalmaNote: the installer registers
+  the associations, and a file opened while the app is running is handed to
+  the running window (`tauri-plugin-single-instance`) rather than starting a
+  second app on the same library.
+- **The page can only reach files it was handed.** The shell keeps the paths
+  that were picked, saved or opened from Explorer in `linked-files.json` beside
+  the library and refuses any other; which page belongs to which file is kept in
+  `palmanote:linked-files`.
+- **Legacy .doc is not read.** Its binary format needs Word or a converter.
+- The round trip is the specification: [docx.test.ts](src/import/docx.test.ts)
+  writes documents with every node and mark, reads them back, and requires the
+  same document — twice over, so a second save adds nothing.
+
 ## 17. Theme and settings
 
-**Theme** ([theme.ts](src/state/theme.ts)) cycles system → light → dark from a
-button in the top bar. Three states rather than two, because following the
-machine is a real preference. It also sets `color-scheme`, so the engine draws
-the right scrollbars and form controls.
+**Theme** ([theme.ts](src/state/theme.ts)) is the first thing in Settings —
+System, Light, Dark, side by side, with a thumb that slides to the one chosen.
+It was an icon in the top bar that cycled through the three while showing only
+the current one, so choosing Dark meant clicking until it happened. Three
+states rather than two, because following the machine is a real preference. It
+also sets `color-scheme`, so the engine draws the right scrollbars and form
+controls.
+
+**The top bar** carries the window's things and nothing else: the tabs, then
+**File** (New page, Open, Save on desktop, Import, Export — the menu Word
+taught everybody to look in, and the only place Open and Save appear outside
+their chords), the writing chart, the guide and Settings. History moved to the
+page bar beside notes and page view, because it is about the page.
 
 **The guide** ([GuideDialog.tsx](src/ui/GuideDialog.tsx),
 [guide.ts](src/ui/guide.ts)) is on `F1` and on a `?` in the top bar. It was
@@ -1309,7 +1390,10 @@ reachable from here.
 | `Ctrl+1`–`Ctrl+8`, `Ctrl+9` | jump to tab N, last tab |
 | `Ctrl+Shift+PageUp` / `PageDown` | move the open tab left / right |
 | `Alt+←` / `Alt+→` | back, forward |
-| `Ctrl+Shift+E` | export |
+| `Ctrl+O` | open a file (desktop); import (browser) |
+| `Ctrl+S` | save the page to its .docx, or Save As (desktop) |
+| `Ctrl+Shift+S` | export |
+| `Ctrl+Alt+P` | page view |
 | `Ctrl+Shift+I` | import |
 | `Ctrl+Shift+H` | history of this page |
 | `Ctrl+Space` | a sticky note in the rail |
@@ -1322,7 +1406,8 @@ reachable from here.
 
 | | |
 |---|---|
-| `Ctrl+B` / `Ctrl+I` / `Ctrl+Shift+X` | bold, italic, strikethrough |
+| `Ctrl+B` / `Ctrl+I` / `Ctrl+U` / `Ctrl+Shift+X` | bold, italic, underline, strikethrough |
+| `Ctrl+Shift+L` / `E` / `R` / `J` | align left, centre, right, justify |
 | `Ctrl+Alt+1/2/3`, `Ctrl+Alt+0` | Heading, Subheading, Small heading, Text |
 | `Ctrl+Z` / `Ctrl+Y` | undo, redo |
 | `Tab` / `Shift+Tab` in a list | nest, outdent (three levels) |
@@ -1370,8 +1455,8 @@ chord already closes a tab and would go on doing so first.
 ## 21. What it deliberately does not have
 
 Worth reading as a feature list of its own, since most of these were decided
-rather than deferred: no underline, no text colour, no font sizes, no
-alignment controls, no colour picker for highlights, no syntax highlighting in
+rather than deferred: no font families, no free colour picker (seven text
+colours, four highlights), no line spacing, no syntax highlighting in
 code blocks, no full-text search of bodies, no global undo stack, no annotation
 on PDFs, no auto-collapsing sidebar, no multi-block selection, and no third
 switch.
@@ -1589,6 +1674,14 @@ and the `sticky_notes` table in [schema.sql](src/data/schema.sql).
 ## 24. Gaps and things to check
 
 Honest state, not a wish list.
+
+- **The desktop file paths have not been run in the packaged app.** PDF export
+  through WebView2, `Ctrl+O`, `Ctrl+S` back to a .docx and Explorer launches
+  compile, type-check and are covered at their edges — the .docx round trip is
+  unit-tested, the print root is laid out and printed by Chrome in a script —
+  but `npm run desktop:smoke` runs against the real library, so it was not run.
+- **Page view draws page breaks; it does not paginate.** A break inside a
+  paragraph is shown, not moved, and Word may break a line or two differently.
 
 - **`Ctrl+Shift+H` is bound twice.** [Highlight.ts](src/editor/Highlight.ts)
   binds `Mod-Shift-h` to the yellow highlight, and

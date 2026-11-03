@@ -20,6 +20,9 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
   const dragFrom = useRef<number | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
   const [dragWidth, setDragWidth] = useState(0);
+  /** A drag that ended without a drop: the tabs slide home rather than snap. */
+  const [returning, setReturning] = useState(false);
+  const returnTimer = useRef<number | undefined>(undefined);
   const [menu, setMenu] = useState<{ docId: string | null; x: number; y: number } | null>(null);
 
   // Keep the active tab in view when it changes by keyboard.
@@ -43,10 +46,38 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
     return true;
   };
 
-  const endDrag = () => {
+  const endDrag = (dropped: boolean) => {
+    // A drop lands every tab where it was already drawn — the shifted ones are
+    // already standing in their new places — so it must not animate. Anything
+    // else slides back home.
+    if (!dropped && dragFrom.current !== null) {
+      setReturning(true);
+      window.clearTimeout(returnTimer.current);
+      returnTimer.current = window.setTimeout(() => setReturning(false), 450);
+    }
     dragFrom.current = null;
     setDropAt(null);
     setDragWidth(0);
+  };
+
+  /**
+   * The insertion index under a pointer: how many tabs it is past the middle of.
+   *
+   * Read from layout (`offsetLeft`), never from `getBoundingClientRect`. While a
+   * tab is in the air its neighbours are slid aside by a transform, and a
+   * transformed box moves under a pointer that has not — so measuring the
+   * drawn boxes made the slot flip back and forth and the drop land one short.
+   * Layout ignores transforms, so these midpoints stay put for the whole drag.
+   */
+  const dropIndexAt = (clientX: number): number => {
+    const strip = stripRef.current;
+    if (!strip) return tabs.tabs.length;
+    const x = clientX - strip.getBoundingClientRect().left - strip.clientLeft + strip.scrollLeft;
+    let index = 0;
+    for (const el of strip.querySelectorAll<HTMLElement>('.tab[data-index]')) {
+      if (el.offsetLeft + el.offsetWidth / 2 < x) index = Number(el.dataset.index) + 1;
+    }
+    return index;
   };
 
   /**
@@ -138,20 +169,27 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
 
   return (
     <div
-      className="tabstrip"
       ref={stripRef}
       role="tablist"
       aria-label="Open documents"
       // The strip itself takes the drag too. Without this the gaps between
       // tabs, and the empty run to the right of the last one, are dead
       // ground — cross one and the cursor says no.
-      onDragOver={allowDrop}
+      className={`tabstrip${dragFrom.current !== null ? ' is-dragging' : ''}${returning ? ' is-returning' : ''}`}
+      onDragOver={(event) => {
+        if (!allowDrop(event)) return;
+        const at = dropIndexAt(event.clientX);
+        setDropAt((current) => (current === at ? current : at));
+      }}
       onDrop={(event) => {
         if (!allowDrop(event)) return;
-        tabs.moveTab(dragFrom.current!, tabs.tabs.length - 1);
-        endDrag();
+        const from = dragFrom.current!;
+        const at = dropIndexAt(event.clientX);
+        const target = at > from ? at - 1 : at;
+        if (target !== from) tabs.moveTab(from, target);
+        endDrag(true);
       }}
-      onDragEnd={endDrag}
+      onDragEnd={() => endDrag(false)}
       onContextMenu={(event) => {
         event.preventDefault();
         setMenu({ docId: null, x: event.clientX, y: event.clientY });
@@ -192,31 +230,17 @@ export function TabStrip({ onPick, onNew }: { onPick?: () => void; onNew?: () =>
               .filter(Boolean)
               .join(' ')}
             style={{ '--tab-drag-width': `${dragWidth}px` } as CSSProperties}
+            data-index={index}
             draggable
             onDragStart={(event) => {
               dragFrom.current = index;
+              window.clearTimeout(returnTimer.current);
+              setReturning(false);
               setDragWidth(event.currentTarget.getBoundingClientRect().width);
               event.dataTransfer.effectAllowed = 'move';
               // Firefox starts no drag at all without payload, and the id is
               // the honest thing to carry.
               event.dataTransfer.setData('text/plain', tab.docId);
-            }}
-            onDragEnter={(event) => { if (allowDrop(event)) setDropAt(event.clientX < event.currentTarget.getBoundingClientRect().left + event.currentTarget.getBoundingClientRect().width / 2 ? index : index + 1); }}
-            onDragOver={(event) => {
-              if (!allowDrop(event)) return;
-              const box = event.currentTarget.getBoundingClientRect();
-              setDropAt(event.clientX < box.left + box.width / 2 ? index : index + 1);
-            }}
-            onDragEnd={endDrag}
-            onDrop={(event) => {
-              if (!allowDrop(event)) return;
-              // The strip below would otherwise also take this drop and send
-              // the tab to the end.
-              event.stopPropagation();
-              const box = event.currentTarget.getBoundingClientRect();
-              const target = event.clientX < box.left + box.width / 2 ? index : index + 1;
-              tabs.moveTab(dragFrom.current!, target > dragFrom.current! ? target - 1 : target);
-              endDrag();
             }}
             onClick={() => {
               tabs.open(tab.docId, 'preview');

@@ -1,21 +1,16 @@
 import {
-  CircleHalf,
-  ClockCounterClockwise,
-  Export,
-  FileArrowDown,
+  CaretDown,
   Gear,
   GridFour,
-  Moon,
   Question,
   Sidebar,
-  Sun,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Editor } from '@tiptap/react';
 
 import { clearComment, selectComment, setCommentColour } from '../editor/Comment.ts';
-import { isDesktop } from '../data/bridge.ts';
+import { bridge, isDesktop } from '../data/bridge.ts';
 import { ActivityDialog } from '../ui/ActivityDialog.tsx';
 import { LibraryProvider, useLibrary } from '../state/library.tsx';
 import { useTabClaim } from '../state/soleTab.ts';
@@ -38,6 +33,9 @@ import { Palette } from '../ui/Palette.tsx';
 import { Welcome } from '../ui/Welcome.tsx';
 import { WindowControls } from '../ui/WindowControls.tsx';
 import { DuplicateTab, NarrowScreen, StorageNote, useNarrowScreen } from '../ui/WebShell.tsx';
+import { Notices, notify } from '../ui/Notice.tsx';
+import { RowMenu, type MenuItem } from '../ui/RowMenu.tsx';
+import { openDocument, pickAndOpen, saveToDisk, type OpenTarget } from '../state/diskFiles.ts';
 
 /**
  * Two questions the browser build has to answer before anything reads the
@@ -230,6 +228,65 @@ function Workspace() {
   // PDF reader. The button says so rather than opening onto nothing.
   const canBrowseHistory = ready && !greeting && !pdf && library.selectedId !== null;
 
+  /*
+    Files on disk, the way Word has them: Ctrl+O, Ctrl+S, and a document
+    double-clicked in Explorer — at launch, or handed to this window by a
+    second launch. See state/diskFiles.ts.
+  */
+  const fileTarget = useRef<OpenTarget | null>(null);
+  const [fileMenu, setFileMenu] = useState<{ x: number; y: number } | null>(null);
+  fileTarget.current = {
+    exists: (id) => {
+      const doc = library.byId.get(id);
+      return Boolean(doc && doc.archivedAt === null);
+    },
+    refresh: library.refresh,
+    select: (id) => {
+      setPdf(null);
+      setGreeting(false);
+      library.select(id);
+    },
+    openPdf: (file) => {
+      setGreeting(false);
+      setPdf(file);
+    },
+  };
+  const openFiles = useCallback(async (paths: string[]) => {
+    for (const path of paths) {
+      try {
+        const opened = await bridge?.readDocument?.(path);
+        if (opened && fileTarget.current) await openDocument(opened, fileTarget.current);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }, []);
+  useEffect(() => {
+    if (!ready || !bridge) return;
+    void bridge.launchDocuments?.().then(openFiles);
+    return bridge.onOpenDocuments?.((paths) => void openFiles(paths));
+  }, [ready, openFiles]);
+
+  /** Ctrl+O: the shell's picker on desktop, the import dialog in a browser. */
+  const openFile = useCallback(() => {
+    if (bridge?.openDocument && fileTarget.current) {
+      void pickAndOpen(fileTarget.current).catch((error) =>
+        notify(error instanceof Error ? error.message : String(error)),
+      );
+    } else setImporting(true);
+  }, []);
+
+  const saveCurrent = useCallback(async () => {
+    const doc = library.selectedId ? library.byId.get(library.selectedId) : undefined;
+    if (!doc || greeting || pdf) return;
+    try {
+      const flush = flushRef.current;
+      notify(await saveToDisk(doc.id, doc.title, flush ? () => flush(false) : null));
+    } catch (error) {
+      notify(error instanceof Error ? `Not saved: ${error.message}` : 'Not saved.');
+    }
+  }, [library, greeting, pdf]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const ctrl = event.ctrlKey && !event.altKey;
@@ -238,6 +295,20 @@ function Workspace() {
       if (ctrl && key === 'Tab') {
         event.preventDefault();
         tabs.cycle(event.shiftKey ? -1 : 1);
+        return;
+      }
+      // Word's two: open a file, save to it. In the browser, Ctrl+O is the
+      // import dialog — the nearest thing to a file a tab can open — and
+      // Ctrl+S says that there was nothing to do instead of saving the page's
+      // HTML, which is what the browser would otherwise offer.
+      if (ctrl && !event.shiftKey && key.toLowerCase() === 's') {
+        event.preventDefault();
+        void saveCurrent();
+        return;
+      }
+      if (ctrl && !event.shiftKey && key.toLowerCase() === 'o') {
+        event.preventDefault();
+        openFile();
         return;
       }
       if (ctrl && !event.shiftKey && key >= '1' && key <= '9') {
@@ -267,7 +338,8 @@ function Workspace() {
         newPage();
         return;
       }
-      if (ctrl && event.shiftKey && key.toLowerCase() === 'e') {
+      // Save As, as Word has it. Ctrl+Shift+E is centring now, in the editor.
+      if (ctrl && event.shiftKey && key.toLowerCase() === 's') {
         event.preventDefault();
         setExporting(true);
         return;
@@ -363,6 +435,8 @@ function Workspace() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [
+    saveCurrent,
+    openFile,
     canBrowseHistory,
     commentOnSelection,
     focusEditor,
@@ -379,12 +453,22 @@ function Workspace() {
     treeVisible,
   ]);
 
+  const fileItems: MenuItem[] = [
+    { label: 'New page', hint: 'Ctrl+T', onSelect: newPage },
+    { label: 'Open…', hint: 'Ctrl+O', onSelect: openFile },
+    // A browser has no file to save to; the page saves as it is typed.
+    ...(isDesktop
+      ? [{ label: 'Save', hint: 'Ctrl+S', disabled: !canBrowseHistory, onSelect: () => void saveCurrent() }]
+      : []),
+    { label: 'Import…', hint: 'Ctrl+Shift+I', onSelect: () => setImporting(true) },
+    { label: 'Export…', hint: 'Ctrl+Shift+S', onSelect: () => setExporting(true) },
+  ];
+
   return (
     <div className={`workspace${treeVisible ? '' : ' tree-hidden'}`}>
       <TreePane
         onOpen={openedSomething}
         onPreview={leaveGreeting}
-        onImport={() => setImporting(true)}
         onHome={goHome}
         onOpenTrash={() => { setTrashOpen(true); leaveGreeting(); }}
       />
@@ -398,7 +482,10 @@ function Workspace() {
         onClick={() => setTreeVisible(true)}
       />
 
-      <div className={`main${railVisible ? ' has-rail' : ''}`}>
+      {/* The column is opened only when the rail is actually drawn in it. Set
+          from the preference alone, the welcome screen and the PDF reader were
+          handed a 13.5rem column of nothing and sat off-centre. */}
+      <div className={`main${ready && !greeting && !pdf && railVisible ? ' has-rail' : ''}`}>
         {/* The title bar of a window with no frame. `deep` means a press
             anywhere in here drags, except where Tauri stops of its own accord:
             it walks up from what was pressed and gives up at the first button,
@@ -433,37 +520,32 @@ function Workspace() {
               masked the `deep` on the strip behind it. */}
           <div className="drag-region" data-tauri-drag-region="deep" />
 
-          <div className="file-actions" aria-label="Import and export">
-            <button
-              type="button"
-              className="chrome-action"
-              title="Import — Ctrl+Shift+I"
-              onClick={() => setImporting(true)}
-            >
-              <FileArrowDown size={16} />
-              <span>Import</span>
-            </button>
-            <button
-              type="button"
-              className="chrome-action"
-              title="Export — Ctrl+Shift+E"
-              onClick={() => setExporting(true)}
-            >
-              <Export size={16} />
-              <span>Export</span>
-            </button>
-          </div>
-
+          {/*
+            Everything that is about files, in the one place Word taught
+            everybody to look: New, Open, Save, and the two ways in and out.
+            It replaced two labelled buttons and left Open and Save — which
+            existed only as chords — somewhere a hand can find them. History
+            went to the page bar, because it is about the page, and the theme
+            went into Settings, where it can say all three choices at once
+            rather than cycling through them blind.
+          */}
           <button
             type="button"
-            className="chrome-btn"
-            aria-label="History"
-            title="History — Ctrl+Shift+H"
-            disabled={!canBrowseHistory}
-            onClick={() => setHistoryOpen(true)}
+            className={`chrome-action file-button${fileMenu ? ' is-open' : ''}`}
+            aria-haspopup="menu"
+            aria-expanded={fileMenu !== null}
+            onClick={(event) => {
+              const box = event.currentTarget.getBoundingClientRect();
+              setFileMenu(fileMenu ? null : { x: box.left, y: box.bottom + 6 });
+            }}
           >
-            <ClockCounterClockwise size={18} />
+            <span>File</span>
+            <CaretDown size={11} weight="bold" />
           </button>
+          {fileMenu && (
+            <RowMenu x={fileMenu.x} y={fileMenu.y} items={fileItems} onClose={() => setFileMenu(null)} />
+          )}
+
           <button
             type="button"
             className="chrome-btn"
@@ -498,21 +580,6 @@ function Workspace() {
             onClick={() => setSettingsOpen(true)}
           >
             <Gear size={18} />
-          </button>
-          <button
-            type="button"
-            className="chrome-btn"
-            aria-label={`Theme: ${theme.choice}`}
-            title={`Theme: ${theme.choice} — click to change`}
-            onClick={theme.cycle}
-          >
-            {theme.choice === 'system' ? (
-              <CircleHalf size={18} />
-            ) : theme.choice === 'light' ? (
-              <Sun size={18} />
-            ) : (
-              <Moon size={18} />
-            )}
           </button>
 
           <WindowControls />
@@ -552,6 +619,7 @@ function Workspace() {
           )}
           {ready && !greeting && !pdf && (
             <EditorPane
+              onOpenHistory={() => setHistoryOpen(true)}
               sessionBaseline={sessionBaseline ?? totalWords}
               hostRef={hostRef}
               historyOpen={historyOpen}
@@ -579,13 +647,19 @@ function Workspace() {
 
       {/* Last in the tree so it is over everything, and only once there is
           something to point at: it teaches the writing surface, and the
-          greeting is still covering it until it is answered. */}
-      {touring && ready && !greeting && !pdf && !trashOpen && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && !railVisible && (
+          greeting is still covering it until it is answered. Not held back
+          by the notes rail: it is open by default, so waiting for it to close
+          meant a first launch was never shown around at all. */}
+      {touring && ready && !greeting && !pdf && !trashOpen && !settingsOpen && !guideOpen && !activityOpen && !paletteOpen && !importing && !exporting && (
         <Tutorial onDone={() => setTouring(false)} />
       )}
 
+      <Notices />
+
       {settingsOpen && (
         <SettingsDialog
+          theme={theme.choice}
+          onTheme={theme.choose}
           onClose={() => setSettingsOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
         />

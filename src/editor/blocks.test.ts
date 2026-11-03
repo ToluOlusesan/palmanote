@@ -15,7 +15,8 @@ import {
   deleteBlock,
   duplicateBlock,
   insertBlockAfter,
-  moveListItem,
+  listSlots,
+  moveListItemTo,
   moveBlock,
 } from './blocks.ts';
 
@@ -256,26 +257,87 @@ test('the last bullet does not climb out of its list', () => {
   assert.equal(apply(state, moveBlock(1)), null);
 });
 
-test('a list item can be dropped before a visible sibling', () => {
-  const document = doc(bullets('a', 'b', 'c'));
-  const state = stateWith(document, 'a');
-  const moved = apply(state, moveListItem(itemPosition(document, 'c'), itemPosition(document, 'a'), false));
-  assert.deepEqual(itemsOf(moved!), ['c', 'a', 'b']);
+/** A bullet with sub-bullets under it. */
+const parent = (text: string, ...children: PMNode[]) =>
+  schema.node('listItem', null, [p(text), schema.node('bulletList', null, children)]);
+
+/** The list tree as indented text, one line per item. */
+function outline(state: EditorState): string[] {
+  const out: string[] = [];
+  const walk = (list: PMNode, depth: number) =>
+    list.forEach((li) => {
+      out.push('  '.repeat(depth) + li.child(0).textContent);
+      li.forEach((inner) => {
+        if (inner.type.name === 'bulletList') walk(inner, depth + 1);
+      });
+    });
+  state.doc.forEach((node) => {
+    if (node.type.name === 'bulletList') walk(node, 0);
+  });
+  return out;
+}
+
+/** Drop the item reading `text` into the slot in front of `before`, or at the end of the list `end` is in. */
+function dropAt(state: EditorState, text: string, where: { before: string } | { endOf: string }) {
+  const slots = listSlots(state, itemPosition(state.doc, text));
+  const slot = 'before' in where
+    ? slots.find((s) => s.beforePos === itemPosition(state.doc, where.before))
+    : slots.find((s) => s.beforePos === null
+        && state.doc.resolve(itemPosition(state.doc, where.endOf)).before() === s.listPos);
+  if (!slot) return null;
+  return apply(state, moveListItemTo(itemPosition(state.doc, text), slot.listPos, slot.index));
+}
+
+test('a list item can be dropped in front of an earlier sibling', () => {
+  const state = stateWith(doc(bullets('a', 'b', 'c')), 'a');
+  assert.deepEqual(itemsOf(dropAt(state, 'c', { before: 'a' })!), ['c', 'a', 'b']);
 });
 
-test('a list item can be dropped after a visible sibling', () => {
-  const document = doc(bullets('a', 'b', 'c'));
-  const state = stateWith(document, 'a');
-  const moved = apply(state, moveListItem(itemPosition(document, 'a'), itemPosition(document, 'c'), true));
-  assert.deepEqual(itemsOf(moved!), ['b', 'c', 'a']);
+test('and at the end of its own list', () => {
+  const state = stateWith(doc(bullets('a', 'b', 'c')), 'a');
+  assert.deepEqual(itemsOf(dropAt(state, 'a', { endOf: 'c' })!), ['b', 'c', 'a']);
 });
 
-test('a list drop refuses to cross into another list', () => {
-  const first = bullets('a', 'b');
-  const second = bullets('c', 'd');
-  const document = doc(first, second);
-  const state = stateWith(document, 'a');
-  assert.equal(apply(state, moveListItem(itemPosition(document, 'a'), itemPosition(document, 'c'), false)), null);
+test('the slots either side of where it already is are not offered', () => {
+  const document = doc(bullets('a', 'b', 'c'));
+  const slots = listSlots(stateWith(document, 'a'), itemPosition(document, 'b'));
+  // Before a and at the end — not before b or before c, which are where it is.
+  assert.deepEqual(slots.map((s) => s.index), [0, 3]);
+});
+
+test('a nested bullet can be carried out to the top level', () => {
+  const state = stateWith(doc(schema.node('bulletList', null, [item('a'), parent('b', item('kid'))])), 'a');
+  const moved = dropAt(state, 'kid', { before: 'a' })!;
+  // The sub-list it leaves would be empty, so it goes with it.
+  assert.deepEqual(outline(moved), ['kid', 'a', 'b']);
+});
+
+test('and a top-level bullet can be carried into a sub-list', () => {
+  const state = stateWith(doc(schema.node('bulletList', null, [item('a'), parent('b', item('kid'))])), 'a');
+  assert.deepEqual(outline(dropAt(state, 'a', { before: 'kid' })!), ['b', '  a', '  kid']);
+});
+
+test('a bullet cannot be dropped inside its own sub-bullets', () => {
+  const document = doc(schema.node('bulletList', null, [parent('b', item('kid')), item('c')]));
+  const source = itemPosition(document, 'bkid');
+  const inside = listSlots(stateWith(document, 'c'), source).filter((s) => s.listPos > source);
+  assert.deepEqual(inside, []);
+});
+
+test('a carried bullet keeps its sub-bullets under the nesting limit', () => {
+  const deep = parent('one', parent('two', item('three')));
+  const document = doc(schema.node('bulletList', null, [item('top'), deep]));
+  // "two" carries one level under it, so it may not go into the third level.
+  const slots = listSlots(stateWith(document, 'top'), itemPosition(document, 'twothree'));
+  assert.ok(slots.every((s) => s.level + 1 <= 3));
+  assert.ok(slots.some((s) => s.level === 1));
+});
+
+test('a list drop stays inside the list it came from', () => {
+  const document = doc(bullets('a', 'b'), p('between'), bullets('c', 'd'));
+  const slots = listSlots(stateWith(document, 'a'), itemPosition(document, 'a'));
+  const second = document.resolve(itemPosition(document, 'c')).before();
+  assert.ok(slots.every((s) => s.listPos !== second));
 });
 
 test('a quote moves as one thing, paragraphs and all', () => {

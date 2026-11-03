@@ -10,7 +10,6 @@ import { openLink } from '../data/links.ts';
 import { ACCEPTED, preloadAssets, storeImage } from './assets.ts';
 import { idFromPageUri, PAGE_DRAG_TYPE } from './pageLinkClipboard.ts';
 import { cleanPastedHTML } from './pastedHtml.ts';
-import { blockAt, LIST_ITEM_DRAG_TYPE, moveListItem } from './blocks.ts';
 import { useLibrary } from '../state/library.tsx';
 import { noteWriting } from '../state/activity.ts';
 import { clearPending, stashPending } from '../state/pending.ts';
@@ -19,6 +18,8 @@ import { extensions } from './extensions.ts';
 import { PageLinkView, pageLinkKey } from './pageLinkView.ts';
 
 const DEBOUNCE_MS = 500;
+/** How often the footer's counts follow the typing. */
+const COUNT_MS = 250;
 const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] };
 
 /**
@@ -166,9 +167,13 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
   const library = useLibrary();
   const { applyMeta } = library;
   const [loading, setLoading] = useState(docId !== null);
-  // Characters are counted on the same walk as words — on save and on load —
-  // rather than per keystroke, which would rebuild the whole text each time.
+  // The footer's counts. Taken on load and on save, and between those at most
+  // every COUNT_MS while typing — never per keystroke, which would rebuild the
+  // whole text each time, but not frozen until the writer pauses either, which
+  // is how a page of three paragraphs used to read "0 words" for a second.
   const [characters, setCharacters] = useState(0);
+  const [words, setWords] = useState<number | null>(null);
+  const countTimer = useRef<number | null>(null);
 
   const sessions = useRef(new Map<string, Session>());
   // `words` is the count this page had at the last save or when it was opened.
@@ -240,19 +245,8 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
         */
         if (view.dragging) return false;
         const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        const draggedListItem = event.dataTransfer?.getData(LIST_ITEM_DRAG_TYPE) ?? '';
-        if (draggedListItem) {
-          event.preventDefault();
-          const sourcePos = Number(draggedListItem);
-          const target = at ? blockAt(view.state, at.pos) : null;
-          if (!Number.isInteger(sourcePos) || !target) return true;
-          const targetDom = view.nodeDOM(target.pos);
-          const box = targetDom instanceof HTMLElement ? targetDom.getBoundingClientRect() : null;
-          const after = box ? event.clientY > box.top + box.height / 2 : false;
-          view.focus();
-          moveListItem(sourcePos, target.pos, after)(view.state, view.dispatch, view);
-          return true;
-        }
+        // A carried bullet never arrives here: listDrop.ts takes its drop in
+        // the capture phase, before this handler is asked.
         if (takeImages(view, [...(event.dataTransfer?.items ?? [])], at?.pos ?? null)) return true;
 
         // A sidebar page is a reference, not prose containing its internal id.
@@ -285,6 +279,14 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     onUpdate({ editor: instance, transaction }) {
       if (!transaction.docChanged) return;
       current.current.dirty = true;
+      if (countTimer.current === null) {
+        countTimer.current = window.setTimeout(() => {
+          countTimer.current = null;
+          const text = textOf(instance.getJSON() as PMDoc);
+          setCharacters(charactersIn(text));
+          setWords(countWords(text));
+        }, COUNT_MS);
+      }
       if (timer.current !== null) clearTimeout(timer.current);
       timer.current = window.setTimeout(() => void save(instance, false), DEBOUNCE_MS);
     },
@@ -302,6 +304,7 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     const text = textOf(content);
     setCharacters(charactersIn(text));
     const words = countWords(text);
+    setWords(words);
 
     // Words *touched*, which is why it is the size of the change rather than
     // the change: cutting forty words is forty words of work, and a chart that
@@ -391,8 +394,10 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
       // of one walk of the document rather than two.
       const measure = (content: PMDoc | null) => {
         const text = textOf(content);
+        const count = countWords(text);
         setCharacters(charactersIn(text));
-        return countWords(text);
+        setWords(count);
+        return count;
       };
 
       const stashed = sessions.current.get(docId);
@@ -495,5 +500,5 @@ export function useDocumentEditor(docId: string | null, scrollHost: () => HTMLEl
     };
   }, [editor, save]);
 
-  return { editor, loading, characters, flush, restore };
+  return { editor, loading, characters, words, flush, restore };
 }

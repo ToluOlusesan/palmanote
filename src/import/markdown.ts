@@ -435,8 +435,10 @@ type Mark = { type: string; attrs?: Record<string, unknown> };
 const STICKERS = STICKER_IDS.join('|');
 
 /**
- * Code, links, pictures, stickers, bold, italic, strikethrough and highlight.
- * Everything else is text.
+ * Code, links, pictures, stickers, bold, italic, strikethrough and highlight,
+ * and the two inline HTML tags the exporter writes for what markdown has no
+ * syntax for — `<u>` for underline, and a `<span style>` carrying a colour and
+ * a size. Everything else is text.
  *
  * Order in the alternation is precedence, and three of the places it matters:
  *
@@ -476,6 +478,8 @@ function inline(source: string, inherited: Mark[] = [], refs: Refs = NO_REFS): P
       '(?<!\\\\)\\[(?<linkText>[^\\]]*)\\]\\(\\s*(?:<(?<linkAngle>[^>]*)>|(?<linkBare>[^()\\s]*))(?:\\s+"[^"]*")?\\s*\\)',
       '(?<!\\\\)\\[(?<refText>[^\\]]*)\\]\\[(?<refName>[^\\]]*)\\]',
       '(?<!\\\\)<(?<autolink>(?:https?:|mailto:)[^>\\s]+)>',
+      '<u>(?<under>[\\s\\S]+?)</u>',
+      '<span style="(?<spanStyle>[^"]*)">(?<span>[\\s\\S]+?)</span>',
       '(?<!\\\\)\\*\\*(?<strongStar>.+?)(?<!\\\\)\\*\\*',
       '(?<![\\w\\\\])__(?<strongLine>.+?)(?<!\\\\)__(?!\\w)',
       '(?<!\\\\)\\*(?<emStar>.+?)(?<!\\\\)\\*',
@@ -546,6 +550,12 @@ function inline(source: string, inherited: Mark[] = [], refs: Refs = NO_REFS): P
     else if (groups.emStar !== undefined) nest(groups.emStar, { type: 'italic' });
     else if (groups.emLine !== undefined) nest(groups.emLine, { type: 'italic' });
     else if (groups.strike !== undefined) nest(groups.strike, { type: 'strike' });
+    else if (groups.under !== undefined) nest(groups.under, { type: 'underline' });
+    else if (groups.span !== undefined) {
+      const style = textStyleOf(groups.spanStyle ?? '');
+      if (style) nest(groups.span, { type: 'textStyle', attrs: style });
+      else out.push(...inline(groups.span, inherited, refs));
+    }
     else if (groups.mark !== undefined) {
       // Markdown cannot say which colour; everything arrives as the first one.
       nest(groups.mark, { type: 'highlight', attrs: { tone: 'yellow' } });
@@ -559,6 +569,18 @@ function inline(source: string, inherited: Mark[] = [], refs: Refs = NO_REFS): P
   }
   push(unescape(source.slice(last)));
   return out;
+}
+
+/**
+ * The colour and size out of a `style` attribute, and nothing else in it.
+ *
+ * `(?:^|;)` in front of `color` so a `background-color` is not read as the
+ * text's own colour.
+ */
+function textStyleOf(style: string): { color: string | null; fontSize: string | null } | null {
+  const color = /(?:^|;)\s*color\s*:\s*([^;]+)/i.exec(style)?.[1]?.trim() ?? null;
+  const fontSize = /(?:^|;)\s*font-size\s*:\s*([^;]+)/i.exec(style)?.[1]?.trim() ?? null;
+  return color || fontSize ? { color, fontSize } : null;
 }
 
 /** `%20` and friends, where the address survives being decoded. */

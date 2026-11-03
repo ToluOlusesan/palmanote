@@ -238,7 +238,7 @@ try {
   // The revisions behind this are a Rust window function over SQLite here and
   // a hand-rolled pass over IndexedDB in the browser. Only one of them ships.
   section('history');
-  await page.locator('.chrome-btn[aria-label="History"]').click();
+  await page.locator('.tool[aria-label="History"]').click();
   await page.waitForSelector('.dialog.is-wide', { timeout: 5000 });
   // The list is read asynchronously after the dialog is on screen.
   await page.waitForSelector('.history-entry', { timeout: 5000 });

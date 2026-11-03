@@ -9,7 +9,9 @@
 
 #[cfg(windows)]
 mod clipboard;
+mod documents;
 mod frac_index;
+mod pdf;
 mod store;
 mod types;
 
@@ -32,6 +34,8 @@ const WINDOW_STATE_FILE: &str = "window-state.json";
 struct App {
     store: Arc<Store>,
     data_directory: PathBuf,
+    /// The files on disk the page has been handed — see documents.rs.
+    files: documents::Files,
 }
 
 type Db<'a> = State<'a, App>;
@@ -577,6 +581,26 @@ fn save_bounds(window: &WebviewWindow, path: &PathBuf) {
 
 fn main() {
     tauri::Builder::default()
+        // First, so a second launch is caught before it opens anything. A
+        // document double-clicked while PalmaNote is already running belongs
+        // in the window that is open, not in a second app racing it for the
+        // same library.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            let paths = documents::openable_arguments(argv);
+            if let Some(state) = app.try_state::<App>() {
+                for path in &paths {
+                    state.files.remember(path);
+                }
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+                let shown: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
+                if !shown.is_empty() {
+                    let _ = window.emit("documents:open", shown);
+                }
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -610,6 +634,12 @@ fn main() {
             write_export,
             pick_import,
             pick_pdf,
+            pdf::print_pdf,
+            documents::open_document,
+            documents::launch_documents,
+            documents::read_document,
+            documents::save_document,
+            documents::save_document_as,
             restore_snapshot,
             window_state,
             minimize_window,
@@ -685,7 +715,11 @@ fn main() {
                 }
             });
 
-            app.manage(App { store, data_directory });
+            let files = documents::Files::load(
+                &data_directory,
+                documents::openable_arguments(std::env::args()),
+            );
+            app.manage(App { store, data_directory, files });
             let _ = window.show();
             Ok(())
         })

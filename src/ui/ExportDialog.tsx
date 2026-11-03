@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { store } from '../data/index.ts';
 import { writeExport } from '../data/files.ts';
 import { buildExport, type ExportFormat, type ManuscriptDetails } from '../export/index.ts';
+import { canExportPdf, exportPdf } from '../export/pdf.ts';
 import { useLibrary } from '../state/library.tsx';
 
 const SETTINGS_KEY = 'palmanote:export';
 
 type Scope = 'document' | 'subtree' | 'all';
 /** What the writer chooses. `markdown-folder` is derived, never picked. */
-type Choice = 'docx' | 'markdown' | 'everything';
+type Choice = 'docx' | 'pdf' | 'markdown' | 'everything';
 
 interface Settings {
   format: Choice;
@@ -48,6 +49,7 @@ function readSettings(): Settings {
       format: saved.format === 'markdown-folder'
         ? 'markdown'
         : saved.format === 'docx' || saved.format === 'markdown' || saved.format === 'everything'
+            || (saved.format === 'pdf' && canExportPdf)
           ? saved.format
           : DEFAULTS.format,
       manuscript: saved.manuscript ?? saved.preset === 'manuscript',
@@ -106,7 +108,9 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const name = renamed ?? suggested;
   const suffix = wholeLibrary
     ? ' — a folder'
-    : settings.format === 'markdown'
+    : settings.format === 'pdf'
+      ? '.pdf'
+      : settings.format === 'markdown'
       ? onePage
         ? '.md'
         : ' — a folder'
@@ -146,6 +150,14 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
             ? ({ kind: 'subtree', rootId: current!.id } as const)
             : ({ kind: 'document', id: current!.id } as const);
 
+      if (settings.format === 'pdf') {
+        const outcome = await exportPdf(store, target, name);
+        if (outcome.cancelled) return;
+        setMessage(`Saved${outcome.location ? ` to ${outcome.location}` : ''}`);
+        window.setTimeout(onClose, 1200);
+        return;
+      }
+
       // One page is one file; anything more is a folder mirroring the tree.
       const format: ExportFormat =
         settings.format === 'markdown' && !onePage ? 'markdown-folder' : settings.format;
@@ -178,6 +190,10 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
 
   const formats: { value: Choice; label: string; note: string }[] = [
     { value: 'docx', label: 'Word document', note: 'Opens in Word and Google Docs.' },
+    // Written by the desktop app's own engine, so only offered there.
+    ...(canExportPdf
+      ? [{ value: 'pdf' as const, label: 'PDF', note: 'Laid out as it is on screen, ready to send or print.' }]
+      : []),
     {
       value: 'markdown',
       label: 'Markdown',

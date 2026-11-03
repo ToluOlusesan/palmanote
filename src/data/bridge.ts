@@ -107,6 +107,25 @@ export interface PalmaNoteBridge {
    */
   pickPdf(): Promise<{ path: string; name: string } | null>;
 
+  /*
+    Real files, the way Word has them. Optional because only the Tauri shell
+    has them; the page checks before offering any of it. See documents.rs: the
+    page can only reach a file the person picked, saved or opened from Explorer.
+  */
+  /** Asks where, then has WebView2 print the page's print root to that file. */
+  printPdf?(fileName: string): Promise<WriteExportOutcome>;
+  /** Ctrl+O. Null when the picker was dismissed. */
+  openDocument?(): Promise<OpenedDocument | null>;
+  /** The files PalmaNote was launched to open, handed over once. */
+  launchDocuments?(): Promise<string[]>;
+  readDocument?(path: string): Promise<OpenedDocument>;
+  /** Writes a .docx (base64) back over a file this page came from. */
+  saveDocument?(path: string, bytes: string): Promise<void>;
+  /** Save As: the path chosen, or null when the dialog was dismissed. */
+  saveDocumentAs?(fileName: string, bytes: string): Promise<string | null>;
+  /** A document opened from Explorer while the app was already running. */
+  onOpenDocuments?(listener: (paths: string[]) => void): () => void;
+
   /**
    * Hands a link to the machine's browser. Rejects anything that is not
    * http, https or mailto — the check is in Rust, not here, because this is
@@ -120,6 +139,17 @@ export interface PalmaNoteBridge {
   minimize(): void;
   toggleMaximize(): void;
   close(): void;
+}
+
+/** A file on disk, read by the shell. */
+export interface OpenedDocument {
+  path: string;
+  name: string;
+  kind: 'docx' | 'pdf' | 'markdown';
+  /** A .docx, base64. */
+  bytes: string | null;
+  /** Markdown or plain text. */
+  text: string | null;
 }
 
 declare global {

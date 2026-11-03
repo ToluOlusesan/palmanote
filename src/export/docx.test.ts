@@ -362,3 +362,51 @@ test('a table brings its borders with it rather than borrowing them', async () =
   assert.match(document, /<w:tblBorders>/);
   assert.match(document, /w:insideH[^>]+w:val="single"/);
 });
+
+/**
+ * The Word half of the formatting arrives as Word's own properties.
+ *
+ * Underline as `w:u`, colour as `w:color`, size in half-points as `w:sz`, and
+ * alignment as `w:jc` on the paragraph — the things Word's ribbon reads back,
+ * so the recipient sees a centred red title as one, and can change it there.
+ */
+const FORMATTED_WALK: Walk = {
+  title: 'Formatted',
+  totalWords: 6,
+  documents: [
+    entry('Formatted', {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { textAlign: 'center' },
+          content: [
+            {
+              type: 'text',
+              text: 'Red and large',
+              marks: [{ type: 'textStyle', attrs: { color: '#d1453b', fontSize: '18pt' } }],
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          attrs: { textAlign: 'justify' },
+          content: [{ type: 'text', text: 'underlined words', marks: [{ type: 'underline' }] }],
+        },
+        { type: 'paragraph', content: [{ type: 'text', text: 'plain' }] },
+      ],
+    }),
+  ],
+};
+
+test('underline, colour, size and alignment are Word properties', async () => {
+  const files = unzip(await docxFromWalk(FORMATTED_WALK, 'reading', DETAILS));
+  const document = files.get('word/document.xml')!;
+  assert.match(document, /<w:jc w:val="center"\/>/);
+  assert.match(document, /<w:jc w:val="both"\/>/);
+  assert.match(document, /<w:color w:val="D1453B"\/>/);
+  assert.match(document, /<w:sz w:val="36"\/>/);
+  assert.match(document, /<w:u w:val="single"\/>/);
+  // Only the paragraphs that asked for it: left is the default, never written.
+  assert.equal((document.match(/<w:jc /g) ?? []).length, 2);
+});

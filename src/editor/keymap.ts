@@ -1,10 +1,7 @@
 import { Extension } from '@tiptap/core';
 import type { Command, EditorState } from '@tiptap/pm/state';
 
-import { duplicateBlock, moveBlock } from './blocks.ts';
-
-/** Lists nest this deep and no deeper. */
-export const MAX_LIST_DEPTH = 3;
+import { duplicateBlock, MAX_LIST_DEPTH, moveBlock } from './blocks.ts';
 
 const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList']);
 
@@ -21,8 +18,9 @@ function listContext(state: EditorState): { itemType: string | null; depth: numb
 }
 
 /**
- * Windows bindings. Tiptap ships `Mod-Shift-s` for strikethrough; the owner
- * asked for Ctrl+Shift+X, which is also what Word and most editors use.
+ * Windows bindings. Strikethrough is Ctrl+Shift+X, which is what Word and most
+ * editors use; it is bound where Strike is registered, in extensions.ts, so
+ * Tiptap's own Ctrl+Shift+S never reaches the editor and stays Save As.
  *
  * Tab nests inside a list and does nothing elsewhere, so it still moves focus
  * out of the editor for keyboard users who need it to.
@@ -40,7 +38,6 @@ export const Shortcuts = Extension.create({
       command(this.editor.state, this.editor.view.dispatch, this.editor.view);
 
     return {
-      'Mod-Shift-x': () => this.editor.commands.toggleStrike(),
       'Mod-Alt-1': heading(1),
       'Mod-Alt-2': heading(2),
       'Mod-Alt-3': heading(3),

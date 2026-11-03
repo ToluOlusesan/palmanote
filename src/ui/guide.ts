@@ -50,13 +50,17 @@ export const GUIDE: GuideSection[] = [
     id: 'formatting',
     title: 'Formatting',
     intro:
-      'Three marks and nothing else — no underline, no colour, no font sizes. Each has a shortcut, a button in the page bar, and a way to type it directly.',
+      'The marks have a shortcut, a button and a way to type them. Colour, size and alignment are in the bar that appears when you select words.',
     rows: [
       { keys: 'Ctrl + B  ·  **bold**', what: 'Bold' },
       { keys: 'Ctrl + I  ·  *italic*', what: 'Italic' },
+      { keys: 'Ctrl + U', what: 'Underline' },
       { keys: 'Ctrl + Shift + X  ·  ~~struck~~', what: 'Strikethrough' },
       { keys: 'Ctrl + Alt + 1 / 2 / 3', what: 'Heading levels — or type ##, ### at the start of a line' },
       { keys: 'Ctrl + Alt + 0', what: 'Back to ordinary text' },
+      { keys: 'Ctrl + Shift + L / E / R / J', what: 'Align left, centre, right, or justify' },
+      { what: 'Text colour and size — select words, then the A and the number in the bar' },
+      { keys: 'Ctrl + Alt + P', what: 'Page view — the page as a sheet of paper, with where each page ends' },
       { keys: '- ', what: 'Bulleted list' },
       { keys: '1. ', what: 'Numbered list' },
       { keys: '[] ', what: 'To-do list, with real checkboxes' },
@@ -276,7 +280,9 @@ export const GUIDE: GuideSection[] = [
     intro:
       'Your writing is yours and stays readable without this app. Export offers several routes out, including one that takes everything.',
     rows: [
-      { keys: 'Ctrl + Shift + E', what: 'Export' },
+      { keys: 'Ctrl + O', what: 'Open a Word document, PDF or markdown file (desktop)' },
+      { keys: 'Ctrl + S', what: 'Save the page back to its Word document — or save it as one (desktop)' },
+      { keys: 'Ctrl + Shift + S', what: 'Export' },
       { what: 'The file is named after the page you are in. Change it in the Save as field before exporting.' },
       { keys: 'Ctrl + Shift + I', what: 'Import — Word documents, markdown, or a PDF to read alongside' },
       { what: 'It asks two things: what kind of file, and how much of your library.' },
@@ -284,7 +290,7 @@ export const GUIDE: GuideSection[] = [
       { what: 'Manuscript format — a switch under Word: double-spaced, running header, title page, chapters starting on new pages.' },
       { what: 'Markdown — one page comes out as one file; more than one comes out as folders mirroring your pages.' },
       { what: 'Everything — the markdown tree, the picture files, and the complete raw database.' },
-      { what: 'PDF is out of the app for now while it is rebuilt.' },
+      { what: 'PDF — on the desktop app, written straight to a file, laid out as it is on screen.' },
     ],
     aside:
       '“Everything” is the escape hatch and sits with the rest rather than hidden away. Someone with that folder and no copy of PalmaNote can rebuild what was here, by hand if they have to. On the desktop app a copy of the whole library is also written to your Documents folder each night, and the last thirty are kept.',

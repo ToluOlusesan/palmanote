@@ -1,7 +1,10 @@
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import Strike from '@tiptap/extension-strike';
 import { TableKit } from '@tiptap/extension-table';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyleKit } from '@tiptap/extension-text-style';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
 import StarterKit from '@tiptap/starter-kit';
@@ -26,9 +29,14 @@ import { SmartTypography } from './typography.ts';
  * document model, which is what makes paste-stripping free: ProseMirror
  * cannot parse a node type that does not exist.
  *
- * Deliberately not here: underline, text colour, alignment.
- * Highlighting is here but is four fixed colours rather than a colour picker —
- * see Highlight.ts.
+ * Underline, text colour, font size and alignment are here, and were not until
+ * November 2026. They were left out while this was a writing app with opinions
+ * about manuscripts; the owner has since made it a Word-and-Notion hybrid, and
+ * a Word document that loses its centred title and its red warning on the way
+ * in is not opened, it is damaged. The opinion that survives is about the
+ * *interface*: a short palette of colours and a short list of sizes, offered
+ * in the selection bar, rather than a ribbon. Highlighting is still four fixed
+ * colours — see Highlight.ts.
  *
  * Code, code blocks and links were once on that list too, and were taken off
  * it. They were the right omissions for a manuscript and the wrong ones for
@@ -119,12 +127,30 @@ export const extensions = [
     // Both taken out of the kit and put back below, extended. See LEAVE_BEHIND.
     code: false,
     link: false,
-    underline: false,
+    // Put back below with Ctrl+Shift+X as its only chord. Tiptap's own
+    // Ctrl+Shift+S is Save As here, as it is in Word.
+    strike: false,
     trailingNode: { node: 'paragraph' },
     dropcursor: { width: 2, color: 'var(--accent)' },
     undoRedo: { depth: 300, newGroupDelay: 400 },
   }),
   ...LEAVE_BEHIND,
+  Strike.extend({
+    addKeyboardShortcuts() {
+      return { 'Mod-Shift-x': () => this.editor.commands.toggleStrike() };
+    },
+  }),
+  // Colour and size, and nothing else the kit offers: no font family, which
+  // is the theme's to choose, and no line height or background, which is what
+  // the four highlights are for.
+  TextStyleKit.configure({
+    backgroundColor: false,
+    fontFamily: false,
+    lineHeight: false,
+  }),
+  // Paragraphs and headings, which is everything a reader sees as a line. The
+  // kit's own chords are Google Docs' — Ctrl+Shift+L, E, R and J.
+  TextAlign.configure({ types: ['heading', 'paragraph'] }),
   Shortcuts,
   TaskList,
   TaskItem.configure({ nested: true }),

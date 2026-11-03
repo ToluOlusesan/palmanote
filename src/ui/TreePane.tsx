@@ -29,13 +29,11 @@ interface DropTarget {
 export function TreePane({
   onOpen,
   onPreview,
-  onImport,
   onHome,
   onOpenTrash,
 }: {
   onOpen: () => void;
   onPreview: () => void;
-  onImport: () => void;
   onHome: () => void;
   onOpenTrash: () => void;
 }) {
@@ -283,15 +281,15 @@ export function TreePane({
           <PalmaMark size={22} />
         </button>
         <span className="visually-hidden">PalmaNote</span>
-        <button
-          type="button"
-          className="ghost tree-import"
-          title="Bring in markdown, Word documents, or a snapshot — Ctrl+Shift+I"
-          onClick={onImport}
-        >
-          Import
-        </button>
       </header>
+
+      {/* At the head of the pages it adds to, where the eye starts — not at the
+          foot of a list that grows, where it drifted further away with every
+          page written. */}
+      <button type="button" className="add-row" title="New page — Ctrl+N" onClick={() => newDocument(false)}>
+        <FilePlus size={18} />
+        New page
+      </button>
 
       {library.favorites.length > 0 && (
         <>
@@ -492,11 +490,6 @@ export function TreePane({
           );
         })}
       </div>
-
-      <button type="button" className="add-row" title="New page — Ctrl+N" onClick={() => newDocument(false)}>
-        <FilePlus size={18} />
-        New page
-      </button>
 
       <footer className="tree-foot">
         <button

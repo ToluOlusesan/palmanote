@@ -1,6 +1,6 @@
 [package]
 name = "palmanote"
-version = "0.2.5"
+version = "0.3.0"
 edition = "2021"
 description = "A writing app for one person."
 default-run = "palmanote"
@@ -15,6 +15,9 @@ tauri-build = { version = "2", features = [] }
 # reader renders in the main window instead of a second one.
 tauri = { version = "2", features = ["image-png", "protocol-asset"] }
 tauri-plugin-dialog = "2"
+# One window per library: a document opened from Explorer while PalmaNote is
+# running is handed to the running window. See main.rs.
+tauri-plugin-single-instance = "2"
 # Hands a link to whatever the machine uses for it. The plugin's own command is
 # deliberately *not* granted to the page in capabilities/default.json: the page
 # asks `open_external`, which checks the scheme first — see main.rs.

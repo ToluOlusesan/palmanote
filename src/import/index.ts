@@ -9,7 +9,7 @@
  * has, so an imported document is indistinguishable from a typed one.
  */
 
-import { htmlToDoc } from '../editor/htmlToDoc.ts';
+import { readDocx } from './docx.ts';
 import type { DocumentKind, PMDoc, PMNode } from '../core/types.ts';
 import type { PalmaNoteStore } from '../data/store.ts';
 import { parseMarkdown } from './markdown.ts';
@@ -112,18 +112,18 @@ export async function planImport(files: IncomingFile[]): Promise<ImportPlan[]> {
     }
 
     if (/\.docx$/i.test(name)) {
-      const { default: mammoth } = await import('mammoth');
-      const converted = await mammoth.convertToHtml({
-        arrayBuffer: (file.bytes ?? new Uint8Array()).buffer as ArrayBuffer,
-      });
+      // Read straight out of Word's XML into this schema — see ./docx.ts for
+      // why that replaced converting to HTML first. Pictures come with it, by
+      // the path the image nodes carry, and are stored at commit time like a
+      // markdown file's.
+      const read = await readDocx(file.bytes ?? new Uint8Array());
       plans.push({
         title: stripOrder(name.replace(/\.docx$/i, '')),
-        kind: 'chapter',
+        kind: 'note',
         icon: null,
-        // Word's HTML goes through the same schema filter as a paste, so
-        // nothing arrives that the editor cannot represent.
-        content: htmlToDoc(converted.value),
+        content: read.doc,
         parent,
+        images: read.images,
       });
       continue;
     }

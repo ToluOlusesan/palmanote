@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react';
+
+import type { ThemeChoice } from '../state/theme.ts';
 import { useEffect, useRef } from 'react';
 
 import { useWritingSettings } from '../state/writingSettings.ts';
@@ -33,10 +36,20 @@ const LAUNCH: Switch[] = [
  * are for changing how things behave — and because a toggle you have to
  * rediscover in a dropdown is a toggle nobody flips twice.
  */
+const THEMES: { id: ThemeChoice; label: string }[] = [
+  { id: 'system', label: 'System' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
+
 export function SettingsDialog({
+  theme,
+  onTheme,
   onClose,
   onOpenGuide,
 }: {
+  theme: ThemeChoice;
+  onTheme: (choice: ThemeChoice) => void;
   onClose: () => void;
   onOpenGuide: () => void;
 }) {
@@ -85,6 +98,32 @@ export function SettingsDialog({
         onMouseDown={(event) => event.stopPropagation()}
       >
         <h2 className="dialog-title">Settings</h2>
+
+        {/* The theme was an icon in the title bar that cycled — three states
+            behind one button that showed only the current one, so choosing
+            Dark meant clicking until it happened. All three, said at once. */}
+        <fieldset className="field">
+          <legend>Appearance</legend>
+          <div
+            className="segmented"
+            role="radiogroup"
+            aria-label="Theme"
+            style={{ '--at': THEMES.findIndex((entry) => entry.id === theme) } as CSSProperties}
+          >
+            {THEMES.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === entry.id}
+                className={`segment${theme === entry.id ? ' is-on' : ''}`}
+                onClick={() => onTheme(entry.id)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         {group('Writing', WRITING)}
         {group('Launch', LAUNCH)}

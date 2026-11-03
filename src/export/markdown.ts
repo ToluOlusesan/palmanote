@@ -227,6 +227,17 @@ function text(node: PMNode): string {
     // *which* tone, so the mark survives the trip and its meaning does not.
     // docx keeps both.
     if (mark.type === 'highlight') out = `==${out}==`;
+    // Markdown has no underline, colour or size, but it has inline HTML, and
+    // every renderer worth the name draws these two tags. The reader takes
+    // exactly these spellings back, so the round trip holds.
+    if (mark.type === 'underline') out = `<u>${out}</u>`;
+    if (mark.type === 'textStyle') {
+      const style = [
+        mark.attrs?.color ? `color: ${String(mark.attrs.color)}` : '',
+        mark.attrs?.fontSize ? `font-size: ${String(mark.attrs.fontSize)}` : '',
+      ].filter(Boolean).join('; ');
+      if (style) out = `<span style="${style}">${out}</span>`;
+    }
     if (mark.type === 'link') {
       const href = String(mark.attrs?.href ?? '');
       // Angle brackets when the address holds a space or a bracket of its own,

@@ -45,5 +45,5 @@ export function useTheme() {
     setChoice((current) => ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]!);
   }, []);
 
-  return { choice, resolved, cycle };
+  return { choice, resolved, cycle, choose: setChoice };
 }

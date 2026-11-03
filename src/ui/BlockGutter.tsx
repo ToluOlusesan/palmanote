@@ -17,16 +17,19 @@ import {
   insertBlockAfter,
   isCarryable,
   isListItem,
-  LIST_ITEM_DRAG_TYPE,
   runBlockCommand,
   selectBlock,
   type BlockInfo,
 } from '../editor/blocks.ts';
 import { BlockMenu } from './BlockMenu.tsx';
 import { carryBlock, clearLifts } from './blockLift.ts';
+import { beginListDrag, endListDrag } from './listDrop.ts';
 
 /** Where the handle sits when a block's own line height cannot be read. */
 const FALLBACK_LINE = 1.5;
+
+/** Past this far, a press became a carry — even one that landed nowhere. */
+const TRAVEL = 12;
 
 /**
  * The `dragend` event is asked one question only: did anything happen.
@@ -83,6 +86,23 @@ function lineOf(dom: HTMLElement): HTMLElement {
 }
 
 /**
+ * The rows a block owns, top to bottom, not counting the blocks nested in it.
+ *
+ * For a paragraph that is its box. For a list item it stops where its own
+ * sub-list starts: those rows belong to the sub-bullets, which have handles of
+ * their own.
+ */
+function ownRows(dom: HTMLElement): { top: number; bottom: number } {
+  const box = dom.getBoundingClientRect();
+  if (dom.tagName !== 'LI') return box;
+  const inner = dom.querySelector(':scope > ul, :scope > ol, :scope > div > ul, :scope > div > ol');
+  return { top: box.top, bottom: inner ? inner.getBoundingClientRect().top : box.bottom };
+}
+
+/** How far above or below its rows a block keeps hold of a reaching hand. */
+const HOLD = 4;
+
+/**
  * The two controls that appear beside the block under the pointer.
  *
  * One gutter that moves, rather than a pair of controls rendered per block.
@@ -98,6 +118,9 @@ function lineOf(dom: HTMLElement): HTMLElement {
  */
 export function BlockGutter({ editor }: { editor: Editor | null }) {
   const [spot, setSpot] = useState<Spot | null>(null);
+  // The same, readable from the pointer handler without re-subscribing it.
+  const spotRef = useRef<Spot | null>(null);
+  spotRef.current = spot;
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   // Typing hides it. The pointer is nowhere near the gutter while a sentence is
   // being written, and a control hovering beside the line you are typing is a
@@ -112,6 +135,8 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
   const dragging = useRef(false);
   /** The document as it was when the handle was taken hold of. */
   const grabbedDoc = useRef<PMNode | null>(null);
+  /** Where the hand was at `dragstart`, and whether it has since gone anywhere. */
+  const grabbedAt = useRef({ x: 0, y: 0, travelled: false });
 
   /**
    * The block beside a point.
@@ -185,6 +210,22 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
         setSpot(null);
         return;
       }
+      /*
+        A hand reaching for the handle holds on to the block it set out from.
+
+        Left of a block's text — its bullet, its checkbox, the margin — the
+        question "which block is here" has no good answer: `posAtCoords` is
+        about text, and out there it lands on whichever line is nearest, which
+        for a to-do item was the one above it, so the handle jumped away as the
+        hand crossed the checkbox and the wrong item came up. So out there the
+        block only lets go when the pointer leaves its own rows vertically.
+      */
+      const held = spotRef.current ? blockFrom(editor.state, spotRef.current.pos) : null;
+      const heldDom = held ? editor.view.nodeDOM(held.pos) : null;
+      if (heldDom instanceof HTMLElement && event.clientX < lineOf(heldDom).getBoundingClientRect().left) {
+        const rows = ownRows(heldDom);
+        if (event.clientY >= rows.top - HOLD && event.clientY <= rows.bottom + HOLD) return;
+      }
       // Returning `current` unchanged when the pointer is still over the same
       // block is what makes a mousemove free. Every setter in this handler is a
       // no-op in that case, so crossing a paragraph costs one `posAtCoords` and
@@ -215,6 +256,7 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
   useEffect(
     () => () => {
       clearLifts();
+      endListDrag();
       document.querySelector('.editor-host')?.classList.remove('is-lifting');
     },
     [],
@@ -357,6 +399,7 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
               return;
             }
             dragging.current = true;
+            grabbedAt.current = { x: event.clientX, y: event.clientY, travelled: false };
             setLifting(true);
             const view = editor.view;
             // Held as an object first, so the page makes clear which block has
@@ -381,10 +424,10 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
             // list ProseMirror owns and rewrites.
             view.dom.closest('.editor-host')?.classList.add('is-lifting');
             if (isListItem(block)) {
-              // List siblings need a precise before/after target. The editor's
-              // generic drop handler cannot describe that slot, so its own
-              // handleDrop reads this marker and performs the move directly.
-              event.dataTransfer.setData(LIST_ITEM_DRAG_TYPE, String(block.pos));
+              // ProseMirror's drop cannot name a slot between two bullets, so a
+              // bullet is carried by listDrop.ts instead — and `view.dragging`
+              // stays empty, so nothing else tries to place it.
+              beginListDrag(view, block.pos);
               return;
             }
             // The whole of the move: prosemirror-view's drop handler reads this
@@ -392,10 +435,20 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
             // indicator to a position the block can actually go.
             view.dragging = { slice, move: true };
           }}
+          onDrag={(event) => {
+            // The last `drag` of a gesture reports (0, 0) in Chromium, which is
+            // not a place the hand went.
+            if (event.clientX === 0 && event.clientY === 0) return;
+            const start = grabbedAt.current;
+            if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > TRAVEL) {
+              start.travelled = true;
+            }
+          }}
           onDragEnd={() => {
             dragging.current = false;
             setLifting(false);
             clearLifts();
+            endListDrag();
             editor.view.dom.closest('.editor-host')?.classList.remove('is-lifting');
             // A drop outside the editor never reaches the handler that would
             // have cleared this, and a stale one would move the wrong block on
@@ -414,11 +467,11 @@ export function BlockGutter({ editor }: { editor: Editor | null }) {
               reaching for the handle used to hold the block, open nothing, and
               then take the handle away with it. The block is held either way,
               since that happens at `dragstart`; the menu is the missing half.
-              A drag abandoned halfway lands here too, and a menu is a fair
-              answer to picking a block up and putting it back.
+              A real carry that landed nowhere is not that gesture, and opening
+              a menu over it read as the drag having glitched into a click.
             */
             if (!movedSomething(before, editor)) {
-              openMenu();
+              if (!grabbedAt.current.travelled) openMenu();
               return;
             }
 

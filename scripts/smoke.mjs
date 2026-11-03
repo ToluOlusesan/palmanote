@@ -78,12 +78,13 @@ const freshPage = async (title) => {
   await page.waitForTimeout(150);
 };
 
+/** Trash is a dialog now, opened from the foot of the tree and closed by its own X. */
 const setArchiveOpen = async (open) => {
-  const isOpen = (await page.locator('.archive').count()) > 0;
-  if (isOpen !== open) {
-    await page.locator('.tree-foot .ghost').click();
-    await page.waitForTimeout(200);
-  }
+  const isOpen = (await page.locator('.trash-view').count()) > 0;
+  if (isOpen === open) return;
+  if (open) await page.locator('.tree-foot .tree-trash').click();
+  else await page.locator('.trash-close').click();
+  await page.waitForTimeout(250);
 };
 
 /** Launch shows a greeting; every check below wants the writing surface. */
@@ -348,7 +349,7 @@ await freshPage('Slash');
 await page.keyboard.type('/');
 await page.waitForSelector('.slash', { timeout: 4000 });
 check('"/" opens the insert menu', await page.locator('.slash').count(), 1);
-check('it offers only what the schema holds', await page.locator('.slash-item').count(), 22);
+check('it offers only what the schema holds', await page.locator('.slash-item').count(), 23);
 check(
   'the first entry starts selected',
   await page.locator('.slash-item.is-active .slash-label').innerText(),
@@ -465,8 +466,12 @@ check(
     'Turn into',
     'Bold',
     'Italic',
+    'Underline',
     'Strikethrough',
     'Code',
+    'Text size',
+    'Text colour',
+    'Alignment',
     'Comment',
     'Bullet list',
     'Numbered list',
@@ -955,7 +960,7 @@ await page.keyboard.type('the version I meant to keep');
 // Long enough for the debounced save that lays down the first revision.
 await page.waitForTimeout(1200);
 
-await page.locator('.chrome-btn[aria-label="History"]').click();
+await page.locator('.tool[aria-label="History"]').click();
 await page.waitForSelector('.dialog.is-wide', { timeout: 4000 });
 // The list is read asynchronously after the dialog is on screen.
 await page.waitForSelector('.history-entry', { timeout: 4000 });
@@ -991,7 +996,7 @@ await page.keyboard.press('Control+KeyZ');
 await page.waitForTimeout(900);
 check('and a restore can be undone like anything else', (await bodyText()).trim(), 'nonsense typed over the top');
 
-await page.locator('.chrome-btn[aria-label="History"]').click();
+await page.locator('.tool[aria-label="History"]').click();
 await page.waitForSelector('.dialog.is-wide');
 check(
   'and where you were before it is kept as its own version',
@@ -1220,9 +1225,9 @@ await page.locator('.tree-list').focus();
 await page.keyboard.press('Backspace');
 await page.waitForTimeout(400);
 check('backspace archives', (await shapeOf()).includes('Lists'), false);
+check('trash keeps it', (await page.locator('.tree-foot .tree-trash').innerText()).trim().startsWith('Trash ('), true);
 await setArchiveOpen(true);
-check('archive keeps it', (await page.locator('.tree-foot .ghost').innerText()).startsWith('Archive ('), true);
-await page.locator('.archive-row .ghost').first().click();
+await page.locator('.trash-item', { hasText: 'Lists' }).first().locator('.trash-restore').click();
 await page.waitForTimeout(400);
 check('restore brings it back', (await shapeOf()).includes('Lists'), true);
 await setArchiveOpen(false);
@@ -1253,7 +1258,10 @@ await dismissWelcome(dark);
 await dark.waitForSelector('.editor-host');
 check('follows a dark system theme', await dark.locator('html').getAttribute('data-theme'), 'dark');
 // system -> light
-await dark.locator('.chrome-btn[aria-label^="Theme"]').click();
+// The theme lives in Settings now, as three choices rather than a cycling icon.
+await dark.keyboard.press('Control+Comma');
+await dark.locator('.segment', { hasText: 'Light' }).click();
+await dark.keyboard.press('Escape');
 await dark.waitForTimeout(250);
 check('the theme control overrides the system', await dark.locator('html').getAttribute('data-theme'), 'light');
 await dark.reload({ waitUntil: 'networkidle' });
@@ -1292,31 +1300,23 @@ check(
 );
 
 await setArchiveOpen(true);
-const doomedRow = page.locator('.archive-row', { hasText: 'Doomed' }).first();
-await doomedRow.locator('.ghost', { hasText: 'Delete' }).click();
+const doomedRow = page.locator('.trash-item', { hasText: 'Doomed' }).first();
+await doomedRow.locator('.trash-delete', { hasText: 'Delete' }).click();
 await page.waitForTimeout(200);
 check(
   'permanent delete asks first',
-  await doomedRow.locator('.ghost', { hasText: 'Delete for good' }).count(),
+  await doomedRow.locator('.trash-delete', { hasText: 'Delete for good' }).count(),
   1,
 );
-await doomedRow.locator('.ghost', { hasText: 'Keep' }).click();
+await doomedRow.locator('.trash-keep').click();
 await page.waitForTimeout(200);
-check('and can be backed out of', await page.locator('.archive-row', { hasText: 'Doomed' }).count(), 1);
+check('and can be backed out of', await page.locator('.trash-item', { hasText: 'Doomed' }).count(), 1);
 
-await page
-  .locator('.archive-row', { hasText: 'Doomed' })
-  .first()
-  .locator('.ghost', { hasText: 'Delete' })
-  .click();
+await doomedRow.locator('.trash-delete', { hasText: 'Delete' }).click();
 await page.waitForTimeout(150);
-await page
-  .locator('.archive-row', { hasText: 'Doomed' })
-  .first()
-  .locator('.ghost', { hasText: 'Delete for good' })
-  .click();
+await doomedRow.locator('.trash-delete', { hasText: 'Delete for good' }).click();
 await page.waitForTimeout(500);
-check('deleting for good empties it from the archive', await page.locator('.archive-row', { hasText: 'Doomed' }).count(), 0);
+check('deleting for good empties it from the trash', await page.locator('.trash-item', { hasText: 'Doomed' }).count(), 0);
 check(
   'and the hidden descendant goes with it',
   await page.evaluate(async () => {
@@ -1389,13 +1389,15 @@ const to = await last.boundingBox();
 await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
 await page.mouse.down();
 for (let step = 1; step <= 8; step++) {
-  await page.mouse.move(from.x + from.width / 2 + ((to.x - from.x) * step) / 8, from.y + from.height / 2);
+  // Past Charlie's middle, which is what "after Charlie" means to a hand.
+  const aimX = to.x + to.width * 0.75;
+  await page.mouse.move(from.x + from.width / 2 + ((aimX - from.x - from.width / 2) * step) / 8, from.y + from.height / 2);
   await page.waitForTimeout(40);
 }
 await page.waitForTimeout(120);
 check(
-  'the strip accepts the drag rather than refusing it',
-  await page.locator('.tab.is-drop').count() > 0,
+  'the strip accepts the drag, and the tabs step aside for it',
+  await page.locator('.tab.is-shifting-left').count() > 0,
   true,
 );
 await page.mouse.up();
@@ -1884,23 +1886,21 @@ await page.waitForTimeout(400);
 check('a task item gets its handle on the same line as its text', await handleAgainst('a task'), BESIDE);
 
 /*
-  A list item is not carried by hand, and that is settled.
+  A list item is carried by hand, into any slot in its own list tree.
 
-  Dropping into a list has no good target: a point inside an item resolves to
-  the gap after it, so the first item has no slot above it, and items sit flush
-  so the indicator draws across the row above. `Alt+Shift` with an arrow is the
-  gesture that does work, and it is checked in the blocks section above.
-
-  Two checks rather than one. The attribute is the thing the stylesheet reads
-  to drop the grab cursor, and a real mouse drag is the thing that proves the
-  browser agrees — an attribute can be right while a stray `draggable`
-  somewhere else reopens the gesture.
+  ProseMirror's drop resolves a point between two bullets to the list rather
+  than to either of them, so this used to go quietly nowhere — and then open
+  the block menu, as though the drag had been a click. listDrop.ts measures
+  the slots itself and draws its own line. Real mouse events, because the
+  thing that breaks silently is the browser declining to start the drag.
 */
-await freshPage('No dragging lists');
-for (const line of ['- one', 'two', 'three']) {
+await freshPage('Dragging lists');
+await page.keyboard.type('- one');
+for (const line of ['two', 'three', 'kid']) {
+  await page.keyboard.press('Enter');
   await page.keyboard.type(line);
-  if (line !== 'three') await page.keyboard.press('Enter');
 }
+await page.keyboard.press('Tab');
 await page.waitForTimeout(400);
 const itemAt = async (text) => {
   const at = await page.evaluate((label) => {
@@ -1912,43 +1912,113 @@ const itemAt = async (text) => {
   await page.waitForTimeout(280);
   return at;
 };
+/** The list as indented lines, so a check can see depth as well as order. */
+const listOrder = () =>
+  page.evaluate(() => {
+    const walk = (list, depth) =>
+      [...list.children].flatMap((li) => {
+        const sub = li.querySelector(':scope > ul, :scope > ol');
+        return [
+          '  '.repeat(depth) + li.querySelector(':scope > p').textContent.trim(),
+          ...(sub ? walk(sub, depth + 1) : []),
+        ];
+      });
+    const root = document.querySelector('.body > ul');
+    return root ? walk(root, 0) : [];
+  });
+/** Carry `from` by its handle to a point on `to`'s line, and let go. */
+const carryItem = async (from, to, { edge = 'top', dx = 0 } = {}) => {
+  await itemAt(from);
+  const grip = await page.locator('.block-handle').boundingBox();
+  const aim = await page.evaluate(([label, side]) => {
+    const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === label);
+    const b = p.getBoundingClientRect();
+    return { x: Math.round(b.left), y: Math.round(side === 'top' ? b.top + 2 : b.bottom - 1) };
+  }, [to, edge]);
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(grip.x + 6, grip.y - 6, { steps: 4 });
+  await page.mouse.move(aim.x + dx, aim.y, { steps: 12 });
+  await page.waitForTimeout(200);
+  const during = await page.evaluate(() => ({
+    line: document.querySelector('.list-drop-line')?.classList.contains('is-shown') ?? false,
+    caret: [...document.querySelectorAll('.prosemirror-dropcursor-block, .prosemirror-dropcursor-inline')]
+      .some((c) => getComputedStyle(c).display !== 'none'),
+  }));
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  return during;
+};
 
 await itemAt('three');
+check('a list item can be picked up', await page.locator('.block-handle').getAttribute('draggable'), 'true');
 check(
-  'a list item refuses to be picked up',
-  await page.locator('.block-handle').getAttribute('draggable'),
-  'false',
+  'a bullet in the air shows our line, not a text caret',
+  await carryItem('three', 'one'),
+  { line: true, caret: false },
+);
+check('and dropping it above the first bullet puts it there', await listOrder(), ['three', '  kid', 'one', 'two']);
+check(
+  'a drag that moved something does not also open the menu',
+  await page.locator('.block-menu').count(),
+  0,
 );
 check(
-  'and says so before it is pressed, rather than after',
-  await page.evaluate(() => getComputedStyle(document.querySelector('.block-handle')).cursor),
-  'pointer',
+  'and nothing of the carry is left standing',
+  await page.evaluate(() => document.querySelectorAll('.list-drop-line').length),
+  0,
 );
+await page.keyboard.press('Control+KeyZ');
+await page.waitForTimeout(300);
+check('one undo puts it back, sub-bullet and all', await listOrder(), ['one', 'two', 'three', '  kid']);
 
-const listOrder = async () => (await body().innerText()).split('\n').filter(Boolean);
-const grabItem = await page.locator('.block-handle').boundingBox();
-const target = await page.evaluate(() => {
-  const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === 'one');
-  const b = p.getBoundingClientRect();
-  return { x: Math.round(b.left) + 40, y: Math.round(b.top) + 2 };
-});
-await page.mouse.move(grabItem.x + grabItem.width / 2, grabItem.y + grabItem.height / 2);
-await page.mouse.down();
-await page.mouse.move(grabItem.x + 6, grabItem.y - 6, { steps: 4 });
-await page.mouse.move(target.x, target.y, { steps: 12 });
-await page.waitForTimeout(200);
-check(
-  'nothing goes into the air over a list',
-  await page.evaluate(() => ({
-    carriers: document.querySelectorAll('.block-lift').length,
-    dimmed: document.querySelector('.editor-host').classList.contains('is-lifting'),
-    indicator: document.querySelectorAll('.prosemirror-dropcursor-block, .ProseMirror-dropcursor').length,
-  })),
-  { carriers: 0, dimmed: false, indicator: 0 },
-);
-await page.mouse.up();
-await page.waitForTimeout(400);
-check('and the list is exactly as it was', await listOrder(), ['one', 'two', 'three']);
+await carryItem('kid', 'one');
+check('a nested bullet can be carried out to the top', await listOrder(), ['kid', 'one', 'two', 'three']);
+await page.keyboard.press('Control+KeyZ');
+await page.waitForTimeout(300);
+
+/*
+  Reaching for a to-do's handle crosses its checkbox, where "which block is
+  here" has no good answer — the handle used to jump to the item above and
+  the wrong task came up in the hand. Walked, because a single hover lands on
+  the far side and never crosses the checkbox at all.
+*/
+await page.keyboard.press('Control+End');
+await page.keyboard.press('Enter');
+await page.keyboard.press('Enter');
+await page.keyboard.type('[] task one');
+await page.keyboard.press('Enter');
+await page.keyboard.type('task two');
+await page.waitForTimeout(300);
+{
+  const at = await page.evaluate(() => {
+    const p = [...document.querySelectorAll('.body li p')].find((n) => n.textContent.trim() === 'task two');
+    const b = p.getBoundingClientRect();
+    return { x: Math.round(b.left) + 30, y: Math.round(b.top + b.height / 2) };
+  });
+  await page.mouse.move(at.x, at.y);
+  await page.waitForTimeout(200);
+  const grip = await page.locator('.block-handle').boundingBox();
+  for (let step = 1; step <= 14; step++) {
+    await page.mouse.move(at.x + ((grip.x + grip.width / 2 - at.x) * step) / 14, at.y + (step % 2 ? 2 : -2));
+  }
+  await page.waitForTimeout(200);
+  check(
+    'reaching across a checkbox for its handle keeps hold of that task',
+    await page.evaluate(() => {
+      const g = document.querySelector('.block-gutter').getBoundingClientRect();
+      const mid = g.top + g.height / 2;
+      const p = [...document.querySelectorAll('.body li p')].find((n) => {
+        const b = n.getBoundingClientRect();
+        return mid >= b.top - 1 && mid <= b.bottom + 1;
+      });
+      return p?.textContent.trim() ?? '(none)';
+    }),
+    'task two',
+  );
+}
+await page.keyboard.press('Control+Home');
+await page.waitForTimeout(150);
 
 // Everything the handle does that is not carrying still works on an item.
 await itemAt('two');
@@ -1957,14 +2027,10 @@ await page.waitForSelector('.block-menu', { timeout: 4000 });
 check('the handle still opens the block menu on a list item', await page.locator('.block-menu').count(), 1);
 await page.locator('.block-item', { hasText: 'Move up' }).first().click();
 await page.waitForTimeout(350);
-check('and the menu still moves it', await listOrder(), ['two', 'one', 'three']);
+check('and the menu still moves it', await listOrder(), ['two', 'one', 'three', '  kid']);
 await page.keyboard.press('Alt+Shift+ArrowDown');
 await page.waitForTimeout(350);
-check('as does the chord, which is the gesture that replaces the drag', await listOrder(), [
-  'one',
-  'two',
-  'three',
-]);
+check('as does the chord', await listOrder(), ['one', 'two', 'three', '  kid']);
 
 // ------------------------------------------------------- the context menu
 // The system menu is replaced here, so the three verbs it had are this app's
@@ -2095,7 +2161,7 @@ check('and leaves a way back at the edge', await page.locator('.rail-handle').co
 check(
   'and a visible one in the page bar, which says how many are waiting',
   await page.locator('.tool[aria-label="Show notes"]').getAttribute('title'),
-  'Show notes (2) — Ctrl+Shift+Space',
+  'Show 2 notes — Ctrl+Shift+Space',
 );
 await page.locator('.tool[aria-label="Show notes"]').click();
 await page.waitForTimeout(400);
@@ -2158,7 +2224,7 @@ check('and nothing typed on the way out was lost', (await bodyText()).includes('
 
 // ------------------------------------------------------------------ export
 section('export');
-await page.keyboard.press('Control+Shift+KeyE');
+await page.keyboard.press('Control+Shift+KeyS');
 await page.waitForSelector('.dialog');
 check('ctrl-shift-E opens the export dialog', await page.locator('.dialog-title').innerText(), 'Export');
 check('three ways out, and no PDF', await page.locator('.dialog .field').first().locator('.choice-label').allInnerTexts(), [
@@ -2238,6 +2304,61 @@ await page.waitForTimeout(400);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 check('escape closes it', await page.locator('.dialog').count(), 0);
+
+section('word formatting');
+/*
+  The Word half: underline by its chord, a colour and a size from the bar, and
+  centring by Google Docs' chord. Each is read back off the document, not off
+  the button that was pressed.
+*/
+await freshPage('Formatting');
+await page.keyboard.type('A title to centre');
+await page.keyboard.press('Control+Shift+KeyE');
+await page.keyboard.press('Enter');
+await page.keyboard.type('some words here');
+await page.waitForTimeout(250);
+check(
+  'ctrl-shift-e centres the line, and only that line',
+  await page.evaluate(() => [...document.querySelectorAll('.body p')].map((p) => p.style.textAlign || 'left')),
+  ['center', 'center'],
+);
+// A new paragraph inherits its parent's alignment in Tiptap, as Word's does;
+// putting it back is one chord.
+await page.keyboard.press('Control+Shift+KeyL');
+{
+  // Dragged across, which is what brings the bar out.
+  const words = await page.locator('.body p', { hasText: 'some words here' }).boundingBox();
+  await page.mouse.move(words.x + 2, words.y + words.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(words.x + words.width - 2, words.y + words.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForSelector('.bubble', { timeout: 4000 });
+  await page.waitForTimeout(300);
+}
+await page.keyboard.press('Control+KeyU');
+await page.waitForTimeout(150);
+check('ctrl-u underlines the held words', await page.locator('.body u').count(), 1);
+await page.locator('.bubble-colour').click();
+await page.locator('.bubble-menu .bubble-item', { hasText: 'Red' }).click();
+await page.waitForTimeout(150);
+check(
+  'the colour menu paints the held words',
+  await page.evaluate(() => getComputedStyle(document.querySelector('.body span[style*="color"]')).color),
+  'rgb(209, 69, 59)',
+);
+await page.locator('.bubble-size').click();
+await page.locator('.bubble-menu .bubble-item', { hasText: '18' }).click();
+await page.waitForTimeout(150);
+check(
+  'and the size menu sizes them in points',
+  await page.evaluate(() => document.querySelector('.body span[style*="font-size"]')?.style.fontSize),
+  '18pt',
+);
+check(
+  'the size control then says what the words are',
+  (await page.locator('.bubble-size-num').innerText()).trim(),
+  '18',
+);
 
 await browser.close();
 

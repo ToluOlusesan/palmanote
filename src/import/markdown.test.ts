@@ -32,6 +32,26 @@ test('marks survive a trip out and back', () => {
   assert.deepEqual(roundTrip(doc), doc);
 });
 
+test('underline, colour and size survive as the inline HTML markdown allows', () => {
+  const doc = paragraph(
+    { type: 'text', text: 'under', marks: [{ type: 'underline' }] },
+    { type: 'text', text: ' then ' },
+    {
+      type: 'text',
+      text: 'red and large',
+      marks: [{ type: 'textStyle', attrs: { color: '#d1453b', fontSize: '18pt' } }],
+    },
+    { type: 'text', text: ' then ' },
+    { type: 'text', text: 'just blue', marks: [{ type: 'textStyle', attrs: { color: '#2f6fe0', fontSize: null } }] },
+  );
+  assert.deepEqual(roundTrip(doc), doc);
+});
+
+test('a background colour is not read as the text colour', () => {
+  const back = parseMarkdown('<span style="background-color: yellow">soft</span>').doc;
+  assert.deepEqual(back.content?.[0]?.content, [{ type: 'text', text: 'soft' }]);
+});
+
 test('a highlight survives, though markdown cannot say which colour', () => {
   const doc = paragraph({
     type: 'text',

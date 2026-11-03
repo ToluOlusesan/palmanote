@@ -6,12 +6,17 @@ import {
   ListChecks,
   ListNumbers,
   SquaresFour,
+  TextAlignCenter,
+  TextAlignJustify,
+  TextAlignLeft,
+  TextAlignRight,
   TextB,
   TextHOne,
   TextHThree,
   TextHTwo,
   TextItalic,
   TextStrikethrough,
+  TextUnderline,
   type Icon,
 } from '@phosphor-icons/react';
 import type { Editor } from '@tiptap/react';
@@ -19,6 +24,14 @@ import { useEffect, useRef, useState } from 'react';
 
 import { groupableImages } from '../editor/Gallery.ts';
 import { activeHighlight, HIGHLIGHT_LABELS, HIGHLIGHT_TONES } from '../editor/Highlight.ts';
+import { ALIGNMENTS, type Alignment } from '../editor/textFormat.ts';
+
+const ALIGN_GLYPHS: Record<Alignment, Icon> = {
+  left: TextAlignLeft,
+  center: TextAlignCenter,
+  right: TextAlignRight,
+  justify: TextAlignJustify,
+};
 
 /**
  * Formatting, in the page bar.
@@ -104,6 +117,9 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
       {button('Italic', 'Ctrl+I', editor.isActive('italic'), TextItalic, () =>
         editor.chain().focus().toggleItalic().run(),
       )}
+      {button('Underline', 'Ctrl+U', editor.isActive('underline'), TextUnderline, () =>
+        editor.chain().focus().toggleUnderline().run(),
+      )}
       {button(
         'Strikethrough',
         'Ctrl+Shift+X',
@@ -137,6 +153,20 @@ export function Toolbar({ editor, rail }: { editor: Editor | null; rail?: RailCo
             <ToolbarMenuItem icon={ListBullets} label="Bullet list" hint="-" onSelect={() => { editor.chain().focus().toggleBulletList().run(); setMoreOpen(false); }} />
             <ToolbarMenuItem icon={ListNumbers} label="Numbered list" hint="1." onSelect={() => { editor.chain().focus().toggleOrderedList().run(); setMoreOpen(false); }} />
             <ToolbarMenuItem icon={ListChecks} label="Task list" hint="[]" onSelect={() => { editor.chain().focus().toggleTaskList().run(); setMoreOpen(false); }} />
+            <span className="toolbar-menu-sep" />
+            {ALIGNMENTS.map((entry) => (
+              <ToolbarMenuItem
+                key={entry.id}
+                icon={ALIGN_GLYPHS[entry.id]}
+                label={entry.label}
+                hint={entry.hint}
+                onSelect={() => {
+                  if (entry.id === 'left') editor.chain().focus().unsetTextAlign().run();
+                  else editor.chain().focus().setTextAlign(entry.id).run();
+                  setMoreOpen(false);
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
