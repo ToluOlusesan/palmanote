@@ -2,6 +2,7 @@ import { EditorContent, type Editor } from '@tiptap/react';
 import { CaretLeft, CaretRight, ClockCounterClockwise, FileText } from '@phosphor-icons/react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
+import { setPagination } from '../editor/pagination.ts';
 import { useDocumentEditor } from '../editor/useDocumentEditor.ts';
 import { useLibrary } from '../state/library.tsx';
 import { useTabs } from '../state/tabs.tsx';
@@ -72,12 +73,11 @@ const PAGE_VIEW = 'palmanote:page-view';
  * Page view: the writing as a sheet of US Letter, at true size, with Word's
  * default inch of margin and a mark wherever a page would end.
  *
- * Word calls it Print Layout and puts it on Ctrl+Alt+P, so this does too. It
- * draws where the pages fall rather than paginating the text — a page break
- * inside a paragraph is shown, not moved — because live pagination in an
- * editable surface is a typesetter, and what the mode is for is knowing what
- * the .docx and the PDF will look like before sending them. Remembered on this
- * machine, like the sidebar.
+ * Word calls it Print Layout and puts it on Ctrl+Alt+P, so this does too. Text
+ * that would cross the end of a page moves to the top of the next one, a line
+ * at a time, so nothing is ever drawn over the cut — see pagination.ts. It
+ * started out only marking the cut and letting the text run through it, which
+ * put lines on top of the band. Remembered on this machine, like the sidebar.
  */
 function usePageView(): [boolean, () => void] {
   const [on, setOn] = useState(() => {
@@ -234,6 +234,10 @@ export function EditorPane({
   const [pageView, togglePageView] = usePageView();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const heldSelection = useRef<HeldSelection | null>(null);
+
+  useEffect(() => {
+    if (editor) setPagination(editor, pageView);
+  }, [editor, pageView]);
 
   useEffect(() => {
     flushRef.current = flush;

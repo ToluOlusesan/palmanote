@@ -19,6 +19,7 @@ import { Highlight } from './Highlight.ts';
 import { Image } from './Image.ts';
 import { NestedList } from './NestedList.ts';
 import { PageLink } from './PageLink.ts';
+import { Pagination } from './pagination.ts';
 import { SceneBreak } from './SceneBreak.ts';
 import { Slash } from './slash.ts';
 import { Sticker } from './Sticker.ts';
@@ -192,6 +193,8 @@ export const extensions = [
     },
   }),
   Slash,
+  // Page view's page breaks. Inert until page view switches it on.
+  Pagination,
   Caret.configure(writingSettings()),
   SmartTypography,
   // Only ever on a wholly empty page. A per-node placeholder reappears on the

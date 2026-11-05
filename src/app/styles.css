@@ -5546,8 +5546,9 @@ mark[data-tone='red'] {
   Word's default margin. The desk around it is a step off the page so the
   sheet reads as paper lying on something. Every 11 inches a band of the desk
   shows through: that is where the page ends in the .docx and in the PDF.
-  Drawn, not paginated — the text runs on through it, and the band says where
-  the cut will fall.
+  Text never runs through it: pagination.ts puts a spacer in front of the
+  first line that would cross a cut, which carries it to the next page's top
+  margin.
 */
 .editor.is-page-view {
   --desk: #f2f2f3;
@@ -5582,6 +5583,14 @@ mark[data-tone='red'] {
 
 .page-view-toggle {
   margin-left: 0.15rem;
+}
+
+/* A block inside the line, so it breaks the paragraph there and adds its
+   height; the lines above it keep their wrapping. */
+.page-spacer {
+  display: block;
+  pointer-events: none;
+  user-select: none;
 }
 
 /*
